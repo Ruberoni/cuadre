@@ -62,3 +62,17 @@ pnpm db:seed
 - One issue → one branch → one small PR. Conventional Commits. PRs are squash-merged into a protected `main`.
 - If the issue is ambiguous (especially fiscal rules), ask in the issue instead of guessing.
 - Changes to rules of the game (ADRs, fiscal rules, module boundaries) are decided by the human maintainer. Propose them; do not make them.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `Ruberoni/cuadre`, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default triage roles, except the agent-ready role uses the existing `agent-ready` label. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `docs/GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain.md`.
