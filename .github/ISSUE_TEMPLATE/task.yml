@@ -1,7 +1,7 @@
 name: Task (agent-ready spec)
 description: A unit of work an agent can implement end to end. The maintainer adds the `agent-ready` label once the spec is complete.
 title: "<verb> <what>"
-labels: ["needs-spec"]
+labels: ["needs-triage"]
 body:
   - type: textarea
     id: context
@@ -57,4 +57,7 @@ body:
     id: design
     attributes:
       label: Design
-      description: Link to the screen in the Design System canvas. Required for new screens (ADR-012).
+      description: Link to the screen's artboard in the Cuadre Screens artifact (ADR-012). Write "N/A — no UI" if the issue adds or changes no screen. A UI issue without a link gets `needs-design` and cannot be `agent-ready`.
+      placeholder: "https://claude.ai/artifact/… or N/A — no UI"
+    validations:
+      required: true
