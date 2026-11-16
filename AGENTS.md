@@ -23,7 +23,7 @@ apps/api/                 Hono + @hono/zod-openapi HTTP server hosting all modul
     index.ts              the ONLY public API of the module
     AGENTS.md             module-local rules
 apps/web/                 React SPA (Vite, TanStack Router/Query/Table, shadcn/ui, Tailwind)
-packages/ui/              design tokens + shadcn components (synced from the Design System canvas)
+packages/ui/              design tokens (synced from the Cuadre Design System) + shadcn components
 packages/contracts/       shared Zod schemas
 docs/                     PLAN, GLOSSARY, ADRs
 ```
@@ -48,11 +48,11 @@ pnpm db:seed
 - **Module boundaries:** import another module only through its `index.ts`. Never query another module's tables. Enforced by dependency-cruiser in CI.
 - **Domain purity:** `domain/` never imports from `infrastructure/`, `http/`, Drizzle, Hono or any I/O.
 - **Money:** never use `number` floats for money. Use the `Money` value object (integer minor units + currency). See ADR-005.
-- **Documents freeze their exchange rate** at issue time. IGTF applies to **payments** in foreign currency, not invoices. See ADR-005/006.
+- **Documents** are `Draft` then `Issued`; issued documents are immutable and freeze their exchange rate. IGTF applies to **receipts** in foreign currency, never invoices. See ADR-005/006/013.
 - **Errors:** domain and use cases return `Result` discriminated unions; throw only for truly unexpected failures. See ADR-009.
 - **Cross-module writes** happen synchronously inside one DB transaction. See ADR-008.
 - **Language:** code, commits, issues, PRs and docs in English; UI copy in Spanish.
-- **Design:** new screens must follow the linked design in the Design System canvas. Do not invent tokens; use `packages/ui`.
+- **Design is a required step (ADR-012):** a screen is built only from its artboard in the Cuadre Screens artifact, linked in the issue's **Design** field. If an issue touches `apps/web` and has no design link, stop and ask in the issue. Do not invent tokens; use `packages/ui`.
 - **Tests:** domain rules are written test-first. Use cases get integration tests against real Postgres. Turn the issue's acceptance examples into tests.
 - **Done means green:** typecheck, lint, boundaries and tests pass locally before opening a PR.
 
