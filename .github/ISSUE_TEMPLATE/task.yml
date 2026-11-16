@@ -1,0 +1,60 @@
+name: Task (agent-ready spec)
+description: A unit of work an agent can implement end to end. The maintainer adds the `agent-ready` label once the spec is complete.
+title: "<verb> <what>"
+labels: ["needs-spec"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why this matters. Link related issues, ADRs and glossary terms.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Concrete Given/When/Then examples with real numbers. These become tests.
+      placeholder: |
+        - Given an invoice of 100.00 USD
+          When it is paid in full in USD cash
+          Then the payment records IGTF of 3.00 USD and the outstanding balance is 0.00 USD
+    validations:
+      required: true
+  - type: dropdown
+    id: modules
+    attributes:
+      label: Affected modules
+      multiple: true
+      options:
+        - catalog
+        - partners
+        - purchasing
+        - inventory
+        - sales
+        - billing
+        - exchange-rates
+        - web (apps/web)
+        - ui (packages/ui)
+        - infra / tooling
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What this issue must NOT do.
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Test expectations
+      description: Unit (domain), integration (use case vs Postgres), E2E — which apply.
+    validations:
+      required: true
+  - type: input
+    id: design
+    attributes:
+      label: Design
+      description: Link to the screen in the Design System canvas. Required for new screens (ADR-012).
