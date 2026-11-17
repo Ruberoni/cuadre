@@ -1,0 +1,27 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "globalPassThroughEnv": ["FC_SEED", "FC_PATH"],
+  "tasks": {
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "env": ["DATABASE_URL*", "API_PORT"]
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {},
+    "test:unit": {
+      "env": ["CI"]
+    },
+    "test:integration": {
+      "cache": false,
+      "env": ["CI", "DATABASE_URL*"]
+    },
+    "test:e2e": {
+      "cache": false,
+      "env": ["CI", "PLAYWRIGHT_CHANNEL"]
+    }
+  }
+}
