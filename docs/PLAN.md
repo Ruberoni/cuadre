@@ -12,7 +12,7 @@ Budget: ~5–10 h/week. Target: MVP in 6–8 weeks.
 
 One end-to-end flow: **buy → stock → sell → collect**.
 
-1. **Master data:** products (SKU, unit of measure, one sale price in USD, IVA rate), suppliers, customers (with RIF).
+1. **Master data** (create, edit, list): products (SKU, unit of measure, one sale price in USD, IVA rate), suppliers, customers (with RIF).
 2. **Exchange rates:** daily BCV rate, entered manually.
 3. **Purchasing:** purchase order → one goods receipt per order (increases stock; is the payable).
 4. **Inventory:** single warehouse, stock ledger (kardex), weighted average cost in USD.
@@ -29,29 +29,33 @@ Multiple warehouses, returns, advanced reports, multi-company, i18n. Items with 
 See ADR-005, 006, 007, 013.
 
 **Money and rates**
-- Money as integer minor units; never floats. Functional currency USD.
-- Exchange rates are stored with 8 decimals (as the BCV publishes them). The rate for a date is the latest one dated on or before it; none → `MISSING_EXCHANGE_RATE`.
-- Every document has a document currency and freezes the exchange rate when it is issued, including USD documents (for their VES equivalent).
+- Money as integer minor units; never floats. Functional currency USD. Rounding is half away from zero, to the currency's minor unit.
+- Exchange rates are stored with 8 decimals (as the BCV publishes them). The rate for a date is the latest one dated on or before it; none → `MISSING_EXCHANGE_RATE`. A rate may be recorded up to 7 days ahead (the BCV publishes the next business day's rate in advance). A recorded rate may be corrected only until an issued document has frozen it.
+- Every document has a document currency and freezes the exchange rate when it is issued, including USD documents (for their VES equivalent). Exception: sales orders are always priced in USD; the currency is chosen on the invoice.
 
 **Documents**
 - Lifecycle: `Draft` (editable, deletable, no effects) → `Issued` (immutable). Issuing freezes the rate, moves stock and opens the balance. No voiding in the MVP.
 - `DocumentDate` defaults to today, may be in the past, never in the future; it drives the rate lookup.
-- Documents are 1:1 and complete: one goods receipt per purchase order (may receive less; closes the order, no backorder), one invoice per sales order (required). The sales order's price defaults from the product and is editable per line.
+- Documents are 1:1 and complete: one goods receipt per purchase order (may receive less; closes the order, no backorder), one invoice per sales order (required). The sales order's price defaults from the product and is editable per line. The goods receipt's unit cost defaults from the purchase order and is editable to match the supplier's invoice.
+- Quantities follow the unit of measure: whole numbers for Unidad, Caja and Bulto; up to 3 decimals for Kilogramo and Litro.
 
 **Taxes**
-- IVA per product: 16% / 8% / exempt.
-- An invoice may be issued in USD or VES. A USD invoice always shows its VES equivalent, computed on totals at the frozen rate. A VES invoice converts each line from the USD price at the frozen rate.
-- Our invoices get a gapless sequential number when issued; drafts consume none. No control number of our own (that belongs to SENIAT-certified invoicing).
+- IVA per product: 16% / 8% / exempt. IVA is computed on the taxable base of each rate (sum of the lines at that rate), not per line.
+- An invoice may be issued in USD or VES. A USD invoice always shows its VES equivalent, computed on totals at the frozen rate. A VES invoice converts each line's USD **unit price** at the frozen rate, then multiplies by the quantity.
+- Our invoices get a gapless sequential number when issued; drafts consume none. Numbers are shown with 8 digits (`00000001`), never reset. No control number of our own (that belongs to SENIAT-certified invoicing), so the printed invoice states it is not a fiscal document. The business's own data (name, RIF, address) comes from configuration.
 - The business is a `SpecialTaxpayer`: IGTF 3% is charged **on top of** each receipt made in foreign currency. It never appears on an invoice and does not reduce the outstanding balance.
 
 **Inventory**
-- Weighted average cost in USD, **excluding IVA**. A purchase in VES converts at the goods receipt's frozen rate.
+- Weighted average cost in USD, **excluding IVA**. A purchase in VES converts at the goods receipt's frozen rate. Each product keeps its total stock value and quantity; the average is derived from them, and the movement that empties the stock takes the remaining value (ADR-007).
 - No negative stock (`INSUFFICIENT_STOCK`). Opening stock enters only through the seed and goods receipts; no adjustments or counts.
 
 **Settlement**
 - A receipt settles exactly one invoice; a payment settles exactly one goods receipt. A document may have several partial receipts or payments.
 - Outstanding balances are kept in the document's currency. A receipt or payment in the other currency converts at its own frozen rate; no exchange-difference entry is recorded.
 - Goods receipts record the supplier's invoice number and control number.
+
+**Partners**
+- One `Partner` per RIF; it may be a supplier, a customer or both. RIFs are validated by format and check digit.
 
 ## Roles
 
