@@ -9,6 +9,19 @@ Built as a personal portfolio project, developed primarily by AI agents from wel
 - Domain glossary: [`docs/GLOSSARY.md`](docs/GLOSSARY.md)
 - Agent instructions: [`AGENTS.md`](AGENTS.md)
 
-> Status: planning. The walking skeleton has not been built yet.
+> Status: walking skeleton. The monorepo, tooling and CI gates are in place; business features arrive slice by slice.
+
+## Quick start
+
+Requires Node 26, pnpm and Docker.
+
+```bash
+pnpm install
+docker compose up -d
+pnpm db:migrate
+pnpm dev
+```
+
+See [`AGENTS.md`](AGENTS.md) for the full list of commands.
 
 All sample data in this repository is fictitious.
