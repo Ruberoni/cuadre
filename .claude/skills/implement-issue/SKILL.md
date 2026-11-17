@@ -1,6 +1,6 @@
 ---
 name: implement-issue
-description: Take a GitHub issue from plan to a reviewed, ready PR. Use when the maintainer says "implement #N", "plan #N" or runs /implement-issue N. One issue, one branch, one PR.
+description: Take a GitHub issue from plan to a reviewed, ready PR. Run it as /implement-issue N, from a worktree. One issue, one branch, one PR.
 argument-hint: "<issue-number>"
 disable-model-invocation: true
 ---
@@ -13,14 +13,14 @@ Target: issue **#$ARGUMENTS**.
 
 ## Contract
 
-- **Invoking this skill authorizes:** renaming the branch, commits, `git push` of this branch and **one** PR (draft, then ready). Nothing else: no merge, no push to `main`, no force-push, no other branches, no issues created without asking.
+- **Invoking this skill authorizes:** renaming the branch, commits, `git push` of this branch, **one** PR (draft, then ready) and comments on the target issue (to ask or to escalate). Nothing else: no merge, no push to `main`, no force-push, no other branches, no issues created without asking.
 - **All questions happen in Phase 1.** After the plan is approved, ask nothing until the final report. Only these stop you: a real blocker only the maintainer can solve; the three-rounds escalation (AGENTS.md); a contradiction with an ADR. Say which in the session and in the PR.
 - Never weaken a gate (tool config, CI, `REVIEW.md`, `verify`, tests) to get green. If a gate must change, the PR justifies it (REVIEW item 10).
 - Do not edit ADRs or fiscal rules: propose the change in the PR (AGENTS.md).
 
 ## Phase 0 — Guards
 
-1. **Worktree.** `[ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]` must hold. In the main checkout, stop and tell the maintainer: parallel sessions share it.
+1. **Worktree.** `[ "$(git rev-parse --path-format=absolute --git-dir)" != "$(git rev-parse --path-format=absolute --git-common-dir)" ]` must hold (absolute paths, so it also works from a subdirectory). In the main checkout, stop and tell the maintainer: parallel sessions share it.
 2. **Issue.** `gh issue view <n> --json number,title,body,labels,comments`. Stop unless it has the `agent-ready` label. If it touches `apps/web` and its **Design handoff** is incomplete (or it carries `needs-design`), stop and ask in the issue (ADR-012).
 3. **Branch.** Rename the generated `claude/…` branch before anything else: `git branch -m <type>/<n>-<slug>` (Conventional Commits type the PR title will carry; slug from the issue title). Renaming after the first push closes the PR.
 
@@ -53,16 +53,16 @@ Run, and fix until green (three rounds, then escalate by commenting on the issue
 
 Anything not run is declared in the PR with its reason, never silently skipped. `PLAYWRIGHT_CHANNEL=msedge` where the Playwright download is unreachable.
 
-**Parallel sessions.** `verify` and the integration tests share ports 3100/4173 and the `cuadre_e2e` and `cuadre_test` databases. If `verify` fails at the `ports` step, or a database is busy, assume another session is verifying: wait (about a minute between tries, up to 10 minutes) and retry. That does not count as a fix round. After 10 minutes, stop and say so.
+**Parallel sessions.** `verify` and `pnpm test:e2e` share ports 3100/4173 and the `cuadre_e2e` database; the integration tests share `cuadre_test`. If `verify` or `test:e2e` fails at the `ports` step, or a database is busy, assume another session is running: wait (about a minute between tries, up to 10 minutes) and retry. Two integration runs at once give no clear error, only odd failures: before "fixing" an inexplicable integration failure, check whether another session is running (`docker compose logs`, open connections to `cuadre_test`) and retry alone. Waiting does not count as a fix round. After 10 minutes, stop and say so.
 
 ## Phase 4 — Draft PR
 
 1. `git push -u origin <branch>`; `gh pr create --draft` with the repo's PR template (`Closes #<n>`, what changed, Verification ticked only for what ran, `Verified-by:` last line). Title: the Conventional Commit.
-2. The `/code-review` and "triggered items" lines are filled in Phase 5.
+2. The review line (`pr-reviewer` with `REVIEW.md`, triggered items) and the `Verified-by:` trailer are left pending on purpose: Phase 6 fills them.
 
 ## Phase 5 — Review
 
-1. Spawn the `pr-reviewer` agent with the PR number and the issue number. It returns one list tagged **Important**, **Nit** or **Pre-existing** and never edits files.
+1. Spawn the `pr-reviewer` agent with the PR number and the issue number, and tell it that the PR's review line and `Verified-by:` trailer are still pending (it must not report them). It returns one list tagged **Important**, **Nit** or **Pre-existing** and never edits files.
 2. Apply it:
    - **Important:** fix, always.
    - **Nit:** fix if cheap; otherwise list it as accepted, with the reason, in the PR.
@@ -73,8 +73,8 @@ Anything not run is declared in the PR with its reason, never silently skipped. 
 
 ## Phase 6 — Ready
 
-1. Update the PR body: Verification (what actually ran), triggered `REVIEW.md` items, findings fixed / accepted / follow-up, and the `Verified-by:` trailer.
-2. `gh pr checks` **once**. A failed check is fixed (it counts toward the three rounds). A check still running is not waited for: say so in the report.
+1. Update the PR body: Verification (what actually ran), triggered `REVIEW.md` items, findings fixed / accepted / follow-up, the fixes made after the last review (nobody reviewed those: Nit fixes and second-round fixes), and the `Verified-by:` trailer (use `pr-reviewer`, not `code-review`, for the review).
+2. `gh pr checks` **once**. A failed check is fixed (it counts toward the three rounds), and the report says its new run is still pending or red until you have seen it. A check still running is not waited for: say so in the report.
 3. `gh pr ready`.
 4. Report to the maintainer, in Spanish and short: the PR link; what was verified and what was not; review findings (fixed, accepted, follow-ups); and **where to look in the manual review**: ADR edits, gate changes (REVIEW item 10), and any decision taken without asking.
 5. Offer to create each follow-up as a `needs-triage` issue ("Found in <PR>"). Create them only on a yes.

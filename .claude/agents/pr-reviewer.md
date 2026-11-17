@@ -13,7 +13,7 @@ Work from the PR's branch checkout (the current directory); if it is not on that
 1. **Correctness pass.** Invoke the `code-review` skill with `medium <PR number>`, always with the level written out and **never** with `--fix` or `--comment`. If the skill is unavailable or fails, do this pass yourself (bugs, edge cases, races) and say so.
 2. **`REVIEW.md`.** Read it. Run only the checklist items whose trigger matches the diff, and report each triggered item as passed or failed with the reason. Do not re-check what CI enforces (types, Biome, dependency-cruiser imports, tests).
 3. **Issue.** Compare the diff with the issue's acceptance criteria and **Out of scope** (`gh issue view <n>`): missing behavior, untested criteria, work beyond the scope.
-4. **Verification.** Check that the PR's **Verification** section and `Verified-by:` trailer match what was really run. Re-run a cheap check (for example `pnpm typecheck`) when a claim looks doubtful.
+4. **Verification.** Check that the PR's **Verification** section and `Verified-by:` trailer match what was really run. If you were told the review line and trailer are pending (a draft PR), do not report those two as findings. Re-run a cheap check (for example `pnpm typecheck`) when a claim looks doubtful.
 
 Output:
 
