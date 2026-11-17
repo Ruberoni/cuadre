@@ -47,13 +47,13 @@ pnpm dev                 # api (http://localhost:3000, GET /health, /openapi.jso
 pnpm test                # unit + integration (integration needs Postgres, uses the cuadre_test database)
 pnpm test:unit
 pnpm test:integration
-pnpm test:e2e            # Playwright smoke + Button browser test (PLAYWRIGHT_CHANNEL=msedge uses an installed browser)
+pnpm test:e2e            # Playwright (starts api + web on its own cuadre_e2e database; needs Postgres) + Button browser test (PLAYWRIGHT_CHANNEL=msedge uses an installed browser)
 pnpm typecheck
 pnpm lint                # Biome + dependency-cruiser (pnpm lint:boundaries)
-pnpm verify              # (planned) boot the app and run the smoke E2E (ADR-014)
+pnpm verify              # Postgres -> fresh cuadre_e2e -> migrate -> seed -> boot api + web -> smoke E2E (ADR-014); one run at a time per machine
 ```
 
-`docker compose down -v` recreates the database volume (the `cuadre_test` database is created only on a fresh volume).
+`docker compose down -v` recreates the database volume (the `cuadre_test` database is created only on a fresh volume; `cuadre_e2e` is created by `db:e2e:prepare`).
 
 Each module declares its Drizzle tables in `src/modules/<module>/infrastructure/*.table.ts` (ADR-004); `drizzle-kit` picks them up from there.
 

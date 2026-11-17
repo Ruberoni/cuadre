@@ -9,6 +9,7 @@
       "Bash(pnpm lint:boundaries)",
       "Bash(pnpm format)",
       "Bash(pnpm test)",
+      "Bash(pnpm verify)",
       "Bash(pnpm test:*)",
       "Bash(pnpm db:*)",
       "Bash(pnpm --filter * test:*)",

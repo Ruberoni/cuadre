@@ -88,9 +88,24 @@ jobs:
         run: pnpm test:integration
 
   e2e:
-    name: e2e smoke (Playwright)
+    name: verify (boot the app + smoke E2E)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # verify reuses a Postgres that already answers on 5433 instead of starting docker compose.
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: cuadre
+          POSTGRES_PASSWORD: cuadre
+          POSTGRES_DB: cuadre
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U cuadre -d cuadre"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
@@ -101,10 +116,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Install Chromium
         run: pnpm --filter @cuadre/web exec playwright install --with-deps chromium
-      - run: pnpm test:e2e
+      - name: Verify (migrate, seed, boot api + web, smoke E2E)
+        run: pnpm verify
+      - name: Browser component tests
+        run: pnpm --filter @cuadre/web test:browser
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: failure()
         with:
           name: playwright-report
-          path: apps/web/playwright-report
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
           retention-days: 7

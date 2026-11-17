@@ -10,7 +10,7 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "env": ["DATABASE_URL*", "API_PORT"]
+      "env": ["DATABASE_URL*", "API_PORT", "API_URL"]
     },
     "build": {
       "dependsOn": ["^build"],
@@ -29,7 +29,7 @@
     },
     "test:e2e": {
       "cache": false,
-      "env": ["CI", "PLAYWRIGHT_CHANNEL"]
+      "env": ["CI", "PLAYWRIGHT_CHANNEL", "DATABASE_URL_E2E", "E2E_API_PORT", "E2E_WEB_PORT"]
     }
   }
 }

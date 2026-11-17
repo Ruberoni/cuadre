@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "typecheck": "turbo run typecheck",
+    "typecheck": "turbo run typecheck && tsc --noEmit -p scripts/tsconfig.json",
     "test": "turbo run test:unit test:integration",
     "test:unit": "turbo run test:unit",
     "test:integration": "turbo run test:integration",
@@ -16,6 +16,7 @@
     "lint": "biome check . && pnpm lint:boundaries",
     "lint:boundaries": "depcruise apps/api/src apps/web/src packages/shared-kernel/src",
     "format": "biome check --write .",
+    "verify": "node scripts/verify.mts",
     "db:migrate": "pnpm --filter @cuadre/api db:migrate",
     "db:seed": "pnpm --filter @cuadre/api db:seed"
   },

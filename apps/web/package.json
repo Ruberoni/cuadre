@@ -7,7 +7,8 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run",
-    "test:e2e": "playwright test && vitest run --config vitest.browser.config.ts",
+    "test:e2e": "playwright test && pnpm run test:browser",
+    "test:browser": "vitest run --config vitest.browser.config.ts",
     "tokens:generate": "node scripts/generate-tokens.ts"
   },
   "dependencies": {

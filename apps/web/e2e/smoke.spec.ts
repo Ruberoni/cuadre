@@ -14,3 +14,12 @@ test("the web app loads a blank page without errors", async ({ page }) => {
   await expect(page.locator("main")).toBeEmpty();
   expect(errors).toEqual([]);
 });
+
+test("the API answers with a reachable database", async ({ request }) => {
+  const apiUrl = `http://127.0.0.1:${process.env.E2E_API_PORT ?? 3100}`;
+
+  const response = await request.get(`${apiUrl}/health`);
+
+  expect(response.status()).toBe(200);
+  expect(await response.json()).toEqual({ status: "ok", database: "up" });
+});
