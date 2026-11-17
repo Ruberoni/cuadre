@@ -28,7 +28,7 @@ apps/web/                 React SPA (Vite, TanStack Router/Query/Table, shadcn/u
   src/components/ui/      shadcn components · src/lib/format: es-VE formatting · src/styles: generated tokens
   test/                   hand-written-token scanner, boundary-rule fixtures
 packages/contracts/       shared Zod schemas
-packages/shared-kernel/   pure domain code shared by api and web (Money, Rate, Result); imports nothing outside the package; the token generator loads it, so relative `.ts` imports and `erasableSyntaxOnly`
+packages/shared-kernel/   pure domain code shared by api and web (Money, Rate, Result); imports nothing outside the package; the token generator loads it, so it uses only relative `.ts` imports and `erasableSyntaxOnly`
 docs/                     PLAN, GLOSSARY, ADRs
 ```
 

@@ -41,6 +41,8 @@ describe("Money laws (ADR-005, ADR-014)", () => {
     );
   });
 
+  // Within ±10^12 no grouping can leave the range. Near the limit the law does not hold: see the
+  // "fails instead of losing precision" and grouping examples in money.test.ts.
   it("addition is associative", () => {
     fc.assert(
       fc.property(

@@ -14,7 +14,7 @@ Not caused by the package: shadcn 4.23.0 emits `import { cn } from "cn"` and add
 
 ## Decision
 - Design tokens (snapshot, generator, generated CSS), shadcn components, `cn` and the `es-VE` formatting helper live in `apps/web`, in shadcn's default single-app layout: `src/components/ui`, `src/lib`, `src/lib/format`, `src/styles`, `design-system/`, `scripts/`, with the `@/*` alias. CLI output is kept as written, except `from "cn"` (use `@/lib/utils`) and the color, shadow and radius classes that become tokens.
-- `Result` (ADR-009) and `Currency` live in `packages/shared-kernel` (ADR-002), not in `apps/web`: the `Money` value object is shared by the API's domains and `apps/web`, which is the extraction trigger below. Web imports them from the package.
+- `Result` (ADR-009) and `Currency` live in `packages/shared-kernel` (ADR-002), not in `apps/web`: the `Money` value object is used by `apps/web` and will be used by the API's domains (catalog slice), which is the extraction trigger below. Web imports them from the package.
 - A dependency-cruiser rule (`ui-primitives-stay-generic`) keeps primitives generic: `src/components/ui`, `src/lib`, `src/hooks` and `src/styles` never import screens.
 - ADR-012 is unchanged in substance: the Design System still owns the tokens and the sync still runs through `sync-design-system`; only its target moves to `apps/web`.
 

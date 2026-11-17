@@ -54,6 +54,16 @@ describe("add", () => {
     expect(add(usd(145), ves(100))).toEqual({ ok: false, error: "CURRENCY_MISMATCH" });
   });
 
+  it("is associative only while no grouping leaves the range", () => {
+    // (MAX + 1) + -1 stops at its first step, while MAX + (1 + -1) works: the law holds inside
+    // the range, not at its edge.
+    expect(add(usd(MAX_MINOR_UNITS), usd(1)).ok).toBe(false);
+    expect(plain(unwrap(add(usd(MAX_MINOR_UNITS), unwrap(add(usd(1), usd(-1))))))).toEqual({
+      minorUnits: MAX_MINOR_UNITS,
+      currency: "USD",
+    });
+  });
+
   it("fails instead of losing precision past the limit", () => {
     expect(add(usd(MAX_MINOR_UNITS), usd(1))).toEqual({ ok: false, error: "AMOUNT_OUT_OF_RANGE" });
   });
