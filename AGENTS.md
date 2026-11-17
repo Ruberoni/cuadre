@@ -52,7 +52,7 @@ pnpm db:seed
 - **Errors:** domain and use cases return `Result` discriminated unions; throw only for truly unexpected failures. See ADR-009.
 - **Cross-module writes** happen synchronously inside one DB transaction. See ADR-008.
 - **Language:** code, commits, issues, PRs and docs in English; UI copy in Spanish.
-- **Design is a required step (ADR-012):** a screen is built only from its artboard in the Cuadre Screens artifact, linked in the issue's **Design** field. If an issue touches `apps/web` and has no design link, stop and ask in the issue. Do not invent tokens; use `packages/ui`.
+- **Design is a required step (ADR-012, [`docs/design/`](docs/design/README.md)):** a screen is built only from the issue's **Design handoff** (artboard link + completed review checklist + handoff). If an issue touches `apps/web` and that checklist is incomplete, stop and ask in the issue. Do not invent tokens; use `packages/ui`. UI error messages come from the handoff and go into the single message catalog in `apps/web`.
 - **Tests:** domain rules are written test-first. Use cases get integration tests against real Postgres. Turn the issue's acceptance examples into tests.
 - **Done means green:** typecheck, lint, boundaries and tests pass locally before opening a PR.
 
