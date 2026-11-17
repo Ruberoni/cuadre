@@ -1,6 +1,11 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
-  "globalDependencies": ["tsconfig.base.json", ".dependency-cruiser.cjs", "biome.json"],
+  "globalDependencies": [
+    "tsconfig.base.json",
+    "tsconfig.depcruise.json",
+    ".dependency-cruiser.cjs",
+    "biome.json"
+  ],
   "tasks": {
     "dev": {
       "cache": false,

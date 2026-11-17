@@ -1,4 +1,4 @@
-/** Module boundaries (ADR-001). Run with `pnpm lint:boundaries`; proven by apps/api/test/boundaries.test.ts. */
+/** Module boundaries (ADR-001). Run with `pnpm lint:boundaries`; proven by apps/api/test/boundaries.test.ts and apps/web/test/boundaries.test.ts. */
 
 const IO_CORE_MODULES =
   "^(node:)?(fs|fs/promises|net|http|https|http2|dgram|dns|child_process|cluster|worker_threads|tls)$";
@@ -49,6 +49,17 @@ const forbidden = [
     to: { dependencyTypes: ["core"], path: IO_CORE_MODULES },
   },
   {
+    name: "ui-primitives-stay-generic",
+    comment:
+      "Design-system primitives (apps/web components/ui, lib, hooks, styles) never import screens or feature code (ADR-015).",
+    severity: "error",
+    from: { path: "^apps/web/(test/boundaries-fixtures/)?src/(components/ui|lib|hooks|styles)/" },
+    to: {
+      path: "^apps/web/(test/boundaries-fixtures/)?src/",
+      pathNot: "^apps/web/(test/boundaries-fixtures/)?src/(components/ui|lib|hooks|styles)/",
+    },
+  },
+  {
     name: "no-circular",
     severity: "error",
     from: {},
@@ -67,6 +78,7 @@ const options = {
   doNotFollow: { path: "node_modules" },
   exclude: { path: "boundaries-fixtures" },
   tsPreCompilationDeps: true,
+  tsConfig: { fileName: "tsconfig.depcruise.json" },
   enhancedResolveOptions: {
     exportsFields: ["exports"],
     conditionNames: ["import", "require", "node", "default", "types"],

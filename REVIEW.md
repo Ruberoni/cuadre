@@ -20,6 +20,6 @@ Each item: **trigger** (readable from the diff) → **check** → origin. New it
 5. **Inventory** — stock movements or costing change → outbound larger than on-hand fails with `INSUFFICIENT_STOCK`; average cost excludes IVA; VES converts at the goods receipt's frozen rate. _ADR-007._
 6. **Endpoints** — a new or changed route → the role matrix is enforced at the API and a test covers the 403. _PLAN → Roles._
 7. **Errors** — a new failure path → returns a `Result`, not a throw; its message is in the UI message catalog. _ADR-009, ADR-012._
-8. **Screens** — a new or changed screen → follows the issue's Design handoff; uses `packages/ui` tokens and components; copy uses the glossary's Spanish column; a Playwright E2E covers the acceptance criteria. _ADR-012, ADR-014._
+8. **Screens** — a new or changed screen → follows the issue's Design handoff; uses the tokens and components in `apps/web`; copy uses the glossary's Spanish column; a Playwright E2E covers the acceptance criteria. _ADR-012, ADR-014._
 9. **Migrations** — a migration is added → existing migrations are not edited; it applies cleanly on a seeded database.
 10. **Quality gates** — the diff touches Biome, dependency-cruiser or tsconfig settings, CI workflows, `REVIEW.md`, `verify`, or removes or skips a test → flag it explicitly; the PR must justify it (deleted flaky tests state why). _ADR-014._

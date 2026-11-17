@@ -3,7 +3,12 @@
   "compilerOptions": {
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
-    "types": ["vite/client", "node"]
+    "erasableSyntaxOnly": true,
+    "types": ["vite/client", "node"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["src", "e2e", "*.ts"]
+  "include": ["src", "e2e", "scripts", "test", "*.ts"],
+  "exclude": ["test/boundaries-fixtures"]
 }

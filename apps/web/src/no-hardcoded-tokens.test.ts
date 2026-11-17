@@ -1,9 +1,9 @@
 import { fileURLToPath } from "node:url";
-import { scanForHardcodedValues } from "@cuadre/ui/lib/scan-hardcoded-values";
 import { expect, it } from "vitest";
+import { scanForHardcodedValues } from "../test/scan-hardcoded-values.ts";
 
-// Tokens come from packages/ui; the web app may use semantic classes (bg-primary) but never
-// literal colors (ADR-012). This copy runs over apps/web/src so its Turborepo cache key covers it.
-it("no token value is written by hand in apps/web", () => {
+// The Design System owns the tokens (ADR-012): code may use semantic classes (bg-primary) but
+// never literal colors, in screens or components. tokens.css is the only place values live.
+it("no token value is written by hand outside the generated tokens.css", () => {
   expect(scanForHardcodedValues(fileURLToPath(new URL(".", import.meta.url)))).toEqual([]);
 });
