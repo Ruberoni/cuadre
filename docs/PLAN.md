@@ -86,14 +86,14 @@ See ADR-001…004, 008…012.
 
 The gate has two levels:
 
-1. **Phase 0 — blocks all UI work, including the walking skeleton:** the Design System exists, the *App shell* and *Products* artboards exist, and its tokens are synced into `packages/ui`.
+1. **Phase 0 — blocks all UI work, including the walking skeleton:** the Design System exists and the *App shell* and *Products* artboards exist with completed handoffs. Syncing the tokens into `packages/ui` is the first step of the walking skeleton, before any UI code: `packages/ui` only exists once the monorepo does.
 2. **Per issue — blocks `agent-ready`:** an issue that adds or changes a screen has its **Design handoff** filled in: artboard link, completed review checklist, trimmed handoff. Until it does, it carries `needs-design`. Issues with no UI write `N/A — no UI`.
 
 Every design goes through the **review flow** in [`design/README.md`](design/README.md), using the `design` plugin skills:
 - **Design System:** `/design-system extend` per component, `/accessibility-review` on tokens, `/design-system audit` before each sync.
 - **Each screen:** `/ux-copy` → `/design-critique` → `/accessibility-review` → `/design-handoff`. No open 🔴 passes a step; 🟡 is fixed or justified.
 
-Ground rules: **desktop only** (minimum 1280 px); **WCAG 2.2 AA** with 24×24 px pointer targets; UI copy uses the glossary's Spanish terms.
+Ground rules: **desktop only** (minimum 1280 px); **WCAG 2.2 AA** with 24×24 px pointer targets, except SC 1.4.10 Reflow, which desktop-only cannot meet until responsive layouts (post-MVP); UI copy uses the glossary's Spanish terms.
 
 Design System content for Phase 0:
 - **Tokens:** start from shadcn's neutral tokens, semantic names (`--background`, `--primary`…); one sans-serif (Inter), a single accent color, small radius, compact density (~32 px table rows). **Light theme only**; dark mode is a post-MVP task.
@@ -132,8 +132,8 @@ Screens to design (each one just before its slice becomes `agent-ready`, not all
 
 Vertical tracer-bullet slices (schema → API → UI → tests). `/to-tickets` breaks each into issues. The `inventory` module is built inside slices 5 and 6, not as a standalone step.
 
-0. **Phase 0 — Design System:** Design System + *App shell* and *Products* artboards + token sync into `packages/ui`.
-1. **Walking skeleton** (pair mode, not issue → PR): monorepo, CI with all gates, docker compose, `.claude/` config, `catalog` module end to end (create + list products) with tests at every level.
+0. **Phase 0 — Design System:** Design System + *App shell* and *Products* artboards, each through the review flow.
+1. **Walking skeleton** (pair mode, not issue → PR): monorepo, token sync into `packages/ui` (first, before any UI code), CI with all gates, docker compose, `.claude/` config, `catalog` module end to end (create + list products) with tests at every level.
 2. **Auth and roles:** Better Auth, login screen, role matrix enforced at the API.
 3. **BCV rates** + `Money`.
 4. **Partners:** suppliers and customers.
@@ -156,7 +156,7 @@ Vertical tracer-bullet slices (schema → API → UI → tests). `/to-tickets` b
 Clear tasks waiting their turn. `/to-tickets` creates them as issues labelled `needs-triage`.
 
 - **Dark mode:** add dark values for the semantic tokens in the Design System and sync them.
-- **Responsive layouts** (tablet / mobile) for the screens that need them.
+- **Responsive layouts** (tablet / mobile) for the screens that need them. Also lifts the SC 1.4.10 Reflow exception.
 - **`design-screen` project skill:** runs the per-screen review flow and drafts the handoff. Trigger: after the third screen has gone through the flow by hand (ADR-011).
 - **Storybook:** Storybook 8 (Vite) in `packages/ui`, stories only for Cuadre's own components (not plain shadcn), interaction tests through the Vitest addon in CI; visual regression later. Trigger: may be pulled into the MVP as soon as `packages/ui` gets its first own composite component (likely `MoneyInput` or `DataTable`).
 - **User admin screen.**
