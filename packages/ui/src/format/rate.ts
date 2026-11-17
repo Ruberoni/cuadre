@@ -1,6 +1,6 @@
 import { groupThousands } from "./money.ts";
 
-const RATE = /^(\d+)(?:\.(\d{1,8}))?$/;
+const RATE = /^(0|[1-9]\d*)(?:\.(\d{1,8}))?$/;
 
 /**
  * An exchange rate always shows 8 decimals, never rounded: `"36.5123"` → `36,51230000`.

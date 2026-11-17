@@ -13,8 +13,7 @@
     "@cuadre/ui": "workspace:*",
     "@tanstack/react-router": "1.170.46",
     "react": "19.3.1",
-    "react-dom": "19.3.1",
-    "tailwindcss": "4.3.5"
+    "react-dom": "19.3.1"
   },
   "devDependencies": {
     "@playwright/test": "1.65.1",

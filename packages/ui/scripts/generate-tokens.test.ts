@@ -53,9 +53,12 @@ describe("generateTokensCss", () => {
     expect(generate(snapshot())).toContain("--color-*: initial;");
   });
 
-  it("maps shadcn's --radius to radius-md and keeps the three radii", () => {
+  it("resets Tailwind's default radii and shadows, then emits the Design System's own", () => {
     const css = generate(snapshot());
-    expect(css).toContain("--radius: 6px;");
+    expect(css).toContain("--radius-*: initial;");
+    expect(css).toContain("--shadow-*: initial;");
+    expect(css).toContain("--shadow-popover: 0 4px 12px rgba(10, 10, 10, 0.08)");
+    expect(css).toContain("--shadow-dialog: 0 16px 40px rgba(10, 10, 10, 0.16);");
     expect(css).toContain("--radius-sm: 4px;");
     expect(css).toContain("--radius-md: 6px;");
     expect(css).toContain("--radius-lg: 8px;");
@@ -112,9 +115,24 @@ describe("generateTokensCss", () => {
     expect(errorOf({ ...snapshot(), motion: { tokens: [] } })).toBe("UNKNOWN_FAMILY: motion");
   });
 
-  it("fails without radius-md", () => {
+  it("fails on a token name that is not valid in a custom property", () => {
     const data = snapshot();
-    data.radius.tokens = data.radius.tokens.filter((token) => token.name !== "radius-md");
-    expect(errorOf(data)).toMatch(/^INVALID_SNAPSHOT: radius-md/);
+    data.color.tokens.push({ name: "brand.dark", value: "#000000" });
+    expect(errorOf(data)).toMatch(/^INVALID_TOKEN_NAME: color\/brand\.dark/);
+  });
+
+  it.each([
+    ["shadow", "0 4px 12px rgba(10, 10, 10, 0.08"],
+    ["shadow", "0 4px 12px 0)"],
+  ])("fails on unbalanced parentheses in a %s value (%s)", (family, value) => {
+    const data = snapshot();
+    (data[family] as { tokens: Token[] }).tokens[0] = { name: "shadow-popover", value };
+    expect(errorOf(data)).toMatch(/^UNSUPPORTED_VALUE: shadow\/shadow-popover/);
+  });
+
+  it("fails on an unpaired quote in a font family", () => {
+    const data = snapshot();
+    (data.type as { families: Record<string, string> }).families.sans = '"Inter, sans-serif';
+    expect(errorOf(data)).toMatch(/^UNSUPPORTED_VALUE: type\/families\/sans/);
   });
 });

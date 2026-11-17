@@ -26,8 +26,10 @@ export function groupThousands(digits: string): string {
 
 /** The amount without symbol: `123456` → `1.234,56`. */
 export function formatAmount(minorUnits: number): string {
-  if (!Number.isSafeInteger(minorUnits) || minorUnits < 0) {
-    throw new RangeError(`Minor units must be a non-negative safe integer, got ${minorUnits}`);
+  if (!Number.isSafeInteger(minorUnits) || minorUnits < 0 || minorUnits > MAX_MINOR_UNITS) {
+    throw new RangeError(
+      `Minor units must be an integer from 0 to ${MAX_MINOR_UNITS}, got ${minorUnits}`,
+    );
   }
   const digits = String(minorUnits).padStart(3, "0");
   return `${groupThousands(digits.slice(0, -2))},${digits.slice(-2)}`;
@@ -38,7 +40,8 @@ export function formatMoney(minorUnits: number, currency: Currency): string {
   return `${SYMBOLS[currency]}${NBSP}${formatAmount(minorUnits)}`;
 }
 
-const GROUPED = /^\d{1,3}(?:\.\d{3})+(?:,(\d+))?$/;
+// The first group has no leading zero: `0.123` is not a well-placed thousands separator.
+const GROUPED = /^[1-9]\d{0,2}(?:\.\d{3})+(?:,(\d+))?$/;
 const PLAIN = /^\d+(?:,(\d+))?$/;
 
 /**

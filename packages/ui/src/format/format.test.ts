@@ -25,9 +25,12 @@ describe("formatMoney", () => {
     expect(formatMoney(minor, currency)).toBe(expected);
   });
 
-  it.each([-1, 1.5, Number.NaN, 2 ** 53])("rejects %s (not a non-negative safe integer)", (n) => {
-    expect(() => formatMoney(n, "USD")).toThrow(RangeError);
-  });
+  it.each([-1, 1.5, Number.NaN, 2 ** 53, MAX_MINOR_UNITS + 1])(
+    "rejects %s (outside 0..10^15)",
+    (n) => {
+      expect(() => formatMoney(n, "USD")).toThrow(RangeError);
+    },
+  );
 });
 
 describe("formatAmount", () => {
@@ -42,11 +45,12 @@ describe("formatRate", () => {
     ["36.51234567", "36,51234567"],
     ["36", "36,00000000"],
     ["1234.5", "1.234,50000000"],
+    ["0.5", "0,50000000"],
   ])("%s → %s", (rate, expected) => {
     expect(formatRate(rate)).toBe(expected);
   });
 
-  it.each(["36.123456789", "-1", "abc", "", "36,5"])("rejects %j", (rate) => {
+  it.each(["36.123456789", "-1", "abc", "", "36,5", "036.5"])("rejects %j", (rate) => {
     expect(() => formatRate(rate)).toThrow(RangeError);
   });
 });
@@ -97,12 +101,23 @@ describe("parseAmount", () => {
     expect(parseAmount("1,456")).toEqual({ ok: false, error: "TOO_MANY_DECIMALS" });
   });
 
-  it.each(["abc", "", "   ", "-1", "1.23", "1,", ",5", "1,2,3", "1.2345", "1 000", "Bs."])(
-    "rejects %j as not a number",
-    (input) => {
-      expect(parseAmount(input)).toEqual({ ok: false, error: "NOT_A_NUMBER" });
-    },
-  );
+  it.each([
+    "abc",
+    "",
+    "   ",
+    "-1",
+    "1.23",
+    "1,",
+    ",5",
+    "1,2,3",
+    "1.2345",
+    "1 000",
+    "Bs.",
+    "0.123,45",
+    "000.000,00",
+  ])("rejects %j as not a number", (input) => {
+    expect(parseAmount(input)).toEqual({ ok: false, error: "NOT_A_NUMBER" });
+  });
 
   it("rejects amounts above 10^15 minor units", () => {
     expect(parseAmount("10.000.000.000.000,01")).toEqual({ ok: false, error: "OUT_OF_RANGE" });
