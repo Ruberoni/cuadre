@@ -53,11 +53,22 @@ body:
       description: Unit (domain), integration (use case vs Postgres), E2E — which apply.
     validations:
       required: true
-  - type: input
+  - type: textarea
     id: design
     attributes:
-      label: Design
-      description: Link to the screen's artboard in the Cuadre Screens artifact (ADR-012). Write "N/A — no UI" if the issue adds or changes no screen. A UI issue without a link gets `needs-design` and cannot be `agent-ready`.
-      placeholder: "https://claude.ai/artifact/… or N/A — no UI"
+      label: Design handoff
+      description: >-
+        Artboard link, completed review checklist and trimmed handoff, using the template in docs/design/README.md (ADR-012).
+        Write "N/A — no UI" if the issue adds or changes no screen.
+        A UI issue with an incomplete checklist gets `needs-design` and cannot be `agent-ready`.
+      placeholder: |
+        **Artboard:** https://claude.ai/artifact/…
+
+        - [ ] ux-copy
+        - [ ] design-critique
+        - [ ] accessibility-review
+        - [ ] design-handoff
+
+        (components and states, empty/loading/error, copy, focus and keyboard, accepted 🟡 findings)
     validations:
       required: true

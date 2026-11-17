@@ -87,7 +87,13 @@ See ADR-001…004, 008…012.
 The gate has two levels:
 
 1. **Phase 0 — blocks all UI work, including the walking skeleton:** the Design System exists, the *App shell* and *Products* artboards exist, and its tokens are synced into `packages/ui`.
-2. **Per issue — blocks `agent-ready`:** an issue that adds or changes a screen links its artboard. Until it does, it carries `needs-design`. Issues with no UI write `N/A — no UI` in the Design field.
+2. **Per issue — blocks `agent-ready`:** an issue that adds or changes a screen has its **Design handoff** filled in: artboard link, completed review checklist, trimmed handoff. Until it does, it carries `needs-design`. Issues with no UI write `N/A — no UI`.
+
+Every design goes through the **review flow** in [`design/README.md`](design/README.md), using the `design` plugin skills:
+- **Design System:** `/design-system extend` per component, `/accessibility-review` on tokens, `/design-system audit` before each sync.
+- **Each screen:** `/ux-copy` → `/design-critique` → `/accessibility-review` → `/design-handoff`. No open 🔴 passes a step; 🟡 is fixed or justified.
+
+Ground rules: **desktop only** (minimum 1280 px); **WCAG 2.2 AA** with 24×24 px pointer targets; UI copy uses the glossary's Spanish terms.
 
 Design System content for Phase 0:
 - **Tokens:** start from shadcn's neutral tokens, semantic names (`--background`, `--primary`…); one sans-serif (Inter), a single accent color, small radius, compact density (~32 px table rows). **Light theme only**; dark mode is a post-MVP task.
@@ -150,6 +156,8 @@ Vertical tracer-bullet slices (schema → API → UI → tests). `/to-tickets` b
 Clear tasks waiting their turn. `/to-tickets` creates them as issues labelled `needs-triage`.
 
 - **Dark mode:** add dark values for the semantic tokens in the Design System and sync them.
+- **Responsive layouts** (tablet / mobile) for the screens that need them.
+- **`design-screen` project skill:** runs the per-screen review flow and drafts the handoff. Trigger: after the third screen has gone through the flow by hand (ADR-011).
 - **Storybook:** Storybook 8 (Vite) in `packages/ui`, stories only for Cuadre's own components (not plain shadcn), interaction tests through the Vitest addon in CI; visual regression later. Trigger: may be pulled into the MVP as soon as `packages/ui` gets its first own composite component (likely `MoneyInput` or `DataTable`).
 - **User admin screen.**
 - **Invoice PDF.**
