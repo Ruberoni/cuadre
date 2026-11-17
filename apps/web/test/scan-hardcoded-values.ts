@@ -1,6 +1,5 @@
-// Node-only helper for tests: scans a package's `src` for hand-written token values.
-// Each package runs it over its own src (see no-hardcoded-tokens.test.ts), so Turborepo's cache
-// can never hide a violation behind another package's hash.
+// Node-only helper for tests: scans `apps/web/src` for hand-written token values
+// (see src/no-hardcoded-tokens.test.ts).
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { findHardcodedValues } from "./hardcoded-values.ts";

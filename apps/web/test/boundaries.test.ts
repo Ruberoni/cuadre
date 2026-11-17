@@ -33,6 +33,7 @@ describe("UI primitives boundary rule", () => {
         .sort();
 
       expect(violations).toEqual([
+        "ui-primitives-stay-generic | components/ui/reaches-into-routes-via-alias.ts -> routes/__root.tsx",
         "ui-primitives-stay-generic | components/ui/reaches-into-routes.ts -> routes/page.ts",
       ]);
     } finally {
