@@ -68,12 +68,13 @@ One role per user. Users are created by the seed (one per role); no user admin s
 
 ## Technical baseline
 
-See ADR-001…004, 008…012.
+See ADR-001…004, 008…012, 014.
 - pnpm + Turborepo monorepo: `apps/api` (Hono + zod-openapi), `apps/web` (React + Vite + TanStack Router/Query/Table + shadcn/ui + Tailwind + React Hook Form + Zod), `packages/contracts`, `packages/ui`.
 - Modular monolith; hexagonal-lite modules; synchronous cross-module calls in one transaction; `Result` errors.
 - PostgreSQL + Drizzle, module-owned tables.
 - Better Auth for authentication (ADR-003).
-- Quality gates in CI on every PR: TypeScript strict (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`), Biome, dependency-cruiser boundaries, Vitest unit + integration (real Postgres), Playwright E2E for the happy path.
+- Quality gates in CI on every PR: TypeScript strict (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`), Biome, dependency-cruiser boundaries, Vitest unit + integration (real Postgres), property tests (fast-check) for invariants named by an ADR, Playwright E2E for each UI slice's acceptance criteria (`retries: 0`).
+- Verification layer (ADR-014): `pnpm verify` boots the app and runs a smoke E2E before every PR; `REVIEW.md` holds the diff-triggered review checklist; PRs carry a **Verification** section and a `Verified-by:` trailer, kept on `main` by squash-merging with the PR title and description.
 - Conventional Commits, squash merge, protected `main`.
 - Local: `docker compose` (Postgres) + realistic fictitious seed from day one.
 
@@ -119,8 +120,8 @@ Screens to design (each one just before its slice becomes `agent-ready`, not all
 ## Agent setup
 
 - `AGENTS.md` (root, short) + `AGENTS.md` per module; `CLAUDE.md` imports `AGENTS.md`.
-- `.claude/`: PostToolUse hook (Biome on edited file), Stop hook (typecheck), permissions for pnpm scripts.
-- Project skills: `implement-issue` (issue → worktree → TDD → PR) and `sync-design-system` (Design System tokens → `packages/ui` PR). More only when a pattern repeats 2–3 times.
+- `.claude/`: PostToolUse hook (Biome on edited file), Stop hook (typecheck + Biome + unit tests of the touched packages, ≈30 s budget), permissions for pnpm scripts.
+- Project skills: `implement-issue` (issue → worktree → TDD → PR) `sync-design-system` (Design System tokens → `packages/ui` PR) and `verify` (wraps `pnpm verify`; ADR-014). More only when a pattern repeats 2–3 times.
 - Issues follow the template in `.github/ISSUE_TEMPLATE/task.yml`; only the maintainer applies `agent-ready`.
 
 ## People
@@ -133,7 +134,7 @@ Screens to design (each one just before its slice becomes `agent-ready`, not all
 Vertical tracer-bullet slices (schema → API → UI → tests). `/to-tickets` breaks each into issues. The `inventory` module is built inside slices 5 and 6, not as a standalone step.
 
 0. **Phase 0 — Design System:** Design System + *App shell* and *Products* artboards, each through the review flow.
-1. **Walking skeleton** (pair mode, not issue → PR): monorepo, token sync into `packages/ui` (first, before any UI code), CI with all gates, docker compose, `.claude/` config, `catalog` module end to end (create + list products) with tests at every level.
+1. **Walking skeleton** (pair mode, not issue → PR): monorepo, token sync into `packages/ui` (first, before any UI code), CI with all gates, docker compose, `.claude/` config, `catalog` module end to end (create + list products) with tests at every level, `pnpm verify` and the `verify` skill.
 2. **Auth and roles:** Better Auth, login screen, role matrix enforced at the API.
 3. **BCV rates** + `Money`.
 4. **Partners:** suppliers and customers.
@@ -162,6 +163,7 @@ Clear tasks waiting their turn. `/to-tickets` creates them as issues labelled `n
 - **User admin screen.**
 - **Invoice PDF.**
 - **Public demo deploy** (e.g. Railway/Fly + Neon, demo user, nightly reset).
+- **Commit gate** (ADR-014): block commits from agent sessions that ran neither `verify` nor `/code-review`, with `off` / `observe` / `enforce` modes; roll out in `observe` first.
 
 ## Fog for later (`/wayfinder`)
 
