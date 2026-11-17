@@ -2,7 +2,7 @@
 
 Cuadre is an ERP for a small Venezuelan distribution business (single company). It is a personal portfolio project built primarily by AI agents working from GitHub issues. This file is the source of truth for every agent (Claude Code, Codex, Cursor…); `CLAUDE.md` only imports it.
 
-> **Status:** pre-skeleton. No application code exists yet. The plan lives in [`docs/PLAN.md`](docs/PLAN.md). Commands below marked _(planned)_ arrive with the walking skeleton.
+> **Status:** walking skeleton in progress. The monorepo, tooling and CI gates exist; business modules and UI arrive slice by slice. The plan lives in [`docs/PLAN.md`](docs/PLAN.md). Commands marked _(planned)_ arrive with the catalog slice.
 
 ## Read before working
 
@@ -11,7 +11,7 @@ Cuadre is an ERP for a small Venezuelan distribution business (single company). 
 3. [`docs/adr/`](docs/adr/) — architecture decisions. If your change contradicts an ADR, stop and ask; do not reopen the debate in code.
 4. The `AGENTS.md` inside the module you are touching _(planned, one per module)_.
 
-## Repo map (planned)
+## Repo map
 
 ```
 apps/api/                 Hono + @hono/zod-openapi HTTP server hosting all modules
@@ -30,19 +30,28 @@ docs/                     PLAN, GLOSSARY, ADRs
 
 Modules (MVP): `catalog`, `partners`, `purchasing`, `inventory`, `sales`, `billing`, `exchange-rates`.
 
-## Commands (planned)
+## Commands
+
+Requires Node 26 (`.nvmrc`; `nvm use 26`) and pnpm (`npm i -g pnpm`; the version is pinned in `package.json`).
 
 ```bash
 pnpm install
-docker compose up -d     # Postgres
-pnpm dev                 # api + web
-pnpm test                # all tests
+docker compose up -d     # Postgres on localhost:5433 (override with POSTGRES_PORT); no .env needed
+pnpm db:migrate          # migrate the dev database
+pnpm db:seed             # seed it (a no-op until the first module lands)
+pnpm dev                 # api (http://localhost:3000, GET /health, /openapi.json) + web (http://localhost:5173)
+pnpm test                # unit + integration (integration needs Postgres, uses the cuadre_test database)
+pnpm test:unit
+pnpm test:integration
+pnpm test:e2e            # Playwright smoke (PLAYWRIGHT_CHANNEL=msedge uses an installed browser)
 pnpm typecheck
-pnpm lint                # Biome + dependency-cruiser
-pnpm db:migrate
-pnpm db:seed
-pnpm verify              # boot the app and run the smoke E2E (ADR-014)
+pnpm lint                # Biome + dependency-cruiser (pnpm lint:boundaries)
+pnpm verify              # (planned) boot the app and run the smoke E2E (ADR-014)
 ```
+
+`docker compose down -v` recreates the database volume (the `cuadre_test` database is created only on a fresh volume).
+
+Each module declares its Drizzle tables in `src/modules/<module>/infrastructure/*.table.ts` (ADR-004); `drizzle-kit` picks them up from there.
 
 ## Non-negotiable rules
 
