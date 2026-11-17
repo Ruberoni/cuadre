@@ -16,8 +16,11 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
-    "typecheck": {},
+    "typecheck": {
+      "dependsOn": ["^typecheck"]
+    },
     "test:unit": {
+      "dependsOn": ["^test:unit"],
       "env": ["CI", "FC_SEED", "FC_PATH"]
     },
     "test:integration": {

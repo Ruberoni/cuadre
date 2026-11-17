@@ -1,4 +1,4 @@
-/** Module boundaries (ADR-001). Run with `pnpm lint:boundaries`; the module rules are anchored to apps/api, the UI rule to apps/web; proven by apps/api/test/boundaries.test.ts and apps/web/test/boundaries.test.ts. */
+/** Module boundaries (ADR-001). Run with `pnpm lint:boundaries`; the module rules are anchored to apps/api, the UI rule to apps/web, the purity rule to packages/shared-kernel; proven by apps/api/test/boundaries.test.ts, apps/web/test/boundaries.test.ts and packages/shared-kernel/test/boundaries.test.ts. */
 
 const IO_CORE_MODULES =
   "^(node:)?(fs|fs/promises|net|http|https|http2|dgram|dns|child_process|cluster|worker_threads|tls)$";
@@ -58,6 +58,17 @@ const forbidden = [
       path: "^apps/web/(test/boundaries-fixtures/)?src/",
       pathNot: "^apps/web/(test/boundaries-fixtures/)?src/(components/ui|lib|hooks|styles)/",
     },
+  },
+  {
+    name: "shared-kernel-purity",
+    comment:
+      "packages/shared-kernel is pure domain code shared by apps/api domains and apps/web: its code imports nothing outside the package (no npm packages, no Node core, no apps). Test files are exempt (vitest, fast-check).",
+    severity: "error",
+    from: {
+      path: "^packages/shared-kernel/(test/boundaries-fixtures/)?src/",
+      pathNot: "[.]test[.]ts$",
+    },
+    to: { pathNot: "^packages/shared-kernel/(test/boundaries-fixtures/)?src/" },
   },
   {
     name: "no-circular",

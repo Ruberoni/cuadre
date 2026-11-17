@@ -1,17 +1,12 @@
 // es-VE money formatting and parsing (Design System → Formatting). Implemented once here; screens
 // never call Intl or toFixed themselves. Works on integer minor units, never on floats (ADR-005),
 // and groups digits by hand so the output does not depend on the ICU data of the runtime.
-import { err, ok, type Result } from "../result.ts";
-
-export type Currency = "USD" | "VES";
+import { type Currency, err, MAX_MINOR_UNITS, ok, type Result } from "@cuadre/shared-kernel";
 
 /** No-break space: keeps the symbol on the same line as its amount. */
 export const NBSP = " ";
 
 const SYMBOLS: Record<Currency, string> = { USD: "$", VES: "Bs." };
-
-/** Largest amount the helper accepts, in minor units (10^15). */
-export const MAX_MINOR_UNITS = 10 ** 15;
 
 export type ParseAmountError =
   | "NOT_A_NUMBER"

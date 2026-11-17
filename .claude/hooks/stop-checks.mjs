@@ -89,7 +89,9 @@ for (let chunk = [], size = 0, i = 0; i <= lintable.length; i++) {
 }
 
 if (names.length > 0 || rootChange) {
-  const filter = rootChange ? [] : names.flatMap((n) => ["--filter", JSON.stringify(n)]);
+  // `...name` is the package plus the packages that depend on it (a shared-kernel change also
+  // checks apps/web).
+  const filter = rootChange ? [] : names.flatMap((n) => ["--filter", JSON.stringify(`...${n}`)]);
   steps.push(["typecheck + unit tests", `exec turbo run typecheck test:unit ${filter.join(" ")}`]);
 }
 

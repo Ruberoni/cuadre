@@ -6,7 +6,7 @@
 // Run it with `pnpm --filter @cuadre/web tokens:generate`.
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { err, ok, type Result } from "../src/lib/result.ts";
+import { err, ok, type Result } from "@cuadre/shared-kernel";
 
 export const SNAPSHOT_URL = new URL("../design-system/tokens.json", import.meta.url);
 export const TOKENS_CSS_URL = new URL("../src/styles/tokens.css", import.meta.url);
