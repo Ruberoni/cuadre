@@ -41,6 +41,7 @@ pnpm typecheck
 pnpm lint                # Biome + dependency-cruiser
 pnpm db:migrate
 pnpm db:seed
+pnpm verify              # boot the app and run the smoke E2E (ADR-014)
 ```
 
 ## Non-negotiable rules
@@ -53,8 +54,18 @@ pnpm db:seed
 - **Cross-module writes** happen synchronously inside one DB transaction. See ADR-008.
 - **Language:** code, commits, issues, PRs and docs in English; UI copy in Spanish.
 - **Design is a required step (ADR-012, [`docs/design/`](docs/design/README.md)):** a screen is built only from the issue's **Design handoff** (artboard link + completed review checklist + handoff). If an issue touches `apps/web` and that checklist is incomplete, stop and ask in the issue. Do not invent tokens; use `packages/ui`. UI error messages come from the handoff and go into the single message catalog in `apps/web`.
-- **Tests:** domain rules are written test-first. Use cases get integration tests against real Postgres. Turn the issue's acceptance examples into tests.
-- **Done means green:** typecheck, lint, boundaries and tests pass locally before opening a PR.
+- **Tests:** domain rules are written test-first. Use cases get integration tests against real Postgres. Turn the issue's acceptance examples into tests. A slice that adds or changes a screen ships Playwright E2E tests for its acceptance criteria. Invariants named by an ADR get property tests (fast-check, pure domain only); every counterexample found stays as a fixed example test.
+- **Done means verified:** see [Verification](#verification).
+
+## Verification
+
+See ADR-014. The reviewer's checklist is [`REVIEW.md`](REVIEW.md).
+
+- **Cheap checks first.** The Stop hook runs typecheck, Biome and the touched packages' unit tests. Before opening a PR, also run integration tests and `pnpm verify` (it boots the app; a change is verified when it has been run, not just compiled).
+- **Three rounds, then escalate.** If a check still fails after three fix attempts, stop and explain in the issue or PR which check fails and why you think it does.
+- **No flaky tests.** Never skip a test, add sleeps, or retry until green (Playwright runs with `retries: 0`). If you cannot find the root cause, delete the test and say why in the PR.
+- **Do not weaken the gates** (tool config, CI, `REVIEW.md`, `verify`, existing tests) to get green. If a gate must change, justify it in the PR.
+- **Stamp the PR.** Fill the template's **Verification** section and its `Verified-by:` trailer with what actually ran (`none — <reason>` if nothing did).
 
 ## Workflow
 
@@ -62,6 +73,7 @@ pnpm db:seed
 - One issue → one branch → one small PR. Conventional Commits. PRs are squash-merged into a protected `main`.
 - If the issue is ambiguous (especially fiscal rules), ask in the issue instead of guessing.
 - Changes to rules of the game (ADRs, fiscal rules, module boundaries) are decided by the human maintainer. Propose them; do not make them.
+- A bug that reached `main` is labelled `escaped-defect` and closes only with a new `REVIEW.md` item, test or hook besides the fix. When a slice of the build order closes, prune `REVIEW.md`, this file and slow or redundant tests.
 
 ## Agent skills
 
