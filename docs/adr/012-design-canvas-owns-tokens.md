@@ -11,11 +11,11 @@ The maintainer designs the UI in Claude artifacts. If both the design and the co
   - **Cuadre Screens** (Claude "Design" artifact, built on the Design System): one artboard per screen.
 - `packages/ui` mirrors the tokens (shadcn CSS variables + Tailwind theme) through an explicit sync step, done by a `sync-design-system` project skill that opens a PR. Component code comes from the shadcn CLI; only tokens are synced.
 - **Design is a required step, gated at two levels:**
-  1. No UI code, including the walking skeleton, is written before the Design System exists, the *App shell* and *Products* artboards exist, and the tokens are synced.
+  1. No UI code, including the walking skeleton, is written before the Design System exists and the *App shell* and *Products* artboards exist. The first step of the walking skeleton syncs the tokens into `packages/ui`, before any UI code.
   2. An issue that adds or changes a screen cannot be marked `agent-ready` until its **Design handoff** field holds the artboard link, a completed review checklist and the handoff. Until then it carries `needs-design`. Issues without UI state `N/A — no UI`.
 - **Every design goes through the review flow** in [`docs/design/README.md`](../design/README.md), using the `design` plugin skills. Each screen gets `/ux-copy` → `/design-critique` → `/accessibility-review` → `/design-handoff`. The Design System gets `/design-system extend` per component, `/accessibility-review` on tokens, and `/design-system audit` before each sync. No open critical findings pass a step.
 - The evidence lives in the issue, not in per-screen files: the handoff is a snapshot for the implementer, while the artifacts stay the living reference. Only reusable outputs go to the repo (error messages, glossary terms).
-- Desktop only (minimum 1280 px). Accessibility target WCAG 2.2 AA, with 24×24 px pointer targets.
+- Desktop only (minimum 1280 px). Accessibility target WCAG 2.2 AA, with 24×24 px pointer targets. Exception: SC 1.4.10 Reflow (content reflowing at 320 CSS px) cannot be met by a desktop-only layout; it is accepted until responsive layouts are built.
 - Tokens use semantic names. The MVP ships a light theme only.
 - Visual tone: sober and information-dense (compact tables, one sans-serif font, a single accent color). Numbers, currencies and dates follow `es-VE` conventions.
 
