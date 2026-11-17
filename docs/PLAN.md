@@ -42,7 +42,7 @@ See ADR-005, 006, 007, 013.
 **Taxes**
 - IVA per product: 16% / 8% / exempt. IVA is computed on the taxable base of each rate (sum of the lines at that rate), not per line.
 - An invoice may be issued in USD or VES. A USD invoice always shows its VES equivalent, computed on totals at the frozen rate. A VES invoice converts each line's USD **unit price** at the frozen rate, then multiplies by the quantity.
-- Our invoices get a gapless sequential number when issued; drafts consume none. Numbers are shown with 8 digits (`00000001`), never reset. No control number of our own (that belongs to SENIAT-certified invoicing), so the printed invoice states it is not a fiscal document. The business's own data (name, RIF, address) comes from configuration.
+- Our invoices get a gapless sequential number when issued; drafts consume none. Numbers are shown with 8 digits (`00000001`), never reset. No control number of our own (that belongs to SENIAT-certified invoicing), so the printed invoice states it is not a fiscal document. The business's own data (name, RIF, address) comes from configuration. An issued invoice keeps the customer's legal name and RIF as they were when it was issued, so editing the partner later never changes it.
 - The business is a `SpecialTaxpayer`: IGTF 3% is charged **on top of** each receipt made in foreign currency. It never appears on an invoice and does not reduce the outstanding balance.
 
 **Inventory**
