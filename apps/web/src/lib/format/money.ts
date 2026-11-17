@@ -30,6 +30,11 @@ export function formatAmount(minorUnits: number): string {
   return `${groupThousands(digits.slice(0, -2))},${digits.slice(-2)}`;
 }
 
+/** `$` or `Bs.`: the symbol the formatting guide prints for a currency. */
+export function currencySymbol(currency: Currency): string {
+  return SYMBOLS[currency];
+}
+
 /** `145` USD → `$ 1,45`; `123456789` VES → `Bs. 1.234.567,89` (symbol, no-break space, amount). */
 export function formatMoney(minorUnits: number, currency: Currency): string {
   return `${SYMBOLS[currency]}${NBSP}${formatAmount(minorUnits)}`;

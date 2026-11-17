@@ -48,7 +48,7 @@ test.describe("create a product", () => {
     await fillForm(page, validFlour);
     await submit(page);
 
-    await expect(page).toHaveURL(/\/productos/);
+    await expect(page).toHaveURL(/\/productos(\?|$)/);
     await expect(page.getByRole("status")).toHaveText("Producto HAR-PAN-1K creado.");
     const row = page.getByRole("row", { name: /HAR-PAN-1K/ });
     for (const text of [
@@ -176,18 +176,49 @@ test.describe("the product list", () => {
     const rows = page.locator("tbody tr");
 
     await search.fill("aceite");
-    await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText("ACE-GIR-1L");
+    await expect(rows).toHaveCount(1);
 
     await search.fill("HAR-");
-    await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText("HAR-PAN-1K");
+    await expect(rows).toHaveCount(1);
 
     await search.fill("xyz");
     await expect(page.getByText("Sin resultados para «xyz»")).toBeVisible();
     await page.getByRole("button", { name: "Limpiar búsqueda" }).click();
     await expect(rows).toHaveCount(2);
     await expect(search).toHaveValue("");
+  });
+
+  test("following the sidebar link clears the search instead of bringing it back", async ({
+    page,
+    request,
+  }) => {
+    await givenProduct(request, { sku: "HAR-PAN-1K", name: "Harina de maíz" });
+    await givenProduct(request, { sku: "ACE-GIR-1L", name: "Aceite de girasol" });
+    await page.goto("/productos");
+    const search = page.getByRole("searchbox", { name: "Buscar por código o nombre" });
+    await search.fill("harina");
+    await expect(page.locator("tbody tr")).toHaveCount(1);
+
+    await page.getByRole("navigation", { name: "Principal" }).getByRole("link").click();
+
+    await expect(page.locator("tbody tr")).toHaveCount(2);
+    await expect(search).toHaveValue("");
+    await expect(page).not.toHaveURL(/q=/);
+  });
+
+  test("a page beyond the last one goes to the last page", async ({ page, request }) => {
+    for (let i = 1; i <= 30; i++) {
+      await givenProduct(request, {
+        sku: `P-${String(i).padStart(2, "0")}`,
+        name: `Producto ${i}`,
+      });
+    }
+
+    await page.goto("/productos?page=9");
+
+    await expect(page.getByText("26–30 de 30 productos")).toBeVisible();
   });
 
   test("with no products it shows the empty state and the way to create one", async ({ page }) => {
@@ -229,6 +260,33 @@ test.describe("app shell", () => {
       "aria-current",
       "page",
     );
+  });
+
+  test("Productos stays the current page on page 2, sorted, and in the new product form", async ({
+    page,
+  }) => {
+    const link = page
+      .getByRole("navigation", { name: "Principal" })
+      .getByRole("link", { name: "Productos" });
+
+    for (const path of ["/productos?page=2&sort=name&order=desc", "/productos/nuevo"]) {
+      await page.goto(path);
+      await expect(link).toHaveAttribute("aria-current", "page");
+    }
+  });
+
+  test("a status line is not squeezed into a zero-width column", async ({ page }) => {
+    await page.goto("/productos/nuevo");
+    await page.getByLabel("Código").fill("ABC");
+    await page.getByLabel("Nombre").fill("Producto de prueba");
+    await page.getByRole("combobox", { name: "Unidad de medida" }).click();
+    await page.getByRole("option", { name: "Unidad" }).click();
+    await page.getByLabel("Precio de venta").fill("1,00");
+    await page.getByRole("button", { name: "Guardar producto" }).click();
+
+    const status = page.getByRole("status").getByText("Producto ABC creado.");
+    const box = await status.boundingBox();
+    expect(box?.height).toBeLessThan(60); // one line: a squeezed column would be far taller
   });
 
   test("the skip link is the first Tab stop and moves focus to the content", async ({ page }) => {

@@ -1,17 +1,9 @@
 // The single UI message catalog (ADR-012): every user-facing error, status line and label that
 // comes from an error code or a domain value lives here, in Spanish, verbatim from the design
 // handoffs. Screens never write these strings inline and never show a raw code.
-import type {
-  ApiErrorCode,
-  ProductField,
-  ProductIssueCode,
-  TaxRate,
-  UnitOfMeasure,
-} from "@cuadre/contracts";
+import type { ProductField, ProductIssueCode, TaxRate, UnitOfMeasure } from "@cuadre/contracts";
+import type { ClientErrorCode } from "@/api/client";
 import { formatMoney, NBSP, type ParseAmountError } from "@/lib/format";
-
-/** Codes the API answers with, plus the one the browser raises itself when no answer arrives. */
-export type ClientErrorCode = ApiErrorCode | "NETWORK_ERROR";
 
 /** Message for an error that belongs to no field, shown in the form alert. */
 export const errorMessages: Record<ClientErrorCode, (details: { sku?: string }) => string> = {

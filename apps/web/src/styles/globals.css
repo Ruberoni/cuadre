@@ -18,6 +18,11 @@
     @apply bg-background font-sans text-foreground;
   }
 
+  /* A focused element is never hidden under the sticky header (App shell handoff). */
+  html {
+    scroll-padding-top: var(--header-height);
+  }
+
   /* Design System → Visual foundations → Focus. */
   :focus-visible {
     outline: 2px solid var(--ring);

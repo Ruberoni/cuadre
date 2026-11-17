@@ -1,7 +1,7 @@
 import { PRODUCTS_PAGE_SIZE, type Product, type ProductSortField } from "@cuadre/contracts";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { SearchIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useProducts } from "@/api/products";
 import { usePageTitle } from "@/components/app-layout";
 import { type Column, DataTable, Pager, type SortOrder } from "@/components/data-table";
@@ -64,10 +64,20 @@ function ProductsList() {
   const products = useProducts({ q, sort, order, page });
 
   const [typed, setTyped] = useState(q ?? "");
+  const searchRef = useRef<HTMLInputElement>(null);
+  // The last search this page put in the URL: a different `q` came from outside (sidebar link,
+  // Back button) and replaces what is typed, instead of being undone by the debounce below.
+  const navigatedQ = useRef(q);
+  useEffect(() => {
+    if (q === navigatedQ.current) return;
+    navigatedQ.current = q;
+    setTyped(q ?? "");
+  }, [q]);
   // Search is server-side and debounced; a new search starts again at page 1.
   useEffect(() => {
     if (typed === (q ?? "")) return;
     const timer = setTimeout(() => {
+      navigatedQ.current = typed === "" ? undefined : typed;
       void navigate({
         search: (previous) => ({ ...previous, q: typed === "" ? undefined : typed, page: 1 }),
         replace: true,
@@ -90,12 +100,25 @@ function ProductsList() {
 
   const clearSearch = () => {
     setTyped("");
+    navigatedQ.current = undefined;
     void navigate({ search: (previous) => ({ ...previous, q: undefined, page: 1 }) });
+    // The button that was clicked disappears with the empty state: keep the focus in the toolbar.
+    searchRef.current?.focus();
   };
 
   const data = products.data;
+  // Rows from a previous query (kept while the next one loads) say nothing about this one.
+  const settled = data !== undefined && !products.isPlaceholderData;
   const searching = q !== undefined && q !== "";
-  const noProductsAtAll = data !== undefined && data.total === 0 && !searching;
+  const noProductsAtAll = settled && data.total === 0 && !searching;
+
+  // A page beyond the last one (hand-edited URL, or products removed) goes to the last page.
+  const lastPage = data === undefined ? 1 : Math.max(1, Math.ceil(data.total / data.pageSize));
+  useEffect(() => {
+    if (settled && data.total > 0 && page > lastPage) {
+      void navigate({ search: (previous) => ({ ...previous, page: lastPage }), replace: true });
+    }
+  }, [settled, data, page, lastPage, navigate]);
 
   return (
     <div className="flex max-w-[calc(var(--viewport-min)-var(--sidebar-width)-var(--space-6)*2)] flex-col gap-4">
@@ -114,6 +137,7 @@ function ProductsList() {
                 className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
               />
               <Input
+                ref={searchRef}
                 type="search"
                 value={typed}
                 onChange={(event) => setTyped(event.target.value)}
@@ -128,11 +152,15 @@ function ProductsList() {
           {products.isError && data === undefined ? (
             <Alert variant="destructive" className="flex items-center justify-between gap-4">
               <span>{productsMessages.loadError}</span>
-              <Button variant="outline" onClick={() => void products.refetch()}>
+              <Button
+                variant="outline"
+                loading={products.isFetching}
+                onClick={() => void products.refetch()}
+              >
                 {productsMessages.retry}
               </Button>
             </Alert>
-          ) : data !== undefined && data.total === 0 ? (
+          ) : settled && data.total === 0 ? (
             <EmptyState
               title={productsMessages.noResults.title(q ?? "")}
               description={productsMessages.noResults.description}
@@ -155,6 +183,7 @@ function ProductsList() {
                 order={order satisfies SortOrder}
                 onSort={(key) => void setSort(key)}
                 loading={data === undefined}
+                busy={products.isFetching}
               />
               {data === undefined ? null : (
                 <Pager

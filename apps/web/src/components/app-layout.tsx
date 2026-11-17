@@ -92,6 +92,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
               key={item.to}
               to={item.to}
               search={defaultProductsSearch}
+              // Active on every page of the section, whatever its search params or sub-page.
+              activeOptions={{ includeSearch: false }}
               className={navLinkClass}
             >
               {item.label}
@@ -107,7 +109,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           {/* Always mounted: a live region that appears together with its text is often not read. */}
           <div role="status" className="empty:hidden">
             {status === undefined ? null : (
-              <Alert variant="success" role="none">
+              <Alert variant="success" role="none" className="mb-4 block">
                 {status}
               </Alert>
             )}

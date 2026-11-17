@@ -1,4 +1,5 @@
 import {
+  PRODUCT_FIELDS,
   PRODUCT_NAME_MAX_LENGTH,
   SKU_PATTERN,
   TAX_RATES,
@@ -44,41 +45,41 @@ import {
 
 export const Route = createFileRoute("/_app/productos/nuevo")({ component: NewProduct });
 
-const fieldMessages = productFieldMessages;
-
 // The same rules as the domain, with the messages of the catalog. Values stay as typed; the price
 // becomes `Money` on submit (no transform here, so form input and output types are the same).
 const formSchema = z.object({
   sku: z
     .string()
     .trim()
-    .min(1, fieldMessages.sku.REQUIRED)
-    .regex(SKU_PATTERN, fieldMessages.sku.INVALID_FORMAT),
+    .min(1, productFieldMessages.sku.REQUIRED)
+    .regex(SKU_PATTERN, productFieldMessages.sku.INVALID_FORMAT),
   name: z
     .string()
     .trim()
-    .min(1, fieldMessages.name.REQUIRED)
-    .max(PRODUCT_NAME_MAX_LENGTH, fieldMessages.name.TOO_LONG),
-  unitOfMeasure: z.string().min(1, fieldMessages.unitOfMeasure.REQUIRED),
+    .min(1, productFieldMessages.name.REQUIRED)
+    .max(PRODUCT_NAME_MAX_LENGTH, productFieldMessages.name.TOO_LONG),
+  unitOfMeasure: z.string().min(1, productFieldMessages.unitOfMeasure.REQUIRED),
   salePrice: z.string().superRefine((text, context) => {
     if (text.trim() === "") {
-      context.addIssue({ code: "custom", message: fieldMessages.salePrice.REQUIRED ?? "" });
+      context.addIssue({ code: "custom", message: productFieldMessages.salePrice.REQUIRED ?? "" });
       return;
     }
     const price = toMoney(text, "USD");
     if (!price.ok) {
       context.addIssue({ code: "custom", message: priceParseMessages[price.error] });
     } else if (price.value.minorUnits <= 0) {
-      context.addIssue({ code: "custom", message: fieldMessages.salePrice.NOT_POSITIVE ?? "" });
+      context.addIssue({
+        code: "custom",
+        message: productFieldMessages.salePrice.NOT_POSITIVE ?? "",
+      });
     }
   }),
   taxRate: z.enum(TAX_RATES),
 });
 type FormValues = z.infer<typeof formSchema>;
 
-const FIELD_NAMES = ["sku", "name", "unitOfMeasure", "salePrice", "taxRate"] as const;
-const isFieldName = (name: string): name is (typeof FIELD_NAMES)[number] =>
-  (FIELD_NAMES as readonly string[]).includes(name);
+const isFieldName = (name: string): name is keyof FormValues =>
+  (PRODUCT_FIELDS as readonly string[]).includes(name);
 
 function NewProduct() {
   usePageTitle(productsMessages.newPageTitle);
@@ -265,7 +266,7 @@ function NewProduct() {
             variant="destructive"
             role="alert"
             tabIndex={-1}
-            className="col-span-2"
+            className="col-span-2 block"
           >
             {formError}
           </Alert>

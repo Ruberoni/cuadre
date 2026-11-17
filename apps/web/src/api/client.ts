@@ -1,6 +1,8 @@
 import { ApiError, type ApiErrorCode, type FieldIssue } from "@cuadre/contracts";
 import type { z } from "zod";
-import type { ClientErrorCode } from "@/messages";
+
+/** Codes the API answers with, plus the one the browser raises itself when no answer arrives. */
+export type ClientErrorCode = ApiErrorCode | "NETWORK_ERROR";
 
 /** A failed call: the API's `ApiError`, or `NETWORK_ERROR` when no answer arrived at all. */
 export type ApiFailure = {

@@ -36,6 +36,8 @@ type DataTableProps<Row, SortKey extends string> = {
   onSort: (key: SortKey) => void;
   /** First load: 5 skeleton rows instead of data. */
   loading?: boolean;
+  /** Refetching: the previous rows stay, the table is marked busy for assistive technology. */
+  busy?: boolean;
 };
 
 const SKELETON_ROWS = 5;
@@ -50,10 +52,11 @@ export function DataTable<Row, SortKey extends string>({
   order,
   onSort,
   loading = false,
+  busy = false,
 }: DataTableProps<Row, SortKey>) {
   return (
     <div className="overflow-hidden rounded-md border border-border">
-      <Table aria-busy={loading || undefined}>
+      <Table aria-busy={loading || busy || undefined}>
         <TableCaption className="sr-only">{caption}</TableCaption>
         <TableHeader>
           <TableRow className="hover:bg-muted">

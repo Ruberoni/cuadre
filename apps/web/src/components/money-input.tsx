@@ -1,10 +1,8 @@
 import { type Currency, err, type Money, money, ok, type Result } from "@cuadre/shared-kernel";
 import type * as React from "react";
 import { Input } from "@/components/ui/input";
-import { formatAmount, type ParseAmountError, parseAmount } from "@/lib/format";
+import { currencySymbol, formatAmount, type ParseAmountError, parseAmount } from "@/lib/format";
 import { cn } from "@/lib/utils";
-
-const SYMBOLS: Record<Currency, string> = { USD: "$", VES: "Bs." };
 
 /** The typed text as `Money`, or why it is not an amount. Never goes through a float. */
 export function toMoney(text: string, currency: Currency): Result<Money, ParseAmountError> {
@@ -25,8 +23,7 @@ type MoneyInputProps = Omit<
 };
 
 /**
- * Amount in one currency, typed the Venezuelan way (`1.234,56`; the keypad's decimal key types
- * `,`). Letters are not accepted as typed; the symbol sits outside the editable text; on blur a
+ * Amount in one currency, typed the Venezuelan way (`1.234,56`). Letters are not accepted as typed; the symbol sits outside the editable text; on blur a
  * valid amount is reformatted (`1234,5` → `1.234,50`). More than two decimals is the form's error
  * to show, never silently rounded.
  */
@@ -44,7 +41,7 @@ export function MoneyInput({
         aria-hidden="true"
         className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-body text-muted-foreground"
       >
-        {SYMBOLS[currency]}
+        {currencySymbol(currency)}
       </span>
       <Input
         {...props}
