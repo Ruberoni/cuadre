@@ -43,7 +43,7 @@ pnpm dev                 # api (http://localhost:3000, GET /health, /openapi.jso
 pnpm test                # unit + integration (integration needs Postgres, uses the cuadre_test database)
 pnpm test:unit
 pnpm test:integration
-pnpm test:e2e            # Playwright smoke (PLAYWRIGHT_CHANNEL=msedge uses an installed browser)
+pnpm test:e2e            # Playwright smoke + packages/ui browser tests (PLAYWRIGHT_CHANNEL=msedge uses an installed browser)
 pnpm typecheck
 pnpm lint                # Biome + dependency-cruiser (pnpm lint:boundaries)
 pnpm verify              # (planned) boot the app and run the smoke E2E (ADR-014)
@@ -52,6 +52,12 @@ pnpm verify              # (planned) boot the app and run the smoke E2E (ADR-014
 `docker compose down -v` recreates the database volume (the `cuadre_test` database is created only on a fresh volume).
 
 Each module declares its Drizzle tables in `src/modules/<module>/infrastructure/*.table.ts` (ADR-004); `drizzle-kit` picks them up from there.
+
+## Design system in `packages/ui`
+
+- Tokens are never written by hand. `packages/ui/design-system/tokens.json` is a copy of the Cuadre Design System tokens and `src/styles/tokens.css` is generated from it; both change only through the `sync-design-system` skill (`pnpm --filter @cuadre/ui tokens:generate`). Code uses semantic classes (`bg-primary`), never color literals or Tailwind's default palette (it is reset); tests in each package enforce it.
+- Components come from the shadcn CLI, pinned: `pnpm dlx shadcn@4.23.0 add <name>` run **from `packages/ui`** (it resolves paths from the cwd). In this monorepo the CLI mangles imports: after adding, run `git status` at the repo root and `pnpm install`, and rewrite `from "cn"` to `from "../lib/utils.ts"` and `@cuadre/ui/components/x` to `./x.tsx`; drop any dependency it adds that the component does not import (it once added `cn`) and any `minimumReleaseAgeExclude` it writes to `pnpm-workspace.yaml`. Replace literal colors with token classes (`bg-overlay`, `text-destructive-foreground`, `hover:bg-primary-hover`); then `pnpm exec biome check --write packages/ui`. Aligning a component to its Design System spec (heights, focus ring) happens in the slice that first shows it on a screen.
+- Formatting (`es-VE` money, rates, dates, parsing) lives in `packages/ui/src/format` and is the only place that formats them; screens never call `Intl` or `toFixed`.
 
 Claude Code preview pane: `.claude/launch.json` defines `web` and `api` (needs `node` on the PATH; run `docker compose up -d` first for a healthy `/health`; stop previews before switching worktrees, they share ports 5173 and 3000).
 

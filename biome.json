@@ -10,11 +10,18 @@
       "**",
       "!**/*.md",
       "!**/routeTree.gen.ts",
+      "!packages/ui/design-system/tokens.json",
+      "!packages/ui/src/styles/tokens.css",
       "!**/drizzle",
       "!**/playwright-report",
       "!**/test-results",
       "!**/test/boundaries-fixtures"
     ]
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
   },
   "formatter": {
     "indentStyle": "space",

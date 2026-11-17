@@ -13,6 +13,7 @@
       "Bash(pnpm db:*)",
       "Bash(pnpm --filter * test:*)",
       "Bash(pnpm --filter * typecheck)",
+      "Bash(pnpm --filter @cuadre/ui tokens:generate*)",
       "Bash(pnpm exec biome *)",
       "Bash(docker compose up *)",
       "Bash(docker compose ps)",
