@@ -43,7 +43,7 @@ pnpm dev                 # api (http://localhost:3000, GET /health, /openapi.jso
 pnpm test                # unit + integration (integration needs Postgres, uses the cuadre_test database)
 pnpm test:unit
 pnpm test:integration
-pnpm test:e2e            # Playwright smoke (PLAYWRIGHT_CHANNEL=msedge uses an installed browser)
+pnpm test:e2e            # Playwright smoke + packages/ui browser tests (PLAYWRIGHT_CHANNEL=msedge uses an installed browser)
 pnpm typecheck
 pnpm lint                # Biome + dependency-cruiser (pnpm lint:boundaries)
 pnpm verify              # (planned) boot the app and run the smoke E2E (ADR-014)
@@ -52,6 +52,12 @@ pnpm verify              # (planned) boot the app and run the smoke E2E (ADR-014
 `docker compose down -v` recreates the database volume (the `cuadre_test` database is created only on a fresh volume).
 
 Each module declares its Drizzle tables in `src/modules/<module>/infrastructure/*.table.ts` (ADR-004); `drizzle-kit` picks them up from there.
+
+## Design system in `packages/ui`
+
+- Tokens are never written by hand. `packages/ui/design-system/tokens.json` is a copy of the Cuadre Design System tokens and `src/styles/tokens.css` is generated from it; both change only through the `sync-design-system` skill (`pnpm --filter @cuadre/ui tokens:generate`). Code uses semantic classes (`bg-primary`), never color literals or Tailwind's default palette (colors, radii and shadows are reset, so only `rounded-sm|md|lg` and `shadow-popover|dialog` exist); tests in each package enforce the color rule. Text sizes are not reset yet: Tailwind's `text-sm` and friends still exist next to the Design System's `text-table`, `text-label`… styles, so prefer the latter on screens.
+- Components come from the shadcn CLI, pinned: `pnpm dlx shadcn@4.23.0 add <name>` run **from `packages/ui`** (it resolves paths from the cwd). In this monorepo the CLI mangles imports: after adding, run `git status` at the repo root and `pnpm install`, and rewrite `from "cn"` to `from "../lib/utils.ts"` and `@cuadre/ui/components/x` to `./x.tsx`; drop any dependency it adds that the component does not import (it once added `cn`) and any `minimumReleaseAgeExclude` it writes to `pnpm-workspace.yaml`. Replace literal colors, Tailwind's default shadows and `rounded-xs` with token classes (`bg-overlay`, `text-destructive-foreground`, `hover:bg-primary-hover`, `shadow-popover`, `shadow-dialog`, `rounded-sm`); then `pnpm exec biome check --write packages/ui`. Aligning a component to its Design System spec (heights, focus ring) happens in the slice that first shows it on a screen.
+- Formatting (`es-VE` money, rates, dates, parsing) lives in `packages/ui/src/format` and is the only place that formats them; screens never call `Intl` or `toFixed`.
 
 Claude Code preview pane: `.claude/launch.json` defines `web` and `api` (needs `node` on the PATH; run `docker compose up -d` first for a healthy `/health`; stop previews before switching worktrees, they share ports 5173 and 3000).
 
@@ -82,6 +88,7 @@ See ADR-014. The reviewer's checklist is [`REVIEW.md`](REVIEW.md).
 
 - Work comes from GitHub issues labelled `agent-ready`. Do not start issues without that label.
 - One issue → one branch → one small PR. Conventional Commits. PRs are squash-merged into a protected `main`.
+- **Branch names are `<type>/<issue>-<slug>`:** a Conventional Commits type (`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`) — the one the PR title will carry —, the issue number when there is one, and a lowercase kebab-case slug: `feat/5-design-tokens-formatting`, `fix/23-rate-lookup-weekend`; without an issue, `chore/sync-design-system-2026-11-17`. Sessions start on a generated name (`claude/<random>`): rename it with `git branch -m <name>` before the first push (renaming a published branch closes its PR). A PreToolUse hook (`.claude/hooks/branch-name.mjs`) blocks `git push` and `gh pr create` on an unpublished branch that does not match.
 - If the issue is ambiguous (especially fiscal rules), ask in the issue instead of guessing.
 - Changes to rules of the game (ADRs, fiscal rules, module boundaries) are decided by the human maintainer. Propose them; do not make them.
 - A bug that reached `main` is labelled `escaped-defect` and closes only with a new `REVIEW.md` item, test or hook besides the fix. When a slice of the build order closes, prune `REVIEW.md`, this file and slow or redundant tests.
