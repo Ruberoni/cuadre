@@ -28,6 +28,7 @@ apps/web/                 React SPA (Vite, TanStack Router/Query/Table, shadcn/u
   src/components/ui/      shadcn components · src/lib/format: es-VE formatting · src/styles: generated tokens
   test/                   hand-written-token scanner, boundary-rule fixtures
 packages/contracts/       shared Zod schemas
+packages/shared-kernel/   pure domain code shared by api and web (Money, Rate, Result); imports nothing outside the package; the token generator loads it, so it uses only relative `.ts` imports and `erasableSyntaxOnly`
 docs/                     PLAN, GLOSSARY, ADRs
 ```
 
@@ -68,7 +69,7 @@ Claude Code preview pane: `.claude/launch.json` defines `web` and `api` (needs `
 
 - **Module boundaries:** import another module only through its `index.ts`. Never query another module's tables. Enforced by dependency-cruiser in CI.
 - **Domain purity:** `domain/` never imports from `infrastructure/`, `http/`, Drizzle, Hono or any I/O.
-- **Money:** never use `number` floats for money. Use the `Money` value object (integer minor units + currency). See ADR-005.
+- **Money:** never use `number` floats for money. Use the `Money` value object (integer minor units + currency). It lives in `packages/shared-kernel` with `Rate` (the exact 8-decimal exchange rate value) and `Result`. See ADR-005.
 - **Documents** are `Draft` then `Issued`; issued documents are immutable and freeze their exchange rate. IGTF applies to **receipts** in foreign currency, never invoices. See ADR-005/006/013.
 - **Errors:** domain and use cases return `Result` discriminated unions; throw only for truly unexpected failures. See ADR-009.
 - **Cross-module writes** happen synchronously inside one DB transaction. See ADR-008.

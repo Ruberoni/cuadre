@@ -1,5 +1,5 @@
 // Calendar dates are `YYYY-MM-DD` strings (like `DocumentDate`): no `Date`, no time zones.
-import { err, ok, type Result } from "../result.ts";
+import { err, ok, type Result } from "@cuadre/shared-kernel";
 
 const ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
 const DISPLAY = /^(\d{2})\/(\d{2})\/(\d{4})$/;

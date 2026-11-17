@@ -1,5 +1,3 @@
-// Keep imports from this file relative with `.ts`: scripts/generate-tokens.ts imports it and runs
-// under Node's type stripping, which does not resolve the `@/` alias.
 /** Expected failures are values, not exceptions (ADR-009). */
 export type Result<T, E extends string> = { ok: true; value: T } | { ok: false; error: E };
 
