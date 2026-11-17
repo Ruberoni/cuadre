@@ -21,7 +21,7 @@ Canonical domain vocabulary. Code uses the **Term** column; the UI uses the **Sp
 
 | Term (code) | Spanish (UI) | Meaning |
 |---|---|---|
-| `Partner` | Tercero | A supplier or customer. |
+| `Partner` | Tercero | A supplier, a customer, or both. One per `Rif`. |
 | `Supplier` | Proveedor | Partner we buy from. |
 | `Customer` | Cliente | Partner we sell to. |
 | `Rif` | RIF | Venezuelan tax ID (e.g. `J-12345678-9`). Kept untranslated. |
