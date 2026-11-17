@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CI: "true"
+
+jobs:
+  static:
+    name: static (typecheck, lint, boundaries)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Biome
+        run: pnpm exec biome ci .
+      - name: Module boundaries
+        run: pnpm lint:boundaries
+      - name: Route tree is up to date
+        run: |
+          pnpm --filter @cuadre/web exec tsr generate
+          git diff --exit-code -- apps/web/src/routeTree.gen.ts
+
+  unit:
+    name: unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:unit
+
+  integration:
+    name: integration tests (Postgres)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: cuadre
+          POSTGRES_PASSWORD: cuadre
+          POSTGRES_DB: cuadre_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U cuadre -d cuadre_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgres://cuadre:cuadre@localhost:5433/cuadre_test
+      DATABASE_URL_TEST: postgres://cuadre:cuadre@localhost:5433/cuadre_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Migrate
+        run: pnpm db:migrate
+      - name: Integration tests
+        run: pnpm test:integration
+
+  e2e:
+    name: e2e smoke (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm --filter @cuadre/web exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          retention-days: 7

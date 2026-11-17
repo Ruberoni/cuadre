@@ -1,0 +1,47 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install)",
+      "Bash(pnpm dev)",
+      "Bash(pnpm build)",
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm lint:boundaries)",
+      "Bash(pnpm format)",
+      "Bash(pnpm test)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm db:*)",
+      "Bash(pnpm --filter * test:*)",
+      "Bash(pnpm --filter * typecheck)",
+      "Bash(pnpm exec biome *)",
+      "Bash(docker compose up *)",
+      "Bash(docker compose ps)",
+      "Bash(docker compose logs *)",
+      "Bash(docker compose stop)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/biome-file.mjs\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop-checks.mjs\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
