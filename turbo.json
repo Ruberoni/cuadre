@@ -1,6 +1,6 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
-  "globalPassThroughEnv": ["FC_SEED", "FC_PATH"],
+  "globalDependencies": ["tsconfig.base.json", ".dependency-cruiser.cjs", "biome.json"],
   "tasks": {
     "dev": {
       "cache": false,
@@ -13,11 +13,11 @@
     },
     "typecheck": {},
     "test:unit": {
-      "env": ["CI"]
+      "env": ["CI", "FC_SEED", "FC_PATH"]
     },
     "test:integration": {
       "cache": false,
-      "env": ["CI", "DATABASE_URL*"]
+      "env": ["CI", "FC_SEED", "FC_PATH", "DATABASE_URL*"]
     },
     "test:e2e": {
       "cache": false,

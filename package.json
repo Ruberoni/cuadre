@@ -21,7 +21,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",
-    "@fast-check/vitest": "0.5.0",
     "@types/node": "26.6.6",
     "dependency-cruiser": "18.7.2",
     "fast-check": "4.10.2",

@@ -27,7 +27,8 @@ export default defineConfig({
   webServer: {
     command: `pnpm exec vite build && pnpm exec vite preview --strictPort --port ${PORT}`,
     url: `http://localhost:${PORT}`,
-    reuseExistingServer: !process.env.CI,
+    // Never reuse a server already on the port: it could be another worktree's build.
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });

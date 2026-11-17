@@ -1,9 +1,9 @@
 import { afterAll, describe, expect, it } from "vitest";
+import { testDatabaseUrl } from "../../test/test-database.ts";
 import { createApp } from "../app.ts";
-import { loadConfig } from "../config.ts";
 import { createDb } from "../db/client.ts";
 
-const real = createDb(loadConfig().DATABASE_URL_TEST);
+const real = createDb(testDatabaseUrl());
 // Nothing listens on port 1: stands in for "Postgres is stopped".
 const unreachable = createDb("postgres://cuadre:cuadre@127.0.0.1:1/cuadre");
 
