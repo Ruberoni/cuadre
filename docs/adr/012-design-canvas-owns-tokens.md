@@ -1,6 +1,6 @@
 # ADR-012: Design System owns the tokens; screens are designed before they are built
 
-**Status:** Accepted (amended 2026-11-16)
+**Status:** Accepted (amended 2026-11-16, 2026-11-17)
 
 ## Context
 The maintainer designs the UI in Claude artifacts. If both the design and the code define tokens, they drift. Agents left without a visual reference invent UI, and each one invents it differently.
@@ -9,9 +9,9 @@ The maintainer designs the UI in Claude artifacts. If both the design and the co
 - Two artifacts:
   - **Cuadre Design System** (Claude "Design System" artifact): source of truth for design tokens (color, typography, spacing, radius), component specs and the formatting guide.
   - **Cuadre Screens** (Claude "Design" artifact, built on the Design System): one artboard per screen.
-- `packages/ui` mirrors the tokens (shadcn CSS variables + Tailwind theme) through an explicit sync step, done by a `sync-design-system` project skill that opens a PR. Component code comes from the shadcn CLI; only tokens are synced.
+- `apps/web` mirrors the tokens (shadcn CSS variables + Tailwind theme) through an explicit sync step, done by a `sync-design-system` project skill that opens a PR. Component code comes from the shadcn CLI; only tokens are synced.
 - **Design is a required step, gated at two levels:**
-  1. No UI code, including the walking skeleton, is written before the Design System exists and the *App shell* and *Products* artboards exist. The first step of the walking skeleton syncs the tokens into `packages/ui`, before any UI code.
+  1. No UI code, including the walking skeleton, is written before the Design System exists and the *App shell* and *Products* artboards exist. The first step of the walking skeleton syncs the tokens into `apps/web`, before any UI code.
   2. An issue that adds or changes a screen cannot be marked `agent-ready` until its **Design handoff** field holds the artboard link, a completed review checklist and the handoff. Until then it carries `needs-design`. Issues without UI state `N/A — no UI`.
 - **Every design goes through the review flow** in [`docs/design/README.md`](../design/README.md), using the `design` plugin skills. Each screen gets `/ux-copy` → `/design-critique` → `/accessibility-review` → `/design-handoff`. The Design System gets `/design-system extend` per component, `/accessibility-review` on tokens, and `/design-system audit` before each sync. No open critical findings pass a step.
 - The evidence lives in the issue, not in per-screen files: the handoff is a snapshot for the implementer, while the artifacts stay the living reference. Only reusable outputs go to the repo (error messages, glossary terms).

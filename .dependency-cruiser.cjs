@@ -1,4 +1,4 @@
-/** Module boundaries (ADR-001). Run with `pnpm lint:boundaries`; proven by apps/api/test/boundaries.test.ts. */
+/** Module boundaries (ADR-001). Run with `pnpm lint:boundaries`; the module rules are anchored to apps/api, the UI rule to apps/web; proven by apps/api/test/boundaries.test.ts and apps/web/test/boundaries.test.ts. */
 
 const IO_CORE_MODULES =
   "^(node:)?(fs|fs/promises|net|http|https|http2|dgram|dns|child_process|cluster|worker_threads|tls)$";
@@ -10,7 +10,7 @@ const forbidden = [
     comment:
       "A module may import another module only through its index.ts (ADR-001). Never reach into its domain, application, infrastructure or http.",
     severity: "error",
-    from: { path: "(^|/)src/modules/([^/]+)/" },
+    from: { path: "^apps/api/(test/boundaries-fixtures/)?src/modules/([^/]+)/" },
     to: {
       path: "(^|/)src/modules/[^/]+/",
       pathNot: ["(^|/)src/modules/$2/", "(^|/)src/modules/[^/]+/index[.]ts$"],
@@ -21,7 +21,7 @@ const forbidden = [
     comment:
       "Code outside src/modules (app wiring, db, server) may import a module only through its index.ts.",
     severity: "error",
-    from: { path: "(^|/)src/(?!modules/)" },
+    from: { path: "^apps/api/(test/boundaries-fixtures/)?src/(?!modules/)" },
     to: {
       path: "(^|/)src/modules/[^/]+/",
       pathNot: "(^|/)src/modules/[^/]+/index[.]ts$",
@@ -32,7 +32,7 @@ const forbidden = [
     comment:
       "domain/ is pure: it never imports infrastructure/, http/, the db layer, Drizzle, Hono or any I/O (ADR-001).",
     severity: "error",
-    from: { path: "(^|/)src/modules/[^/]+/domain/" },
+    from: { path: "^apps/api/(test/boundaries-fixtures/)?src/modules/[^/]+/domain/" },
     to: {
       path: [
         "(^|/)src/modules/[^/]+/(infrastructure|http)/",
@@ -45,8 +45,19 @@ const forbidden = [
     name: "domain-no-io-core-modules",
     comment: "domain/ never imports Node I/O modules.",
     severity: "error",
-    from: { path: "(^|/)src/modules/[^/]+/domain/" },
+    from: { path: "^apps/api/(test/boundaries-fixtures/)?src/modules/[^/]+/domain/" },
     to: { dependencyTypes: ["core"], path: IO_CORE_MODULES },
+  },
+  {
+    name: "ui-primitives-stay-generic",
+    comment:
+      "Design-system primitives (apps/web components/ui, lib, hooks, styles) never import screens or feature code (ADR-015).",
+    severity: "error",
+    from: { path: "^apps/web/(test/boundaries-fixtures/)?src/(components/ui|lib|hooks|styles)/" },
+    to: {
+      path: "^apps/web/(test/boundaries-fixtures/)?src/",
+      pathNot: "^apps/web/(test/boundaries-fixtures/)?src/(components/ui|lib|hooks|styles)/",
+    },
   },
   {
     name: "no-circular",
@@ -67,6 +78,7 @@ const options = {
   doNotFollow: { path: "node_modules" },
   exclude: { path: "boundaries-fixtures" },
   tsPreCompilationDeps: true,
+  tsConfig: { fileName: "tsconfig.depcruise.json" },
   enhancedResolveOptions: {
     exportsFields: ["exports"],
     conditionNames: ["import", "require", "node", "default", "types"],

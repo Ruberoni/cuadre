@@ -34,8 +34,7 @@ body:
         - sales
         - billing
         - exchange-rates
-        - web (apps/web)
-        - ui (packages/ui)
+        - web (apps/web, including tokens and shadcn components)
         - infra / tooling
     validations:
       required: true

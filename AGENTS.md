@@ -23,7 +23,10 @@ apps/api/                 Hono + @hono/zod-openapi HTTP server hosting all modul
     index.ts              the ONLY public API of the module
     AGENTS.md             module-local rules
 apps/web/                 React SPA (Vite, TanStack Router/Query/Table, shadcn/ui, Tailwind)
-packages/ui/              design tokens (synced from the Cuadre Design System) + shadcn components
+  design-system/          Design System token snapshot (synced, never edited by hand)
+  scripts/                token generator (runs on Node type stripping: relative `.ts` imports, no `@/`)
+  src/components/ui/      shadcn components · src/lib/format: es-VE formatting · src/styles: generated tokens
+  test/                   hand-written-token scanner, boundary-rule fixtures
 packages/contracts/       shared Zod schemas
 docs/                     PLAN, GLOSSARY, ADRs
 ```
@@ -43,7 +46,7 @@ pnpm dev                 # api (http://localhost:3000, GET /health, /openapi.jso
 pnpm test                # unit + integration (integration needs Postgres, uses the cuadre_test database)
 pnpm test:unit
 pnpm test:integration
-pnpm test:e2e            # Playwright smoke + packages/ui browser tests (PLAYWRIGHT_CHANNEL=msedge uses an installed browser)
+pnpm test:e2e            # Playwright smoke + Button browser test (PLAYWRIGHT_CHANNEL=msedge uses an installed browser)
 pnpm typecheck
 pnpm lint                # Biome + dependency-cruiser (pnpm lint:boundaries)
 pnpm verify              # (planned) boot the app and run the smoke E2E (ADR-014)
@@ -53,11 +56,11 @@ pnpm verify              # (planned) boot the app and run the smoke E2E (ADR-014
 
 Each module declares its Drizzle tables in `src/modules/<module>/infrastructure/*.table.ts` (ADR-004); `drizzle-kit` picks them up from there.
 
-## Design system in `packages/ui`
+## Design system in `apps/web`
 
-- Tokens are never written by hand. `packages/ui/design-system/tokens.json` is a copy of the Cuadre Design System tokens and `src/styles/tokens.css` is generated from it; both change only through the `sync-design-system` skill (`pnpm --filter @cuadre/ui tokens:generate`). Code uses semantic classes (`bg-primary`), never color literals or Tailwind's default palette (colors, radii and shadows are reset, so only `rounded-sm|md|lg` and `shadow-popover|dialog` exist); tests in each package enforce the color rule. Text sizes are not reset yet: Tailwind's `text-sm` and friends still exist next to the Design System's `text-table`, `text-label`… styles, so prefer the latter on screens.
-- Components come from the shadcn CLI, pinned: `pnpm dlx shadcn@4.23.0 add <name>` run **from `packages/ui`** (it resolves paths from the cwd). In this monorepo the CLI mangles imports: after adding, run `git status` at the repo root and `pnpm install`, and rewrite `from "cn"` to `from "../lib/utils.ts"` and `@cuadre/ui/components/x` to `./x.tsx`; drop any dependency it adds that the component does not import (it once added `cn`) and any `minimumReleaseAgeExclude` it writes to `pnpm-workspace.yaml`. Replace literal colors, Tailwind's default shadows and `rounded-xs` with token classes (`bg-overlay`, `text-destructive-foreground`, `hover:bg-primary-hover`, `shadow-popover`, `shadow-dialog`, `rounded-sm`); then `pnpm exec biome check --write packages/ui`. Aligning a component to its Design System spec (heights, focus ring) happens in the slice that first shows it on a screen.
-- Formatting (`es-VE` money, rates, dates, parsing) lives in `packages/ui/src/format` and is the only place that formats them; screens never call `Intl` or `toFixed`.
+- Tokens are never written by hand. `apps/web/design-system/tokens.json` is a copy of the Cuadre Design System tokens and `apps/web/src/styles/tokens.css` is generated from it; both change only through the `sync-design-system` skill (`pnpm --filter @cuadre/web tokens:generate`). Code uses semantic classes (`bg-primary`), never color literals or Tailwind's default palette (colors, radii and shadows are reset, so only `rounded-sm|md|lg` and `shadow-popover|dialog` exist); a test in `apps/web` enforces the color rule. Text sizes are not reset yet: Tailwind's `text-sm` and friends still exist next to the Design System's `text-table`, `text-label`… styles, so prefer the latter on screens.
+- Components come from the shadcn CLI, pinned: `pnpm dlx shadcn@4.23.0 add <name>` run **from `apps/web`** (it resolves paths from the cwd; ADR-015). It writes `src/components/ui/<name>.tsx` with `@/…` imports. Fix up afterwards: run `git status` at the repo root and `pnpm install`; rewrite `from "cn"` to `from "@/lib/utils"`; drop any dependency it adds that the component does not import (it adds `cn`) and any `minimumReleaseAgeExclude` it writes to `pnpm-workspace.yaml`; `lucide-react` stays pinned to an older version than the registry's latest, so keep the pin. Replace literal colors, Tailwind's default shadows and `rounded-xs` with token classes (`bg-overlay`, `text-destructive-foreground`, `hover:bg-primary-hover`, `shadow-popover`, `shadow-dialog`, `rounded-sm`); then `pnpm exec biome check --write apps/web`. Aligning a component to its Design System spec (heights, focus ring) happens in the slice that first shows it on a screen. Primitives (`components/ui`, `lib`, `hooks`, `styles`) never import screens (dependency-cruiser). `erasableSyntaxOnly` is on for all of `apps/web` (no enums, namespaces or parameter properties), because the generator runs on Node's type stripping.
+- Formatting (`es-VE` money, rates, dates, parsing) lives in `apps/web/src/lib/format` and is the only place that formats them; screens never call `Intl` or `toFixed`.
 
 Claude Code preview pane: `.claude/launch.json` defines `web` and `api` (needs `node` on the PATH; run `docker compose up -d` first for a healthy `/health`; stop previews before switching worktrees, they share ports 5173 and 3000).
 
@@ -70,7 +73,7 @@ Claude Code preview pane: `.claude/launch.json` defines `web` and `api` (needs `
 - **Errors:** domain and use cases return `Result` discriminated unions; throw only for truly unexpected failures. See ADR-009.
 - **Cross-module writes** happen synchronously inside one DB transaction. See ADR-008.
 - **Language:** code, commits, issues, PRs and docs in English; UI copy in Spanish.
-- **Design is a required step (ADR-012, [`docs/design/`](docs/design/README.md)):** a screen is built only from the issue's **Design handoff** (artboard link + completed review checklist + handoff). If an issue touches `apps/web` and that checklist is incomplete, stop and ask in the issue. Do not invent tokens; use `packages/ui`. UI error messages come from the handoff and go into the single message catalog in `apps/web`.
+- **Design is a required step (ADR-012, [`docs/design/`](docs/design/README.md)):** a screen is built only from the issue's **Design handoff** (artboard link + completed review checklist + handoff). If an issue touches `apps/web` and that checklist is incomplete, stop and ask in the issue. Do not invent tokens; use the tokens and components in `apps/web`. UI error messages come from the handoff and go into the single message catalog in `apps/web`.
 - **Tests:** domain rules are written test-first. Use cases get integration tests against real Postgres. Turn the issue's acceptance examples into tests. A slice that adds or changes a screen ships Playwright E2E tests for its acceptance criteria. Invariants named by an ADR get property tests (fast-check, pure domain only); every counterexample found stays as a fixed example test.
 - **Done means verified:** see [Verification](#verification).
 

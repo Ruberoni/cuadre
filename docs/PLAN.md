@@ -73,7 +73,7 @@ One role per user. Users are created by the seed (one per role); no user admin s
 ## Technical baseline
 
 See ADR-001…004, 008…012, 014.
-- pnpm + Turborepo monorepo: `apps/api` (Hono + zod-openapi), `apps/web` (React + Vite + TanStack Router/Query/Table + shadcn/ui + Tailwind + React Hook Form + Zod), `packages/contracts`, `packages/ui`.
+- pnpm + Turborepo monorepo: `apps/api` (Hono + zod-openapi), `apps/web` (React + Vite + TanStack Router/Query/Table + shadcn/ui + Tailwind + React Hook Form + Zod), `packages/contracts`.
 - Modular monolith; hexagonal-lite modules; synchronous cross-module calls in one transaction; `Result` errors.
 - PostgreSQL + Drizzle, module-owned tables.
 - Better Auth for authentication (ADR-003).
@@ -86,12 +86,12 @@ See ADR-001…004, 008…012, 014.
 
 **No UI code is written without a design.** See ADR-012. Two artifacts:
 
-- **Cuadre Design System** (Claude "Design System" artifact): source of truth for tokens and component specs. `sync-design-system` mirrors its tokens into `packages/ui`.
+- **Cuadre Design System** (Claude "Design System" artifact): source of truth for tokens and component specs. `sync-design-system` mirrors its tokens into `apps/web`.
 - **Cuadre Screens** (Claude "Design" artifact, built on the Design System): one artboard per screen. Issues link the artboard in their **Design** field.
 
 The gate has two levels:
 
-1. **Phase 0 — blocks all UI work, including the walking skeleton:** the Design System exists and the *App shell* and *Products* artboards exist with completed handoffs. Syncing the tokens into `packages/ui` is the first step of the walking skeleton, before any UI code: `packages/ui` only exists once the monorepo does.
+1. **Phase 0 — blocks all UI work, including the walking skeleton:** the Design System exists and the *App shell* and *Products* artboards exist with completed handoffs. Syncing the tokens into `apps/web` is the first step of the walking skeleton, before any UI code.
 2. **Per issue — blocks `agent-ready`:** an issue that adds or changes a screen has its **Design handoff** filled in: artboard link, completed review checklist, trimmed handoff. Until it does, it carries `needs-design`. Issues with no UI write `N/A — no UI`.
 
 Every design goes through the **review flow** in [`design/README.md`](design/README.md), using the `design` plugin skills:
@@ -102,8 +102,8 @@ Ground rules: **desktop only** (minimum 1280 px); **WCAG 2.2 AA** with 24×24 px
 
 Design System content for Phase 0:
 - **Tokens:** start from shadcn's neutral tokens, semantic names (`--background`, `--primary`…); one sans-serif (Inter), a single accent color, small radius, compact density (~32 px table rows). **Light theme only**; dark mode is a post-MVP task.
-- **Components (specs):** app layout (sidebar + header), data table, form with validation, button, input, select, combobox (search product/partner), money input, status badge, confirm dialog. Code comes from the shadcn CLI in `packages/ui`; only tokens are synced.
-- **Formatting guide:** locale `es-VE` (`1.234,56`), symbols `Bs.` and `$` in the UI (`VES`/`USD` only in code and currency pickers), dates `dd/mm/aaaa`. Implemented once as a formatting helper in `packages/ui`.
+- **Components (specs):** app layout (sidebar + header), data table, form with validation, button, input, select, combobox (search product/partner), money input, status badge, confirm dialog. Code comes from the shadcn CLI in `apps/web`; only tokens are synced.
+- **Formatting guide:** locale `es-VE` (`1.234,56`), symbols `Bs.` and `$` in the UI (`VES`/`USD` only in code and currency pickers), dates `dd/mm/aaaa`. Implemented once as a formatting helper in `apps/web`.
 - **Tone:** sober, information-dense back-office UI.
 
 Screens to design (each one just before its slice becomes `agent-ready`, not all up front):
@@ -125,7 +125,7 @@ Screens to design (each one just before its slice becomes `agent-ready`, not all
 
 - `AGENTS.md` (root, short) + `AGENTS.md` per module; `CLAUDE.md` imports `AGENTS.md`.
 - `.claude/`: PostToolUse hook (Biome on edited file), Stop hook (typecheck + Biome + unit tests of the touched packages, ≈30 s budget), permissions for pnpm scripts.
-- Project skills: `implement-issue` (issue → worktree → TDD → PR) `sync-design-system` (Design System tokens → `packages/ui` PR) and `verify` (wraps `pnpm verify`; ADR-014). More only when a pattern repeats 2–3 times.
+- Project skills: `implement-issue` (issue → worktree → TDD → PR) `sync-design-system` (Design System tokens → `apps/web` PR) and `verify` (wraps `pnpm verify`; ADR-014). More only when a pattern repeats 2–3 times.
 - Issues follow the template in `.github/ISSUE_TEMPLATE/task.yml`; only the maintainer applies `agent-ready`.
 
 ## People
@@ -138,7 +138,7 @@ Screens to design (each one just before its slice becomes `agent-ready`, not all
 Vertical tracer-bullet slices (schema → API → UI → tests). `/to-tickets` breaks each into issues. The `inventory` module is built inside slices 5 and 6, not as a standalone step.
 
 0. **Phase 0 — Design System:** Design System + *App shell* and *Products* artboards, each through the review flow.
-1. **Walking skeleton** (pair mode, not issue → PR): monorepo, token sync into `packages/ui` (first, before any UI code), CI with all gates, docker compose, `.claude/` config, `catalog` module end to end (create + list products) with tests at every level, `pnpm verify` and the `verify` skill.
+1. **Walking skeleton** (pair mode, not issue → PR): monorepo, token sync into `apps/web` (first, before any UI code), CI with all gates, docker compose, `.claude/` config, `catalog` module end to end (create + list products) with tests at every level, `pnpm verify` and the `verify` skill.
 2. **Auth and roles:** Better Auth, login screen, role matrix enforced at the API.
 3. **BCV rates** + `Money`.
 4. **Partners:** suppliers and customers.
@@ -163,7 +163,7 @@ Clear tasks waiting their turn. `/to-tickets` creates them as issues labelled `n
 - **Dark mode:** add dark values for the semantic tokens in the Design System and sync them.
 - **Responsive layouts** (tablet / mobile) for the screens that need them. Also lifts the SC 1.4.10 Reflow exception.
 - **`design-screen` project skill:** runs the per-screen review flow and drafts the handoff. Trigger: after the third screen has gone through the flow by hand (ADR-011).
-- **Storybook:** Storybook 8 (Vite) in `packages/ui`, stories only for Cuadre's own components (not plain shadcn), interaction tests through the Vitest addon in CI; visual regression later. Trigger: may be pulled into the MVP as soon as `packages/ui` gets its first own composite component (likely `MoneyInput` or `DataTable`).
+- **Storybook:** Storybook 8 (Vite) in `apps/web`, stories only for Cuadre's own components (not plain shadcn), interaction tests through the Vitest addon in CI; visual regression later. Trigger: may be pulled into the MVP as soon as `apps/web` gets its first own composite component (likely `MoneyInput` or `DataTable`).
 - **User admin screen.**
 - **Invoice PDF.**
 - **Public demo deploy** (e.g. Railway/Fly + Neon, demo user, nightly reset).

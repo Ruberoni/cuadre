@@ -14,7 +14,7 @@
     "test:integration": "turbo run test:integration",
     "test:e2e": "turbo run test:e2e",
     "lint": "biome check . && pnpm lint:boundaries",
-    "lint:boundaries": "depcruise apps/api/src",
+    "lint:boundaries": "depcruise apps/api/src apps/web/src",
     "format": "biome check --write .",
     "db:migrate": "pnpm --filter @cuadre/api db:migrate",
     "db:seed": "pnpm --filter @cuadre/api db:seed"
