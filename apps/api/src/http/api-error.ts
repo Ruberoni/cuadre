@@ -29,11 +29,19 @@ export const validationHook: Hook<
   Promise<Response | undefined> | Response | undefined
 > = async (result, c) => {
   if (result.success) return undefined;
+  // One issue per field, even when several rules of the shape fail on it (e.g. a price object).
+  const fields = new Set<string>();
+  for (const issue of result.error.issues) {
+    if (issue.path[0] !== undefined) fields.add(String(issue.path[0]));
+  }
+  // A body that is not even an object has no field to blame: the client shows the generic message.
+  if (fields.size === 0) return c.json(errorBody("VALIDATION_ERROR"), 400);
+
   const sent = await sentValues(result.target, c);
-  const issues: FieldIssue[] = result.error.issues.map((issue) => {
-    const field = String(issue.path[0] ?? "body");
-    return { field, code: sent[field] === undefined ? "REQUIRED" : "INVALID" };
-  });
+  const issues: FieldIssue[] = [...fields].map((field) => ({
+    field,
+    code: sent[field] === undefined ? "REQUIRED" : "INVALID",
+  }));
   return c.json(errorBody("VALIDATION_ERROR", { issues }), 400);
 };
 

@@ -8,16 +8,22 @@ import { productsTable } from "./products.table.ts";
 type ProductRow = typeof productsTable.$inferSelect;
 
 const UNIQUE_VIOLATION = "23505";
+const SKU_UNIQUE_CONSTRAINT = "products_sku_unique";
 
-/** Drizzle wraps driver errors; the Postgres error code sits on the error or on its cause. */
-function postgresErrorCode(error: unknown): string | undefined {
+/** Drizzle wraps driver errors; the Postgres code and constraint sit on the error or its cause. */
+function postgresError(error: unknown): { code?: string; constraint?: string } {
   let current: unknown = error;
   while (typeof current === "object" && current !== null) {
-    const code = (current as { code?: unknown }).code;
-    if (typeof code === "string") return code;
+    const { code, constraint_name: constraint } = current as {
+      code?: unknown;
+      constraint_name?: unknown;
+    };
+    if (typeof code === "string") {
+      return { code, ...(typeof constraint === "string" ? { constraint } : {}) };
+    }
     current = (current as { cause?: unknown }).cause;
   }
-  return undefined;
+  return {};
 }
 
 /** `%`, `_` and `\` are LIKE wildcards: searching for them must match them literally. */
@@ -75,7 +81,11 @@ export function createDrizzleProductRepository(db: Db): ProductRepository {
         if (row === undefined) throw new Error("Insert returned no row");
         return ok(toProduct(row));
       } catch (error) {
-        if (postgresErrorCode(error) === UNIQUE_VIOLATION) return err("SKU_ALREADY_EXISTS");
+        // Only the code's own unique index means "the code exists": another constraint is a bug.
+        const { code, constraint } = postgresError(error);
+        if (code === UNIQUE_VIOLATION && constraint === SKU_UNIQUE_CONSTRAINT) {
+          return err("SKU_ALREADY_EXISTS");
+        }
         throw error;
       }
     },

@@ -1,4 +1,11 @@
-import { TAX_RATES, type TaxRate, UNITS_OF_MEASURE, type UnitOfMeasure } from "@cuadre/contracts";
+import {
+  PRODUCT_NAME_MAX_LENGTH,
+  SKU_MAX_LENGTH,
+  TAX_RATES,
+  type TaxRate,
+  UNITS_OF_MEASURE,
+  type UnitOfMeasure,
+} from "@cuadre/contracts";
 import { sql } from "drizzle-orm";
 import { bigint, check, pgSchema, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
@@ -23,8 +30,15 @@ export const productsTable = catalogSchema.table(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    check("products_sku_format", sql`${table.sku} ~ '^[A-Z0-9-]{1,20}$'`),
-    check("products_name_length", sql`char_length(${table.name}) between 1 and 120`),
+    // Built from the contracts' constants: the database enforces the very rules the domain does.
+    check(
+      "products_sku_format",
+      sql`${table.sku} ~ ${sql.raw(`'^[A-Z0-9-]{1,${SKU_MAX_LENGTH}}$'`)}`,
+    ),
+    check(
+      "products_name_length",
+      sql`char_length(${table.name}) between 1 and ${sql.raw(String(PRODUCT_NAME_MAX_LENGTH))}`,
+    ),
     check("products_unit_of_measure", sql`${table.unitOfMeasure} in (${inList(UNITS_OF_MEASURE)})`),
     check("products_tax_rate", sql`${table.taxRate} in (${inList(TAX_RATES)})`),
     check("products_sale_price_positive", sql`${table.salePriceMinor} > 0`),

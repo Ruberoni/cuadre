@@ -16,9 +16,9 @@ Dependency direction: `http → application → domain`, and `infrastructure →
 
 ## Where each rule lives
 
-- **Field rules** (SKU pattern, max lengths, units, IVA rates, page size) are constants in `packages/contracts` (`catalog/products.ts`). The domain enforces them, the web form imports the same constants. Change a rule there, never in two places.
+- **Field rules** (SKU pattern, max lengths, units, IVA rates, page size) are constants in `packages/contracts` (`catalog/products.ts`). The domain enforces them, the web form imports the same constants. Change a rule there, never in two places. The table's `CHECK` constraints are built from the same constants, so changing a rule also means regenerating the migration (`db:generate`).
 - **Business rules** live in `domain/` and are written test-first. Value objects are branded strings built by `parseX(raw): Result<X, Code>`; `createProduct` runs them all and reports every invalid field at once.
-- **Wire shape** (types, enums, USD price) is the contracts' Zod schema; the API turns shape failures into the same `VALIDATION_ERROR` + `issues` body as domain failures.
+- **Wire shape** (types, enums, USD price) is the contracts' Zod schema; the API turns shape failures into the same `VALIDATION_ERROR` + `issues` body as domain failures. Shape failures come first: a body that breaks the shape never reaches the domain, so it lists only the shape's fields (one issue per field), and a body that is not an object has no `issues`.
 
 ## Errors (ADR-009 and its amendment)
 
@@ -26,13 +26,14 @@ Dependency direction: `http → application → domain`, and `infrastructure →
 - Validation failures use `invalid(issues)` from `@cuadre/shared-kernel` (`FieldIssue = { field, code }`). Field and issue codes are string-literal unions exported by contracts (`ProductField`, `ProductIssueCode`).
 - `http/error-status.ts` maps every failure code to a status with an exhaustive `Record`: a new code does not compile until mapped. Bodies are built with `errorBody` from `src/http/api-error.ts`.
 - A new error code also needs: an entry in contracts' `API_ERROR_CODES` and a message in the web message catalog.
-- Race-safe uniqueness: the unique index is the rule; the repository maps Postgres `23505` to `SKU_ALREADY_EXISTS`. Never check-then-insert.
+- Race-safe uniqueness: the unique index is the rule; the repository maps Postgres `23505` **on that constraint** (`products_sku_unique`) to `SKU_ALREADY_EXISTS`; any other violation stays an unexpected error. Never check-then-insert.
 
 ## Persistence
 
 - Tables live in the module's own Postgres schema (`pgSchema("catalog")`), in `infrastructure/*.table.ts`; never query another module's tables (use its `index.ts`).
 - Money is `sale_price_minor` (bigint, integer minor units) + `sale_price_currency`; rows are rebuilt through `createProduct`, so a corrupt row fails loudly.
-- Codes sort with `collate "C"` so the order is the same on every database.
+- Codes sort with `collate "C"` so the order is the same on every database. Names sort with the database's own collation (a known assumption: it can differ between machines); pin one when it matters.
+- A new module adds its schema to `schemaFilter` in `apps/api/drizzle.config.ts`.
 - A schema change: edit the table, run `pnpm --filter @cuadre/api db:generate`, commit the SQL. Never edit an existing migration.
 
 ## Adding a use case, route or table

@@ -93,6 +93,25 @@ describe("POST /api/products", () => {
     });
   });
 
+  it("names each invalid field once, even when several shape rules fail on it", async () => {
+    const res = await post({ ...flour, salePrice: { minorUnits: 1.5, currency: "VES" } });
+
+    expect(await res.json()).toEqual({
+      code: "VALIDATION_ERROR",
+      issues: [{ field: "salePrice", code: "INVALID" }],
+    });
+  });
+
+  it.each(["null", "[]", '"text"'])(
+    "answers a body that is not an object (%s) with VALIDATION_ERROR and no issues",
+    async (body) => {
+      const res = await post(body);
+
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ code: "VALIDATION_ERROR" });
+    },
+  );
+
   it("rejects a price in VES: products are priced in USD", async () => {
     const res = await post({ ...flour, salePrice: { minorUnits: 145, currency: "VES" } });
 

@@ -7,7 +7,7 @@ describe("parseSku", () => {
     expect(parseSku("HAR-PAN-1K")).toEqual({ ok: true, value: "HAR-PAN-1K" });
   });
 
-  it("normalises to uppercase before anything else", () => {
+  it("normalises the code to uppercase", () => {
     expect(parseSku("har-pan-1k")).toEqual({ ok: true, value: "HAR-PAN-1K" });
   });
 
