@@ -10,10 +10,12 @@ const forbidden = [
     comment:
       "A module may import another module only through its index.ts (ADR-001). Never reach into its domain, application, infrastructure or http.",
     severity: "error",
-    from: { path: "^apps/api/(test/boundaries-fixtures/)?src/modules/([^/]+)/" },
+    // The fixtures prefix is a non-capturing group: an unmatched capture group disappears from the
+    // match, which shifted `$2` away and made every import inside a real module a violation.
+    from: { path: "^apps/api/(?:test/boundaries-fixtures/)?src/modules/([^/]+)/" },
     to: {
       path: "(^|/)src/modules/[^/]+/",
-      pathNot: ["(^|/)src/modules/$2/", "(^|/)src/modules/[^/]+/index[.]ts$"],
+      pathNot: ["(^|/)src/modules/$1/", "(^|/)src/modules/[^/]+/index[.]ts$"],
     },
   },
   {

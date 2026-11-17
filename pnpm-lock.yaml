@@ -199,6 +199,12 @@ importers:
 
   apps/api:
     dependencies:
+      '@cuadre/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@cuadre/shared-kernel':
+        specifier: workspace:*
+        version: link:../../packages/shared-kernel
       '@hono/node-server':
         specifier: 2.1.8
         version: 2.1.8(hono@4.13.18)

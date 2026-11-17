@@ -32,8 +32,9 @@ Canonical domain vocabulary. Code uses the **Term** column; the UI uses the **Sp
 | Term (code) | Spanish (UI) | Meaning |
 |---|---|---|
 | `Product` | Producto | An item that is bought, stocked and sold. |
-| `Sku` | Código / SKU | Unique product code. |
-| `UnitOfMeasure` | Unidad de medida | e.g. unit, box, kg. |
+| `Sku` | Código / SKU | Unique product code: letters, digits and hyphens, at most 20, stored in uppercase. |
+| `UnitOfMeasure` | Unidad de medida | One of a fixed list: Unidad (`UNIT`), Caja (`BOX`), Bulto (`BULK`), Kilogramo (`KILOGRAM`), Litro (`LITER`). |
+| `SalePrice` | Precio de venta | A product's one price in USD, excluding IVA. Sales orders default their line prices from it. |
 | `Warehouse` | Almacén | Physical stock location. Single warehouse in the MVP. |
 | `StockLedger` | Kardex | Chronological record of stock movements per product. |
 | `StockMovement` | Movimiento de inventario | One ledger entry, either inbound (raises `OnHand`) or outbound (lowers it). _Avoid_: "receipt"/"issue" for direction. |
