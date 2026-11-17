@@ -21,17 +21,17 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
+  // `smoke` is what `pnpm verify` runs; `acceptance` is one test per UI acceptance criterion.
   // Where the Playwright CDN is unreachable, run against an installed browser:
   // PLAYWRIGHT_CHANNEL=msedge (or chrome). CI uses the bundled Chromium.
-  projects: [
-    {
-      name: "chromium",
-      use: {
-        ...devices["Desktop Chrome"],
-        ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}),
-      },
+  projects: ["smoke", "acceptance"].map((name) => ({
+    name,
+    testMatch: name === "smoke" ? "smoke.spec.ts" : "products/**/*.spec.ts",
+    use: {
+      ...devices["Desktop Chrome"],
+      ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}),
     },
-  ],
+  })),
   // Playwright starts the web servers before anything else, so the API prepares its own database
   // (create if missing, migrate) as part of its start command.
   webServer: [

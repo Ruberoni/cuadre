@@ -88,7 +88,7 @@ jobs:
         run: pnpm test:integration
 
   e2e:
-    name: verify (boot the app + smoke E2E)
+    name: verify and E2E (boot the app, smoke, acceptance)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # verify reuses a Postgres that already answers on 5433 instead of starting docker compose.
@@ -118,8 +118,8 @@ jobs:
         run: pnpm --filter @cuadre/web exec playwright install --with-deps chromium
       - name: Verify (migrate, seed, boot api + web, smoke E2E)
         run: pnpm verify
-      - name: Browser component tests
-        run: pnpm --filter @cuadre/web test:browser
+      - name: Acceptance E2E and browser component tests
+        run: pnpm test:e2e
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: failure()
         with:
