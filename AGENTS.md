@@ -15,6 +15,7 @@ Cuadre is an ERP for a small Venezuelan distribution business (single company). 
 
 ```
 apps/api/                 Hono + @hono/zod-openapi HTTP server hosting all modules
+  src/auth/               Better Auth (email + password), the session gate, the seeded users; cross-cutting, not a module
   src/modules/<module>/
     domain/               entities, value objects, pure rules — NO I/O imports
     application/          use cases, one per file
@@ -42,7 +43,7 @@ Requires Node 26 (`.nvmrc`; `nvm use 26`) and pnpm (`npm i -g pnpm`; the version
 pnpm install
 docker compose up -d     # Postgres on localhost:5433 (override with POSTGRES_PORT); no .env needed
 pnpm db:migrate          # migrate the dev database
-pnpm db:seed             # seed it (a no-op until the first module lands)
+pnpm db:seed             # seed it: one user per role + demo data (safe to rerun)
 pnpm dev                 # api (http://localhost:3000, GET /health, /openapi.json) + web (http://localhost:5173)
 pnpm test                # unit + integration (integration needs Postgres, uses the cuadre_test database)
 pnpm test:unit
@@ -52,6 +53,8 @@ pnpm typecheck
 pnpm lint                # Biome + dependency-cruiser (pnpm lint:boundaries)
 pnpm verify              # Postgres -> fresh cuadre_e2e -> migrate -> seed -> boot api + web -> smoke E2E (ADR-014); one run at a time per machine
 ```
+
+Seeded users (test values only, never real passwords): `admin@cuadre.test`, `ventas@cuadre.test`, `compras@cuadre.test`, `almacen@cuadre.test`, password `cuadre-demo-2026`. Every `/api` route except Better Auth's (`/api/auth/*`) needs a session; tests sign in with `apps/api/test/sign-in.ts` (integration) or `apps/web/e2e/support/auth.ts` (E2E).
 
 `docker compose down -v` recreates the database volume (the `cuadre_test` database is created only on a fresh volume; `cuadre_e2e` is created by `db:e2e:prepare`).
 

@@ -1,12 +1,15 @@
 import { expect, type Page, test } from "@playwright/test";
 import { formatMoney, NBSP } from "../../src/lib/format/index.ts";
+import { signIn } from "../support/auth.ts";
 import { resetDatabase } from "../support/database.ts";
 import { apiUrl, givenProduct } from "../support/products.ts";
 
 const GENERAL_16 = `General 16${NBSP}%`;
 
-test.beforeEach(async () => {
+// Every test acts as the seeded admin (role enforcement is a later slice).
+test.beforeEach(async ({ page }) => {
   await resetDatabase();
+  await signIn(page);
 });
 
 async function fillForm(
@@ -39,7 +42,6 @@ const validFlour = {
 test.describe("create a product", () => {
   test("an admin creates a product and sees it in the list with the status line", async ({
     page,
-    request,
   }) => {
     await page.goto("/productos");
     await expect(page.getByText("Aún no hay productos")).toBeVisible();
@@ -62,7 +64,7 @@ test.describe("create a product", () => {
     }
 
     // Stored as 145 minor units in USD.
-    const listed = await (await request.get(`${apiUrl}/api/products`)).json();
+    const listed = await (await page.request.get(`${apiUrl}/api/products`)).json();
     expect(listed.items[0].salePrice).toEqual({ minorUnits: 145, currency: "USD" });
   });
 

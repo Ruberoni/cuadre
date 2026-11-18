@@ -51,4 +51,4 @@ Dependency direction: `http → application → domain`, and `infrastructure →
 
 ## Not shown by this template yet
 
-Role guards (every route is open until auth lands; REVIEW item 6 then requires a 403 test), transactions across use cases (ADR-008), and calls into another module. The first module that needs one extends this file.
+Role guards (every route needs a session since #10, enforced by the app's gate in `src/auth`, but any signed-in user acts as admin until role enforcement lands; REVIEW item 6 then requires a 403 test), transactions across use cases (ADR-008), and calls into another module. Integration tests sign in with `test/sign-in.ts`. The first module that needs one extends this file.

@@ -1,5 +1,5 @@
 // The one place that turns failures into HTTP answers (ADR-009): every non-2xx body is an
-// `ApiError` from `@cuadre/contracts`. Modules map their own error codes to statuses with an
+// `ApiError` from `@cuadre/contracts`, except Better Auth's own routes (`/api/auth/*`, src/auth). Modules map their own error codes to statuses with an
 // exhaustive `Record`, and use `errorBody` to build the body.
 import type { ApiError, ApiErrorCode, FieldIssue } from "@cuadre/contracts";
 import type { Hook, OpenAPIHono } from "@hono/zod-openapi";
