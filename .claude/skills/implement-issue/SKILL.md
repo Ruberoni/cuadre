@@ -21,7 +21,7 @@ Target: issue **#$ARGUMENTS**.
 ## Phase 0 — Guards
 
 1. **Worktree.** `[ "$(git rev-parse --path-format=absolute --git-dir)" != "$(git rev-parse --path-format=absolute --git-common-dir)" ]` must hold (absolute paths, so it also works from a subdirectory). In the main checkout, stop and tell the maintainer: parallel sessions share it.
-2. **Issue.** `gh issue view <n> --json number,title,body,labels,comments`. Stop unless it has the `agent-ready` label. If it touches `apps/web` and its **Design handoff** is incomplete (or it carries `needs-design`), stop and ask in the issue (ADR-012).
+2. **Issue.** `gh issue view <n> --json number,title,body,labels,comments`. Stop unless it has the `agent-ready` label. If it touches `apps/web` and its **Design handoff** is incomplete (or it carries `needs-design`), stop (ADR-012): comment on the issue and tell the maintainer in the session to run `/design-screen <n>`, which drafts the design and writes the handoff for them to approve. Do not start the implementation and do not touch the labels.
 3. **Branch.** Rename the generated `claude/…` branch before anything else: `git branch -m <type>/<n>-<slug>` (Conventional Commits type the PR title will carry; slug from the issue title). Renaming after the first push closes the PR.
 
 ## Phase 1 — Plan (all questions live here)

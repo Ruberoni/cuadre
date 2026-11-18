@@ -2,7 +2,7 @@
 
 How screens and components are designed before they are built. The rule is in [ADR-012](../adr/012-design-canvas-owns-tokens.md); this file is the checklist.
 
-Designs live in two Claude artifacts: **Cuadre Design System** (tokens, component specs, guides) and **Cuadre Screens** (one artboard per screen). The steps below use the skills of the `design` plugin (`/design-system`, `/ux-copy`, `/design-critique`, `/accessibility-review`, `/design-handoff`). Whoever designs runs them; implementing agents only read the result in the issue.
+Designs live in two Claude artifacts: **Cuadre Design System** (tokens, component specs, guides) and **Cuadre Screens** (one artboard per screen). The steps below use the skills of the `design` plugin (`/design-system`, `/ux-copy`, `/design-critique`, `/accessibility-review`, `/design-handoff`). `/design-screen <n>` runs the per-screen steps; the maintainer runs the Phase 0 ones by hand, except the additions `/design-screen` makes to the Design System. Implementing agents only read the result in the issue.
 
 ## Ground rules
 
@@ -28,6 +28,15 @@ Required for every new or changed screen, before its issue loses `needs-design`.
 3. `/design-critique`, then fix.
 4. `/accessibility-review`, then fix.
 5. `/design-handoff`, trimmed to the template below, pasted into the issue's **Design handoff** field.
+
+### `/design-screen <n>`
+
+The `design-screen` project skill ([`.claude/skills/design-screen/`](../../.claude/skills/design-screen/SKILL.md)) runs the five steps above for an issue and replaces the issue's Design handoff section with the result. Its `design-reviewer` agent runs the critique and the accessibility review; a 🔴 is fixed and reviewed again, and after three rounds the skill stops and explains.
+
+- **The agent proposes; the maintainer approves.** The maintainer approves the artboards and the handoff, merges the tokens PR if there is one, and applies `agent-ready` and removes `needs-design` themselves. The skill never touches labels.
+- **The Design System only grows.** If a screen needs a component the Design System lacks, the skill adds it (README, preview, CSS classes, tokens: additions only), runs `/design-system extend` and `/accessibility-review`, and records a `/design-system audit` as an issue comment that `sync-design-system` accepts as its first step. If the screen needs an existing token or component spec changed, it stops and asks.
+- **Dry run.** `/design-screen <n> --dry-run` publishes nothing and lists what it would publish; use it to check the skill itself.
+- **Revisions.** A completed handoff is revised the same way: only the blocks of the screens being changed are replaced.
 
 ## Where the output goes
 
@@ -70,7 +79,3 @@ Nothing else is stored in the repo. The artboard and the Design System are the l
 ### Accepted 🟡 findings
 - … — why it stays
 ```
-
-## Later
-
-A `design-screen` project skill that runs the per-screen steps and drafts the handoff will be created after the third screen has gone through this flow by hand (ADR-011).

@@ -98,6 +98,8 @@ Every design goes through the **review flow** in [`design/README.md`](design/REA
 - **Design System:** `/design-system extend` per component, `/accessibility-review` on tokens, `/design-system audit` before each sync.
 - **Each screen:** `/ux-copy` → `/design-critique` → `/accessibility-review` → `/design-handoff`. No open 🔴 passes a step; 🟡 is fixed or justified.
 
+The `/design-screen <n>` project skill runs the per-screen flow and writes the handoff into the issue. **The agent proposes; the maintainer approves; the Design System only grows** (additions only: changing an existing token or component spec is the maintainer's decision).
+
 Ground rules: **desktop only** (minimum 1280 px); **WCAG 2.2 AA** with 24×24 px pointer targets, except SC 1.4.10 Reflow, which desktop-only cannot meet until responsive layouts (post-MVP); UI copy uses the glossary's Spanish terms.
 
 Design System content for Phase 0:
@@ -125,13 +127,13 @@ Screens to design (each one just before its slice becomes `agent-ready`, not all
 
 - `AGENTS.md` (root, short) + `AGENTS.md` per module; `CLAUDE.md` imports `AGENTS.md`.
 - `.claude/`: PostToolUse hook (Biome on edited file), Stop hook (typecheck + Biome + unit tests of the touched packages, ≈30 s budget), permissions for pnpm scripts.
-- Project skills: `implement-issue` (run from a worktree: issue → reviewed plan → implementation → `verify` → draft PR → review → ready PR; uses the `plan-reviewer` and `pr-reviewer` agents in `.claude/agents/`), `sync-design-system` (Design System tokens → `apps/web` PR) and `verify` (wraps `pnpm verify`; ADR-014). More only when a pattern repeats 2–3 times.
+- Project skills: `implement-issue` (run from a worktree: issue → reviewed plan → implementation → `verify` → draft PR → review → ready PR; uses the `plan-reviewer` and `pr-reviewer` agents in `.claude/agents/`), `design-screen` (issue → questions → artboards → review with the `design-reviewer` agent → handoff in the issue; ADR-012), `sync-design-system` (Design System tokens → `apps/web` PR) and `verify` (wraps `pnpm verify`; ADR-014). More only when a pattern repeats 2–3 times.
 - Issues follow the template in `.github/ISSUE_TEMPLATE/task.yml`; only the maintainer applies `agent-ready`.
 
 ## People
 
-- **Maintainer:** writes and approves issues, designs in the Design System and Screens artifacts, reviews and merges PRs, decides ADRs, fiscal rules and module boundaries.
-- **Agents:** implement issues, write tests and migrations, sync tokens, propose the breakdown of each epic into issues.
+- **Maintainer:** writes and approves issues, approves the designs and handoffs drafted by `/design-screen` in the Design System and Screens artifacts (and applies `agent-ready`), reviews and merges PRs, decides ADRs, fiscal rules and module boundaries.
+- **Agents:** implement issues, write tests and migrations, sync tokens, draft screen designs and handoffs for approval, propose the breakdown of each epic into issues.
 
 ## Build order
 
@@ -162,7 +164,6 @@ Clear tasks waiting their turn. `/to-tickets` creates them as issues labelled `n
 
 - **Dark mode:** add dark values for the semantic tokens in the Design System and sync them.
 - **Responsive layouts** (tablet / mobile) for the screens that need them. Also lifts the SC 1.4.10 Reflow exception.
-- **`design-screen` project skill:** runs the per-screen review flow and drafts the handoff. Trigger: after the third screen has gone through the flow by hand (ADR-011).
 - **Storybook:** Storybook 8 (Vite) in `apps/web`, stories only for Cuadre's own components (not plain shadcn), interaction tests through the Vitest addon in CI; visual regression later. Trigger: may be pulled into the MVP as soon as `apps/web` gets its first own composite component (likely `MoneyInput` or `DataTable`).
 - **User admin screen.**
 - **Invoice PDF.**

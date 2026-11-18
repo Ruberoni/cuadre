@@ -1,9 +1,9 @@
 # ADR-012: Design System owns the tokens; screens are designed before they are built
 
-**Status:** Accepted (amended 2026-11-16, 2026-11-17)
+**Status:** Accepted (amended 2026-11-16, 2026-11-17, 2026-11-18)
 
 ## Context
-The maintainer designs the UI in Claude artifacts. If both the design and the code define tokens, they drift. Agents left without a visual reference invent UI, and each one invents it differently.
+The UI is designed in Claude artifacts: drafted by an agent with the `design-screen` skill and approved by the maintainer. If both the design and the code define tokens, they drift. Agents left without a visual reference invent UI, and each one invents it differently.
 
 ## Decision
 - Two artifacts:
@@ -16,12 +16,13 @@ The maintainer designs the UI in Claude artifacts. If both the design and the co
 - **Every design goes through the review flow** in [`docs/design/README.md`](../design/README.md), using the `design` plugin skills. Each screen gets `/ux-copy` → `/design-critique` → `/accessibility-review` → `/design-handoff`. The Design System gets `/design-system extend` per component, `/accessibility-review` on tokens, and `/design-system audit` before each sync. No open critical findings pass a step.
 - The evidence lives in the issue, not in per-screen files: the handoff is a snapshot for the implementer, while the artifacts stay the living reference. Only reusable outputs go to the repo (error messages, glossary terms).
 - Desktop only (minimum 1280 px). Accessibility target WCAG 2.2 AA, with 24×24 px pointer targets. Exception: SC 1.4.10 Reflow (content reflowing at 320 CSS px) cannot be met by a desktop-only layout; it is accepted until responsive layouts are built.
+- **Screens are drafted by the `design-screen` project skill (`/design-screen <n>`).** It asks the product questions, draws the artboards in Cuadre Screens, runs the review flow (with a `design-reviewer` agent for critique and accessibility) and writes the Design handoff into the issue. **The agent proposes; the maintainer approves** the artboards and the handoff and applies `agent-ready` themselves: the skill never adds or removes labels. **The Design System only grows:** the skill may add components, CSS classes and tokens, never change or remove an existing one; a change to what exists is the maintainer's decision, so the skill stops and asks. Added tokens reach `apps/web` through the `sync-design-system` PR the skill ends with.
 - Tokens use semantic names. The MVP ships a light theme only.
 - Visual tone: sober and information-dense (compact tables, one sans-serif font, a single accent color). Numbers, currencies and dates follow `es-VE` conventions.
 
 ## Consequences
 - Agents implement against a visual reference instead of inventing UI.
 - Token changes require a sync PR; editing tokens directly in code is not allowed.
-- UI slices wait on the maintainer's design work; screens are designed just in time, one slice ahead.
+- UI slices wait on the maintainer's approval of the drafted design; screens are designed just in time, one slice ahead.
 - Dark mode is added later by giving the semantic tokens dark values.
 - The review skills exist only in the maintainer's Claude setup; agents in other tools rely on the handoff in the issue, which they read through `gh`.
