@@ -124,6 +124,8 @@ function NewProduct() {
     }
 
     const failure = result.error;
+    // The session ended: the client is already on its way to Login.
+    if (failure.code === "UNAUTHORIZED") return;
     if (failure.code === "SKU_ALREADY_EXISTS") {
       form.setError(
         "sku",

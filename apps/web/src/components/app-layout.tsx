@@ -1,4 +1,6 @@
+import type { SessionUser } from "@cuadre/contracts";
 import { Link, useRouterState } from "@tanstack/react-router";
+import { LogOutIcon } from "lucide-react";
 import {
   createContext,
   type ReactNode,
@@ -10,9 +12,10 @@ import {
   useState,
 } from "react";
 import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { defaultProductsSearch } from "@/features/products/search";
 import { cn } from "@/lib/utils";
-import { shellMessages } from "@/messages";
+import { roleLabels, shellMessages } from "@/messages";
 
 type PageContext = {
   setTitle: (title: string) => void;
@@ -51,8 +54,20 @@ const navLinkClass = cn(
   "aria-[current=page]:before:absolute aria-[current=page]:before:inset-y-0 aria-[current=page]:before:left-0 aria-[current=page]:before:w-[3px] aria-[current=page]:before:rounded-sm aria-[current=page]:before:bg-sidebar-primary",
 );
 
-/** The frame of every signed-in page (Design System → AppLayout). */
-export function AppLayout({ children }: { children: ReactNode }) {
+/**
+ * The frame of every signed-in page (Design System → AppLayout). Without a `user` (the session is
+ * still loading) only the empty frame shows: no nav, no footer, nothing in `<main>`, so a nav for the
+ * wrong role never appears (App shell handoff, #7).
+ */
+export function AppLayout({
+  user,
+  onSignOut,
+  children,
+}: {
+  user?: SessionUser | undefined;
+  onSignOut?: () => void;
+  children?: ReactNode;
+}) {
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState<string | undefined>(undefined);
   const keepStatusOnNextNavigation = useRef(false);
@@ -82,24 +97,48 @@ export function AppLayout({ children }: { children: ReactNode }) {
       >
         {shellMessages.skipLink}
       </a>
-      <aside className="fixed inset-y-0 left-0 w-(--sidebar-width) border-r border-sidebar-border bg-sidebar">
+      <aside className="fixed inset-y-0 left-0 flex w-(--sidebar-width) flex-col border-r border-sidebar-border bg-sidebar">
         <div className="flex h-(--header-height) items-center px-4 text-section-title font-bold text-sidebar-primary">
           {shellMessages.wordmark}
         </div>
-        <nav aria-label={shellMessages.navLabel} className="flex flex-col gap-1 px-2 py-2">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              search={defaultProductsSearch}
-              // Active on every page of the section, whatever its search params or sub-page.
-              activeOptions={{ includeSearch: false }}
-              className={navLinkClass}
+        {user === undefined ? null : (
+          <>
+            <nav
+              aria-label={shellMessages.navLabel}
+              className="flex flex-1 flex-col gap-1 px-2 py-2"
             >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+              {NAV_ITEMS.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  search={defaultProductsSearch}
+                  // Active on every page of the section, whatever its search params or sub-page.
+                  activeOptions={{ includeSearch: false }}
+                  className={navLinkClass}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            <div className="flex items-center justify-between gap-2 border-t border-sidebar-border px-4 py-3">
+              <div className="min-w-0">
+                <p className="truncate text-table font-medium text-sidebar-foreground">
+                  {user.name}
+                </p>
+                <p className="text-caption text-muted-foreground">{roleLabels[user.role]}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={shellMessages.signOut}
+                title={shellMessages.signOut}
+                onClick={onSignOut}
+              >
+                <LogOutIcon aria-hidden="true" />
+              </Button>
+            </div>
+          </>
+        )}
       </aside>
       <div className="pl-(--sidebar-width)">
         <header className="sticky top-0 z-10 flex h-(--header-height) items-center border-b border-border bg-background px-6">
@@ -114,7 +153,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               </Alert>
             )}
           </div>
-          {children}
+          {user === undefined ? null : children}
         </main>
       </div>
     </AppPageContext>

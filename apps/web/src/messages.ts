@@ -1,12 +1,26 @@
 // The single UI message catalog (ADR-012): every user-facing error, status line and label that
 // comes from an error code or a domain value lives here, in Spanish, verbatim from the design
 // handoffs. Screens never write these strings inline and never show a raw code.
-import type { ProductField, ProductIssueCode, TaxRate, UnitOfMeasure } from "@cuadre/contracts";
+import type {
+  ProductField,
+  ProductIssueCode,
+  Role,
+  TaxRate,
+  UnitOfMeasure,
+} from "@cuadre/contracts";
 import type { ClientErrorCode } from "@/api/client";
+import type { PasswordInputLabels } from "@/components/password-input";
+import type { SignInError } from "@/features/auth/sign-in-error";
 import { formatMoney, NBSP, type ParseAmountError } from "@/lib/format";
 
-/** Message for an error that belongs to no field, shown in the form alert. */
-export const errorMessages: Record<ClientErrorCode, (details: { sku?: string }) => string> = {
+/**
+ * Message for an error that belongs to no field, shown in the form alert. `UNAUTHORIZED` has none:
+ * the client goes to Login instead (Login handoff, #10).
+ */
+export const errorMessages: Record<
+  Exclude<ClientErrorCode, "UNAUTHORIZED">,
+  (details: { sku?: string }) => string
+> = {
   VALIDATION_ERROR: () => "Algunos datos no son válidos. Revisar los campos marcados.",
   SKU_ALREADY_EXISTS: ({ sku }) =>
     sku === undefined
@@ -120,5 +134,45 @@ export const shellMessages = {
   skipLink: "Saltar al contenido",
   navLabel: "Principal",
   products: "Productos",
+  signOut: "Cerrar sesión",
   documentTitle: (pageTitle: string) => `${pageTitle} · Cuadre`,
 } as const;
+
+/** Role names in the sidebar footer (App shell handoff, #7). */
+export const roleLabels: Record<Role, string> = {
+  admin: "Administrador",
+  sales: "Ventas",
+  purchasing: "Compras",
+  warehouse: "Almacén",
+};
+
+const passwordInputLabels: PasswordInputLabels = {
+  show: "Mostrar",
+  hide: "Ocultar",
+  showAriaLabel: "Mostrar contraseña",
+  hideAriaLabel: "Ocultar contraseña",
+  shownStatus: "Contraseña visible.",
+  hiddenStatus: "Contraseña oculta.",
+};
+
+/** Login screen (Login handoff, #10). */
+export const loginMessages = {
+  pageTitle: "Iniciar sesión",
+  email: "Correo electrónico",
+  emailPlaceholder: "nombre@empresa.com",
+  password: "Contraseña",
+  passwordInput: passwordInputLabels,
+  submit: "Iniciar sesión",
+  submitting: "Iniciando sesión…",
+  emailRequired: "Falta el correo electrónico.",
+  emailInvalid: "Escribir un correo electrónico válido, como nombre@empresa.com.",
+  passwordRequired: "Falta la contraseña.",
+} as const;
+
+/** Form alert of each sign-in failure; `INVALID_EMAIL` goes on the field instead. */
+export const signInErrorMessages: Record<Exclude<SignInError, "INVALID_EMAIL">, string> = {
+  INVALID_CREDENTIALS:
+    "El correo electrónico o la contraseña no son correctos. Revisar ambos e intentar de nuevo.",
+  TOO_MANY_ATTEMPTS: "Demasiados intentos seguidos. Esperar unos segundos e intentar de nuevo.",
+  NETWORK_ERROR: "No se pudo iniciar sesión. Revisar la conexión e intentar de nuevo.",
+};
