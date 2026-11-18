@@ -1,6 +1,7 @@
 export { type Currency, MAX_MINOR_UNITS } from "@cuadre/shared-kernel";
 export { formatDate, parseDate } from "./date.ts";
 export {
+  currencySymbol,
   formatAmount,
   formatMoney,
   NBSP,

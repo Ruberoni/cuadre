@@ -1,4 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { defaultProductsSearch } from "@/features/products/search";
 
-// Blank on purpose: UI code starts after the design token sync (ADR-012).
-export const Route = createFileRoute("/")({ component: () => <main /> });
+export const Route = createFileRoute("/")({
+  beforeLoad: () => {
+    throw redirect({ to: "/productos", search: defaultProductsSearch, replace: true });
+  },
+});

@@ -2,14 +2,14 @@
 
 Cuadre is an ERP for a small Venezuelan distribution business (single company). It is a personal portfolio project built primarily by AI agents working from GitHub issues. This file is the source of truth for every agent (Claude Code, Codex, Cursor…); `CLAUDE.md` only imports it.
 
-> **Status:** walking skeleton in progress. The monorepo, tooling and CI gates exist; business modules and UI arrive slice by slice. The plan lives in [`docs/PLAN.md`](docs/PLAN.md). Commands marked _(planned)_ arrive with the catalog slice.
+> **Status:** walking skeleton in progress. The monorepo, tooling and CI gates exist; business modules and UI arrive slice by slice. The plan lives in [`docs/PLAN.md`](docs/PLAN.md).
 
 ## Read before working
 
 1. [`docs/PLAN.md`](docs/PLAN.md) — scope, MVP flow, build order.
 2. [`docs/GLOSSARY.md`](docs/GLOSSARY.md) — domain vocabulary. Use these names exactly; never invent synonyms.
 3. [`docs/adr/`](docs/adr/) — architecture decisions. If your change contradicts an ADR, stop and ask; do not reopen the debate in code.
-4. The `AGENTS.md` inside the module you are touching _(planned, one per module)_.
+4. The `AGENTS.md` inside the module you are touching _(one per module; `catalog` is the template)_.
 
 ## Repo map
 
@@ -47,7 +47,7 @@ pnpm dev                 # api (http://localhost:3000, GET /health, /openapi.jso
 pnpm test                # unit + integration (integration needs Postgres, uses the cuadre_test database)
 pnpm test:unit
 pnpm test:integration
-pnpm test:e2e            # Playwright (starts api + web on its own cuadre_e2e database; needs Postgres) + Button browser test (PLAYWRIGHT_CHANNEL=msedge uses an installed browser)
+pnpm test:e2e            # Playwright acceptance tests (starts api + web on the cuadre_e2e database; needs Postgres) + Button browser test (PLAYWRIGHT_CHANNEL=msedge uses an installed browser)
 pnpm typecheck
 pnpm lint                # Biome + dependency-cruiser (pnpm lint:boundaries)
 pnpm verify              # Postgres -> fresh cuadre_e2e -> migrate -> seed -> boot api + web -> smoke E2E (ADR-014); one run at a time per machine

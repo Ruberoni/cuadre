@@ -122,7 +122,7 @@ const steps: { name: string; run: () => Promise<void> | void }[] = [
       try {
         run(
           "smoke (api + web + Playwright)",
-          "pnpm --filter @cuadre/web exec playwright test",
+          "pnpm --filter @cuadre/web exec playwright test --project=smoke",
           5 * MINUTE,
           { DATABASE_URL_E2E: e2eDatabaseUrl },
         );
