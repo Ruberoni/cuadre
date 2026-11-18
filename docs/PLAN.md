@@ -125,7 +125,7 @@ Screens to design (each one just before its slice becomes `agent-ready`, not all
 
 - `AGENTS.md` (root, short) + `AGENTS.md` per module; `CLAUDE.md` imports `AGENTS.md`.
 - `.claude/`: PostToolUse hook (Biome on edited file), Stop hook (typecheck + Biome + unit tests of the touched packages, ≈30 s budget), permissions for pnpm scripts.
-- Project skills: `implement-issue` (issue → worktree → TDD → PR) `sync-design-system` (Design System tokens → `apps/web` PR) and `verify` (wraps `pnpm verify`; ADR-014). More only when a pattern repeats 2–3 times.
+- Project skills: `implement-issue` (run from a worktree: issue → reviewed plan → implementation → `verify` → draft PR → review → ready PR; uses the `plan-reviewer` and `pr-reviewer` agents in `.claude/agents/`), `sync-design-system` (Design System tokens → `apps/web` PR) and `verify` (wraps `pnpm verify`; ADR-014). More only when a pattern repeats 2–3 times.
 - Issues follow the template in `.github/ISSUE_TEMPLATE/task.yml`; only the maintainer applies `agent-ready`.
 
 ## People

@@ -1,6 +1,6 @@
 # REVIEW.md — Cuadre
 
-Focus for whoever reviews a PR (the maintainer or `/code-review`). See [ADR-014](docs/adr/014-verification-layer.md).
+Focus for whoever reviews a PR (the maintainer, or the `pr-reviewer` agent that the `implement-issue` skill runs; the built-in `/code-review` does not read this file, so `pr-reviewer` applies it). See [ADR-014](docs/adr/014-verification-layer.md).
 
 ## How to use
 
