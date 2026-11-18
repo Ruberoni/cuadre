@@ -14,6 +14,8 @@ import type { Product } from "../domain/product.ts";
 import { CREATE_PRODUCT_ERROR_STATUS } from "./error-status.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ "application/json": { schema } });
+/** Answered by the app's session gate before the route runs (`src/auth/require-session.ts`). */
+const UNAUTHORIZED = { description: "No valid session.", content: json(ApiError) };
 
 export const createProductRoute = createRoute({
   method: "post",
@@ -22,6 +24,7 @@ export const createProductRoute = createRoute({
   responses: {
     201: { description: "The product was created.", content: json(ProductDto) },
     400: { description: "Invalid input; `issues` names the fields.", content: json(ApiError) },
+    401: UNAUTHORIZED,
     409: { description: "The code is already used by another product.", content: json(ApiError) },
   },
 });
@@ -33,6 +36,7 @@ export const listProductsRoute = createRoute({
   responses: {
     200: { description: "One page of products.", content: json(ListProductsResponse) },
     400: { description: "Invalid query.", content: json(ApiError) },
+    401: UNAUTHORIZED,
   },
 });
 

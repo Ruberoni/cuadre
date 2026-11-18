@@ -1,4 +1,5 @@
 export { API_ERROR_CODES, ApiError, ApiErrorCode, FieldIssue } from "./api-error.ts";
+export { ROLES, Role, SessionUser } from "./auth/session.ts";
 export {
   CreateProductRequest,
   ListProductsQuery,

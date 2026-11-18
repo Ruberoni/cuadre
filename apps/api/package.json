@@ -14,13 +14,15 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=../../.env src/db/migrate.ts",
     "db:e2e:prepare": "tsx --env-file-if-exists=../../.env src/db/e2e-prepare.ts",
-    "db:seed": "tsx --env-file-if-exists=../../.env src/db/seed.ts"
+    "db:seed": "tsx --env-file-if-exists=../../.env src/db/seed.ts",
+    "db:seed:users": "tsx --env-file-if-exists=../../.env src/db/seed.ts --users-only"
   },
   "dependencies": {
     "@cuadre/contracts": "workspace:*",
     "@cuadre/shared-kernel": "workspace:*",
     "@hono/node-server": "2.1.8",
     "@hono/zod-openapi": "1.6.3",
+    "better-auth": "1.7.25",
     "drizzle-orm": "0.45.4",
     "hono": "4.13.18",
     "postgres": "4.1.1",
