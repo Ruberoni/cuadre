@@ -89,14 +89,14 @@ function LoginForm() {
     // The alert leaves while submitting and comes back with the answer, so it is focused again.
     setFormError(undefined);
     const result = await signIn(values.email, values.password);
-    inFlight.current = false;
-    setSubmitting(false);
 
     if (result.ok) {
-      // The page then goes on to `redirect` (its effect), the one way out of Login.
+      // Stays busy until the page goes on to `redirect` (its effect), the one way out of Login.
       await setSession(queryClient, { user: result.value, signedOut: false });
       return;
     }
+    inFlight.current = false;
+    setSubmitting(false);
     if (result.error === "INVALID_EMAIL") {
       form.setError("email", { message: loginMessages.emailInvalid }, { shouldFocus: true });
       return;

@@ -35,5 +35,10 @@ export async function endSession(
   { signedOut }: { signedOut: boolean },
 ): Promise<void> {
   await setSession(queryClient, { user: null, signedOut });
+  dropAppData(queryClient);
+}
+
+/** Removes every cached query but the session's. */
+export function dropAppData(queryClient: QueryClient): void {
   queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== sessionQueryKey[0] });
 }

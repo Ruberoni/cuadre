@@ -12,9 +12,13 @@ export type SessionVariables = { user: SessionUser };
  */
 export function requireSession(auth: Auth) {
   return createMiddleware<{ Variables: SessionVariables }>(async (c, next) => {
-    // Read-only: when Better Auth renews the session here, its refreshed cookie is not forwarded;
-    // the web's own `get-session` (on every shell mount and window focus) carries it instead.
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    // Read-only (`disableRefresh`): a renewal here would move `expiresAt` without sending the new
+    // cookie, and the web's `get-session` would then see nothing to renew. Only `get-session`
+    // (every shell mount and window focus) renews, so the cookie always follows the session.
+    const session = await auth.api.getSession({
+      headers: c.req.raw.headers,
+      query: { disableRefresh: true },
+    });
     const user = SessionUserSchema.safeParse(session?.user);
     if (!user.success) return c.json(errorBody("UNAUTHORIZED"), 401);
     c.set("user", user.data);

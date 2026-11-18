@@ -153,6 +153,25 @@ describe("the session gate", () => {
     expect((await products(session)).status).toBe(401);
   });
 
+  it("never renews the session: only get-session does, the one that sends the new cookie", async () => {
+    const session = await signIn(db, testApp);
+    // A 7-day session opened two days ago is due for renewal (Better Auth's `updateAge`: 1 day).
+    await db.update(sessionsTable).set({ expiresAt: sql`now() + interval '5 days'` });
+    const [before] = await db.select({ expiresAt: sessionsTable.expiresAt }).from(sessionsTable);
+
+    expect((await products(session)).status).toBe(200);
+    const [afterGate] = await db.select({ expiresAt: sessionsTable.expiresAt }).from(sessionsTable);
+    expect(afterGate?.expiresAt).toEqual(before?.expiresAt);
+
+    const renewed = await app.request("/api/auth/get-session", { headers: session });
+    expect(renewed.status).toBe(200);
+    expect(cookiesOf(renewed)).toMatch(/session_token=/);
+    const [afterGetSession] = await db
+      .select({ expiresAt: sessionsTable.expiresAt })
+      .from(sessionsTable);
+    expect(afterGetSession?.expiresAt.getTime()).toBeGreaterThan(before?.expiresAt.getTime() ?? 0);
+  });
+
   it("lets a signed-in user through, and keeps health and the OpenAPI document public", async () => {
     const session = await signIn(db, testApp);
 

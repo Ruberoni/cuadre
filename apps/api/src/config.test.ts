@@ -42,15 +42,29 @@ describe("loadConfig", () => {
       expect(() => loadConfig({ BETTER_AUTH_SECRET: "short" })).toThrow();
     });
 
-    it("requires an explicit secret in production", () => {
-      expect(() => loadConfig({ NODE_ENV: "production" })).toThrow(/BETTER_AUTH_SECRET/);
-      expect(() =>
-        loadConfig({ NODE_ENV: "production", BETTER_AUTH_SECRET: DEV_AUTH_SECRET }),
-      ).toThrow(/BETTER_AUTH_SECRET/);
+    it("requires an explicit secret and URL in production", () => {
+      const url = "https://cuadre.example";
       const secret = "x".repeat(32);
-      expect(
-        loadConfig({ NODE_ENV: "production", BETTER_AUTH_SECRET: secret }).BETTER_AUTH_SECRET,
-      ).toBe(secret);
+      expect(() => loadConfig({ NODE_ENV: "production", BETTER_AUTH_URL: url })).toThrow(
+        /BETTER_AUTH_SECRET/,
+      );
+      expect(() =>
+        loadConfig({
+          NODE_ENV: "production",
+          BETTER_AUTH_SECRET: DEV_AUTH_SECRET,
+          BETTER_AUTH_URL: url,
+        }),
+      ).toThrow(/BETTER_AUTH_SECRET/);
+      expect(() => loadConfig({ NODE_ENV: "production", BETTER_AUTH_SECRET: secret })).toThrow(
+        /BETTER_AUTH_URL/,
+      );
+      const config = loadConfig({
+        NODE_ENV: "production",
+        BETTER_AUTH_SECRET: secret,
+        BETTER_AUTH_URL: url,
+      });
+      expect(config.BETTER_AUTH_SECRET).toBe(secret);
+      expect(config.trustedOrigins).toEqual([url]);
     });
   });
 });

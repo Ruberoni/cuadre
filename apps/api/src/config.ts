@@ -19,11 +19,19 @@ const envSchema = z
     BETTER_AUTH_TRUSTED_ORIGINS: z.string().optional(),
   })
   .superRefine((env, context) => {
-    if (env.NODE_ENV === "production" && env.BETTER_AUTH_SECRET === DEV_AUTH_SECRET) {
+    if (env.NODE_ENV !== "production") return;
+    if (env.BETTER_AUTH_SECRET === DEV_AUTH_SECRET) {
       context.addIssue({
         code: "custom",
         path: ["BETTER_AUTH_SECRET"],
         message: "BETTER_AUTH_SECRET must be set explicitly in production.",
+      });
+    }
+    if (env.BETTER_AUTH_URL === DEFAULT_AUTH_URL) {
+      context.addIssue({
+        code: "custom",
+        path: ["BETTER_AUTH_URL"],
+        message: "BETTER_AUTH_URL must be set explicitly in production.",
       });
     }
   })

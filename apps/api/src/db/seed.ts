@@ -12,6 +12,8 @@ export async function runSeed(
   config: Config,
   { usersOnly = false }: { usersOnly?: boolean } = {},
 ): Promise<{ users: number; products: number }> {
+  // The seeded users have a published test password: never on a production database.
+  if (config.NODE_ENV === "production") throw new Error("Refusing to seed in production.");
   const { db, close } = createDb(config.DATABASE_URL);
   try {
     const users = await seedUsers(db, createAuthFromConfig(db, config));

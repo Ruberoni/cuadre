@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Outlet, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Outlet, useRouter, useRouterState } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import { signOut } from "@/api/auth";
 import { AppLayout } from "@/components/app-layout";
-import { endSession, sessionQueryOptions } from "@/features/auth/session";
+import { dropAppData, endSession, sessionQueryOptions } from "@/features/auth/session";
 import { shellMessages } from "@/messages";
 
 export const Route = createFileRoute("/_app")({ component: SignedInApp });
@@ -13,6 +13,10 @@ function SignedInApp() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const [signOutFailed, setSignOutFailed] = useState(false);
+  // Set while Cerrar sesión is on its way: an end of session noticed meanwhile (a 401, a refetch)
+  // must still open a clean Login, without `redirect`.
+  const signingOut = useRef(false);
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const session = useQuery(sessionQueryOptions);
   const user = session.data?.user ?? null;
   const signedOut = session.data?.signedOut ?? false;
@@ -23,21 +27,30 @@ function SignedInApp() {
   useEffect(() => {
     if (!leaving) return;
     const here = router.state.location.href;
+    // However the session ended (sign-out, a 401, a refetch), the next user sees none of its data.
+    dropAppData(queryClient);
     void router.navigate({
       to: "/login",
       // After Cerrar sesión, Login opens clean; otherwise it brings the user back here.
-      search: signedOut ? {} : { redirect: here },
+      search: signedOut || signingOut.current ? {} : { redirect: here },
       replace: true,
     });
-  }, [leaving, signedOut, router]);
+  }, [leaving, signedOut, router, queryClient]);
+
+  // The sign-out failure belongs to the page where it happened.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs on navigation only
+  useEffect(() => setSignOutFailed(false), [pathname]);
 
   // While the session loads (or on the way to Login): the empty frame, never a nav for the wrong role.
   if (user === null) return <AppLayout />;
 
   async function handleSignOut() {
     setSignOutFailed(false);
+    signingOut.current = true;
+    const done = await signOut();
     // If the server may still hold the session, stay: Login would only let the user back in.
-    if (!(await signOut())) {
+    if (!done) {
+      signingOut.current = false;
       setSignOutFailed(true);
       return;
     }
