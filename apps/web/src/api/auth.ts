@@ -16,7 +16,7 @@ const postJson = (path: string, body: unknown) =>
     body: JSON.stringify(body),
   });
 
-/** The signed-in user, or `null`. Throws when the API cannot answer (the query shows an error). */
+/** The signed-in user, or `null`. Throws when the API cannot answer (the shell then goes to Login). */
 export async function getSession(): Promise<SessionUser | null> {
   const response = await fetch("/api/auth/get-session");
   if (!response.ok) throw new Error(`get-session answered ${response.status}`);
@@ -43,7 +43,15 @@ export async function signIn(email: string, password: string): Promise<SignInRes
   return { ok: false, error: toSignInError(response.status, error.data?.code) };
 }
 
-/** Ends the session on the server. Never throws: the app signs out locally either way. */
-export async function signOut(): Promise<void> {
-  await postJson("/sign-out", {}).catch(() => undefined);
+/**
+ * Ends the session on the server. `false` when it may still be open (no answer, or an error other
+ * than "no session"): the app must not pretend the user signed out, or Login would let them back in.
+ */
+export async function signOut(): Promise<boolean> {
+  try {
+    const response = await postJson("/sign-out", {});
+    return response.ok || response.status === 401;
+  } catch {
+    return false;
+  }
 }

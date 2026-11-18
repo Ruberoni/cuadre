@@ -135,6 +135,8 @@ export const shellMessages = {
   navLabel: "Principal",
   products: "Productos",
   signOut: "Cerrar sesión",
+  /** Not in the App shell handoff: proposed in #51, same pattern as the sign-in network message. */
+  signOutFailed: "No se pudo cerrar la sesión. Revisar la conexión e intentar de nuevo.",
   documentTitle: (pageTitle: string) => `${pageTitle} · Cuadre`,
 } as const;
 

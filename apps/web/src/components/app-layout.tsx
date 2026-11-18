@@ -62,10 +62,13 @@ const navLinkClass = cn(
 export function AppLayout({
   user,
   onSignOut,
+  error,
   children,
 }: {
   user?: SessionUser | undefined;
   onSignOut?: () => void;
+  /** A shell-level failure (Cerrar sesión did not go through), above the page content. */
+  error?: string | undefined;
   children?: ReactNode;
 }) {
   const [title, setTitle] = useState("");
@@ -153,6 +156,11 @@ export function AppLayout({
               </Alert>
             )}
           </div>
+          {error === undefined ? null : (
+            <Alert variant="destructive" role="alert" className="mb-4 block">
+              {error}
+            </Alert>
+          )}
           {user === undefined ? null : children}
         </main>
       </div>

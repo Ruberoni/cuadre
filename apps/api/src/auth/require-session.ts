@@ -12,6 +12,8 @@ export type SessionVariables = { user: SessionUser };
  */
 export function requireSession(auth: Auth) {
   return createMiddleware<{ Variables: SessionVariables }>(async (c, next) => {
+    // Read-only: when Better Auth renews the session here, its refreshed cookie is not forwarded;
+    // the web's own `get-session` (on every shell mount and window focus) carries it instead.
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     const user = SessionUserSchema.safeParse(session?.user);
     if (!user.success) return c.json(errorBody("UNAUTHORIZED"), 401);

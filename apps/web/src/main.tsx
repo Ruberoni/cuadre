@@ -4,7 +4,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { setUnauthorizedHandler } from "./api/client.ts";
-import { type SessionState, sessionQueryKey } from "./features/auth/session.ts";
+import { endSession, type SessionState, sessionQueryKey } from "./features/auth/session.ts";
 import { router } from "./router.ts";
 
 // No automatic retries: a failed request shows its error state (and "Reintentar") right away.
@@ -14,7 +14,7 @@ const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false 
 // with `redirect` = where they were. Nothing to do if the app already knows (signed out, on Login).
 setUnauthorizedHandler(() => {
   if (queryClient.getQueryData<SessionState>(sessionQueryKey)?.user === null) return;
-  queryClient.setQueryData<SessionState>(sessionQueryKey, { user: null, signedOut: false });
+  void endSession(queryClient, { signedOut: false });
 });
 
 const root = document.getElementById("root");

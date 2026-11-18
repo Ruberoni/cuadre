@@ -29,6 +29,7 @@ export async function seedUsers(
   roles: readonly Role[] = Object.keys(SEED_USERS) as Role[],
 ): Promise<number> {
   const { password } = await auth.$context;
+  let hash: string | undefined;
   let created = 0;
   for (const role of roles) {
     const { name, email } = SEED_USERS[role];
@@ -42,7 +43,9 @@ export async function seedUsers(
       .where(eq(usersTable.email, email));
     if (existing.some((row) => row.account !== null)) continue;
 
-    const hash = await password.hash(SEED_PASSWORD);
+    // Hashing is slow on purpose: once per run, shared by the users it creates (all test values).
+    hash ??= await password.hash(SEED_PASSWORD);
+    const passwordHash = hash;
     await db.transaction(async (tx) => {
       await tx.delete(usersTable).where(eq(usersTable.email, email));
       const id = randomUUID();
@@ -52,7 +55,7 @@ export async function seedUsers(
         accountId: id,
         providerId: "credential",
         userId: id,
-        password: hash,
+        password: passwordHash,
       });
     });
     created++;

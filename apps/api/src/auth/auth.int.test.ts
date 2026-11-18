@@ -97,18 +97,28 @@ describe("closed doors", () => {
 
   it("never lets a user change their own role", async () => {
     const session = await signIn(db, testApp, "sales");
+    const updateUser = (body: unknown) =>
+      app.request("/api/auth/update-user", {
+        method: "POST",
+        headers: json(session),
+        body: JSON.stringify(body),
+      });
+    const stored = async () =>
+      (
+        await db
+          .select({ name: usersTable.name, role: usersTable.role })
+          .from(usersTable)
+          .where(eq(usersTable.email, SEED_USERS.sales.email))
+      )[0];
 
-    await app.request("/api/auth/update-user", {
-      method: "POST",
-      headers: json(session),
-      body: JSON.stringify({ role: "admin" }),
-    });
+    // The request itself works (session, origin, body)…
+    expect((await updateUser({ name: "Otro nombre" })).status).toBe(200);
+    expect(await stored()).toEqual({ name: "Otro nombre", role: "sales" });
 
-    const [user] = await db
-      .select({ role: usersTable.role })
-      .from(usersTable)
-      .where(eq(usersTable.email, SEED_USERS.sales.email));
-    expect(user?.role).toBe("sales");
+    // …but one that carries a role is refused, and the role stays.
+    const res = await updateUser({ name: "Intruso", role: "admin" });
+    expect(res.status).toBe(400);
+    expect(await stored()).toEqual({ name: "Otro nombre", role: "sales" });
   });
 });
 

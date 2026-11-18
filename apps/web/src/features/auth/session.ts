@@ -1,5 +1,5 @@
 import type { SessionUser } from "@cuadre/contracts";
-import { queryOptions } from "@tanstack/react-query";
+import { type QueryClient, queryOptions } from "@tanstack/react-query";
 import { getSession } from "@/api/auth";
 
 /**
@@ -18,3 +18,22 @@ export const sessionQueryOptions = queryOptions({
     return { user, signedOut: false };
   },
 });
+
+/** Sets what the app knows about the session, first cancelling a check in flight that would undo it. */
+export async function setSession(queryClient: QueryClient, state: SessionState): Promise<void> {
+  await queryClient.cancelQueries({ queryKey: sessionQueryKey });
+  queryClient.setQueryData<SessionState>(sessionQueryKey, state);
+}
+
+/**
+ * The session ended (signed out, expired or revoked): record why, which sends the shell to Login,
+ * and drop every other cached app data, so neither Back nor the next user can see it. Not
+ * `clear()`: the session query must keep its observers.
+ */
+export async function endSession(
+  queryClient: QueryClient,
+  { signedOut }: { signedOut: boolean },
+): Promise<void> {
+  await setSession(queryClient, { user: null, signedOut });
+  queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== sessionQueryKey[0] });
+}

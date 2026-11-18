@@ -1,9 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Outlet, useRouter } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { signOut } from "@/api/auth";
 import { AppLayout } from "@/components/app-layout";
-import { type SessionState, sessionQueryKey, sessionQueryOptions } from "@/features/auth/session";
+import { endSession, sessionQueryOptions } from "@/features/auth/session";
+import { shellMessages } from "@/messages";
 
 export const Route = createFileRoute("/_app")({ component: SignedInApp });
 
@@ -11,6 +12,7 @@ export const Route = createFileRoute("/_app")({ component: SignedInApp });
 function SignedInApp() {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const [signOutFailed, setSignOutFailed] = useState(false);
   const session = useQuery(sessionQueryOptions);
   const user = session.data?.user ?? null;
   const signedOut = session.data?.signedOut ?? false;
@@ -33,15 +35,21 @@ function SignedInApp() {
   if (user === null) return <AppLayout />;
 
   async function handleSignOut() {
-    await signOut();
-    // Remember why the session ended (this re-renders into Login), then drop every other cached
-    // app data so Back cannot show it. Not `clear()`: the session query must keep its observers.
-    queryClient.setQueryData<SessionState>(sessionQueryKey, { user: null, signedOut: true });
-    queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== sessionQueryKey[0] });
+    setSignOutFailed(false);
+    // If the server may still hold the session, stay: Login would only let the user back in.
+    if (!(await signOut())) {
+      setSignOutFailed(true);
+      return;
+    }
+    await endSession(queryClient, { signedOut: true });
   }
 
   return (
-    <AppLayout user={user} onSignOut={() => void handleSignOut()}>
+    <AppLayout
+      user={user}
+      onSignOut={() => void handleSignOut()}
+      error={signOutFailed ? shellMessages.signOutFailed : undefined}
+    >
       <Outlet />
     </AppLayout>
   );

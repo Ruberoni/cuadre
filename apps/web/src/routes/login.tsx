@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { safeRedirect } from "@/features/auth/redirect";
-import { type SessionState, sessionQueryKey, sessionQueryOptions } from "@/features/auth/session";
+import { sessionQueryOptions, setSession } from "@/features/auth/session";
 import { loginMessages, shellMessages, signInErrorMessages } from "@/messages";
 
 const searchSchema = z.object({ redirect: z.string().optional().catch(undefined) });
@@ -56,12 +56,11 @@ function LoginPage() {
       void navigate({ href: safeRedirect(redirect, window.location.origin), replace: true });
   }, [signedIn, redirect, navigate]);
   if (session.isPending || signedIn) return null;
-  return <LoginForm redirect={redirect} />;
+  return <LoginForm />;
 }
 
-function LoginForm({ redirect }: { redirect: string | undefined }) {
+function LoginForm() {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [formError, setFormError] = useState<string | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
@@ -94,11 +93,8 @@ function LoginForm({ redirect }: { redirect: string | undefined }) {
     setSubmitting(false);
 
     if (result.ok) {
-      queryClient.setQueryData<SessionState>(sessionQueryKey, {
-        user: result.value,
-        signedOut: false,
-      });
-      await navigate({ href: safeRedirect(redirect, window.location.origin), replace: true });
+      // The page then goes on to `redirect` (its effect), the one way out of Login.
+      await setSession(queryClient, { user: result.value, signedOut: false });
       return;
     }
     if (result.error === "INVALID_EMAIL") {

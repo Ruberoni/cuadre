@@ -263,13 +263,40 @@ test.describe("the session", () => {
     expect(new URL(page.url()).search).toBe("");
     await expect(emailField(page)).toHaveValue("");
 
+    // Not even for a moment: the app page never mounts again, so it never asks for products.
+    const productRequests: string[] = [];
+    page.on("request", (request) => {
+      if (request.url().includes("/api/products")) productRequests.push(request.url());
+    });
     await page.goBack();
 
     await expect(page.getByRole("heading", { level: 1, name: "Iniciar sesión" })).toBeVisible();
     await expect(page.getByRole("navigation")).toHaveCount(0);
     await expect(page.getByRole("row")).toHaveCount(0);
+    expect(productRequests).toEqual([]);
     // And the server agrees: the old session no longer opens the API.
     expect((await page.request.get("/api/products")).status()).toBe(401);
+  });
+
+  test("when Cerrar sesión does not go through, the user stays in the app and is told", async ({
+    page,
+  }) => {
+    await signIn(page);
+    await page.goto("/productos");
+    await page.route("**/api/auth/sign-out", (route) => route.abort());
+
+    await page.getByRole("button", { name: "Cerrar sesión" }).click();
+
+    await expect(page.getByRole("alert")).toHaveText(
+      "No se pudo cerrar la sesión. Revisar la conexión e intentar de nuevo.",
+    );
+    await expect(page).toHaveURL(/\/productos/);
+    await expect(sidebar(page)).toContainText("Administrador");
+
+    // Once it goes through, the session ends as usual.
+    await page.unroute("**/api/auth/sign-out");
+    await page.getByRole("button", { name: "Cerrar sesión" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Iniciar sesión" })).toBeVisible();
   });
 
   test("a session that ends while in the app goes to Login, then back to the same page", async ({
