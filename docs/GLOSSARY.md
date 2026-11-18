@@ -74,3 +74,8 @@ Canonical domain vocabulary. Code uses the **Term** column; the UI uses the **Sp
 |---|---|---|
 | `User` | Usuario | A person who signs in. Has exactly one `Role`. |
 | `Role` | Rol | `admin` (Administrador), `sales` (Ventas), `purchasing` (Compras) or `warehouse` (Almacén). |
+| `Session` | Sesión | A signed-in period of one `User`, ended by signing out or by expiry. |
+| `SignIn` | Iniciar sesión | Start a `Session` with an email and a password. _Avoid_: Entrar, Ingresar, Login. |
+| `SignOut` | Cerrar sesión | End the current `Session`. _Avoid_: Salir. |
+| `Email` | Correo electrónico | A `User`'s sign-in identifier. _Avoid_: Usuario, Correo (alone, in labels). |
+| `Password` | Contraseña | A `User`'s secret for signing in. _Avoid_: Clave. |
