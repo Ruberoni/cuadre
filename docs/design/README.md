@@ -2,7 +2,7 @@
 
 How screens and components are designed before they are built. The rule is in [ADR-012](../adr/012-design-canvas-owns-tokens.md); this file is the checklist.
 
-Designs live in two Claude artifacts: **Cuadre Design System** (tokens, component specs, guides) and **Cuadre Screens** (one artboard per screen). The steps below use the skills of the `design` plugin (`/design-system`, `/ux-copy`, `/design-critique`, `/accessibility-review`, `/design-handoff`). `/design-screen <n>` runs the per-screen steps; the maintainer runs the Phase 0 ones by hand. Implementing agents only read the result in the issue.
+Designs live in two Claude artifacts: **Cuadre Design System** (tokens, component specs, guides) and **Cuadre Screens** (one artboard per screen). The steps below use the skills of the `design` plugin (`/design-system`, `/ux-copy`, `/design-critique`, `/accessibility-review`, `/design-handoff`). `/design-screen <n>` runs the per-screen steps; the maintainer runs the Phase 0 ones by hand, except the additions `/design-screen` makes to the Design System. Implementing agents only read the result in the issue.
 
 ## Ground rules
 
