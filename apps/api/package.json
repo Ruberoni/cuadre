@@ -17,6 +17,8 @@
     "db:seed": "tsx --env-file-if-exists=../../.env src/db/seed.ts"
   },
   "dependencies": {
+    "@cuadre/contracts": "workspace:*",
+    "@cuadre/shared-kernel": "workspace:*",
     "@hono/node-server": "2.1.8",
     "@hono/zod-openapi": "1.6.3",
     "drizzle-orm": "0.45.4",

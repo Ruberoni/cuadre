@@ -1,19 +1,19 @@
 import { fileURLToPath } from "node:url";
-import { sql } from "drizzle-orm";
 import { loadConfig } from "../config.ts";
+import { createCatalogModule } from "../modules/catalog/index.ts";
 import { createDb } from "./client.ts";
 
-/** Seed data arrives with the first module; for now this only proves the connection works. */
-export async function runSeed(url: string): Promise<void> {
+/** Loads the fictitious demo data of every module. Safe to run more than once. */
+export async function runSeed(url: string): Promise<{ products: number }> {
   const { db, close } = createDb(url);
   try {
-    await db.execute(sql`select 1`);
+    return { products: await createCatalogModule({ db }).seed() };
   } finally {
     await close();
   }
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  await runSeed(loadConfig().DATABASE_URL);
-  console.log("Nothing to seed yet.");
+  const { products } = await runSeed(loadConfig().DATABASE_URL);
+  console.log(`Seeded ${products} new products.`);
 }

@@ -1,0 +1,118 @@
+{
+  "id": "b262a432-016a-4107-b571-6c2663ba4cd1",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "catalog.products": {
+      "name": "products",
+      "schema": "catalog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "sku": {
+          "name": "sku",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unit_of_measure": {
+          "name": "unit_of_measure",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sale_price_minor": {
+          "name": "sale_price_minor",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sale_price_currency": {
+          "name": "sale_price_currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'USD'"
+        },
+        "tax_rate": {
+          "name": "tax_rate",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "products_sku_unique": {
+          "name": "products_sku_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "sku"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "products_sku_format": {
+          "name": "products_sku_format",
+          "value": "\"catalog\".\"products\".\"sku\" ~ '^[A-Z0-9-]{1,20}$'"
+        },
+        "products_name_length": {
+          "name": "products_name_length",
+          "value": "char_length(\"catalog\".\"products\".\"name\") between 1 and 120"
+        },
+        "products_unit_of_measure": {
+          "name": "products_unit_of_measure",
+          "value": "\"catalog\".\"products\".\"unit_of_measure\" in ('UNIT', 'BOX', 'BULK', 'KILOGRAM', 'LITER')"
+        },
+        "products_tax_rate": {
+          "name": "products_tax_rate",
+          "value": "\"catalog\".\"products\".\"tax_rate\" in ('GENERAL', 'REDUCED', 'EXEMPT')"
+        },
+        "products_sale_price_positive": {
+          "name": "products_sale_price_positive",
+          "value": "\"catalog\".\"products\".\"sale_price_minor\" > 0"
+        },
+        "products_sale_price_usd": {
+          "name": "products_sale_price_usd",
+          "value": "\"catalog\".\"products\".\"sale_price_currency\" = 'USD'"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {
+    "catalog": "catalog"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
