@@ -1,0 +1,12 @@
+{
+  "name": "@cuadre/dev-env",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run"
+  }
+}

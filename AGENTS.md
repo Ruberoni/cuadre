@@ -30,6 +30,7 @@ apps/web/                 React SPA (Vite, TanStack Router/Query/Table, shadcn/u
   test/                   hand-written-token scanner, boundary-rule fixtures
 packages/contracts/       shared Zod schemas
 packages/shared-kernel/   pure domain code shared by api and web (Money, Rate, Result); imports nothing outside the package; the token generator loads it, so it uses only relative `.ts` imports and `erasableSyntaxOnly`
+packages/dev-env/         local-environment defaults (per-worktree database URLs) for api, web E2E and `scripts/verify.mts`; never domain code
 docs/                     PLAN, GLOSSARY, ADRs
 ```
 
@@ -41,14 +42,14 @@ Requires Node 26 (`.nvmrc`; `nvm use 26`) and pnpm (`npm i -g pnpm`; the version
 
 ```bash
 pnpm install
-docker compose up -d     # Postgres on localhost:5433 (override with POSTGRES_PORT); no .env needed
-pnpm db:migrate          # migrate the dev database
+docker compose up -d     # Postgres on localhost:5433 (override with POSTGRES_PORT); no .env needed; one container for all worktrees
+pnpm db:migrate          # create the dev database if missing and migrate it
 pnpm db:seed             # seed it: one user per role + demo data (safe to rerun)
 pnpm dev                 # api (http://localhost:3000, GET /health, /openapi.json) + web (http://localhost:5173)
-pnpm test                # unit + integration (integration needs Postgres, uses the cuadre_test database)
-pnpm test:unit
+pnpm test                # unit + integration (integration needs Postgres, uses the cuadre_test database, created if missing)
+pnpm test:unit           # packages' unit tests + the Claude Code hook tests (pnpm test:hooks)
 pnpm test:integration
-pnpm test:e2e            # Playwright acceptance tests (starts api + web on the cuadre_e2e database; needs Postgres) + Button browser test (PLAYWRIGHT_CHANNEL=msedge uses an installed browser)
+pnpm test:e2e            # Playwright acceptance tests (starts api + web on the cuadre_e2e database; needs Postgres) + Button browser test (PLAYWRIGHT_CHANNEL=msedge uses an installed browser); one run at a time per machine
 pnpm typecheck
 pnpm lint                # Biome + dependency-cruiser (pnpm lint:boundaries)
 pnpm verify              # Postgres -> fresh cuadre_e2e -> migrate -> seed -> boot api + web -> smoke E2E (ADR-014); one run at a time per machine
@@ -56,7 +57,9 @@ pnpm verify              # Postgres -> fresh cuadre_e2e -> migrate -> seed -> bo
 
 Seeded users (test values only, never real passwords): `admin@cuadre.test`, `ventas@cuadre.test`, `compras@cuadre.test`, `almacen@cuadre.test`, password `cuadre-demo-2026`. Every `/api` route except Better Auth's (`/api/auth/*`) needs a session; tests sign in with `apps/api/test/sign-in.ts` (integration) or `apps/web/e2e/support/auth.ts` (E2E).
 
-`docker compose down -v` recreates the database volume (the `cuadre_test` database is created only on a fresh volume; `cuadre_e2e` is created by `db:e2e:prepare`).
+**Worktrees.** Every checkout shares one Postgres container (`docker-compose.yml` sets `name: cuadre`), but each worktree has its own databases: `cuadre_wt_<worktree>__dev`, `__test` and `__e2e`, where `<worktree>` is the directory name folded to `[a-z0-9_]` plus a short hash of its path (the main checkout keeps `cuadre`, `cuadre_test`, `cuadre_e2e`). `packages/dev-env` derives them, on `POSTGRES_PORT` (default 5433); `DATABASE_URL`, `DATABASE_URL_TEST` and `DATABASE_URL_E2E` override them. `db:migrate`, the integration setup and `db:e2e:prepare` create a missing database. Ports 3000/5173 (dev) and 3100/4173 (`verify`, `test:e2e`) stay shared: one of each per machine at a time. A PreToolUse hook (`.claude/hooks/worktree-guard.mjs`) blocks writing commands (`pnpm add|install|remove|dlx|format`, `git commit|checkout|push`…, `db:generate`, `--write`) that would run outside the worktree, e.g. after `cd ../..`: use absolute paths inside the worktree instead. It is best-effort (scripts that `cd` on their own are not followed).
+
+The container is shared: `docker compose stop` or `down` stops Postgres for every session on the machine, so leave it running, and keep `POSTGRES_PORT` the same in every checkout (a different value recreates the container). A worktree on a branch older than `name: cuadre` in `docker-compose.yml` still starts its own container and fails on the port: rebase it onto `main` first. `docker compose down -v` deletes the database volume of every checkout; the databases are recreated on first use.
 
 Each module declares its Drizzle tables in `src/modules/<module>/infrastructure/*.table.ts` (ADR-004); `drizzle-kit` picks them up from there.
 

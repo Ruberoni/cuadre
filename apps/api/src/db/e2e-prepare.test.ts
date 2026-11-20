@@ -1,9 +1,11 @@
+import { defaultDatabaseUrl } from "@cuadre/dev-env";
 import { describe, expect, it } from "vitest";
 import { e2eDatabaseUrl, prepareE2eDatabase } from "./e2e-prepare.ts";
 
 describe("e2eDatabaseUrl", () => {
-  it("defaults to the cuadre_e2e database", () => {
-    expect(e2eDatabaseUrl({})).toContain("/cuadre_e2e");
+  it("defaults to this checkout's e2e database", () => {
+    expect(e2eDatabaseUrl({})).toBe(defaultDatabaseUrl("e2e"));
+    expect(e2eDatabaseUrl({})).toMatch(/\/cuadre(_[a-z0-9_]+)?_e2e$/);
   });
 
   it("honours DATABASE_URL_E2E", () => {

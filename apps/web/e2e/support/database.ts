@@ -1,6 +1,7 @@
+import { defaultDatabaseUrl } from "@cuadre/dev-env";
 import postgres from "postgres";
 
-const url = process.env.DATABASE_URL_E2E ?? "postgres://cuadre:cuadre@127.0.0.1:5433/cuadre_e2e";
+const url = process.env.DATABASE_URL_E2E ?? defaultDatabaseUrl("e2e");
 
 /**
  * Empties every table of every module schema between tests. Kept: the migrations table, and the

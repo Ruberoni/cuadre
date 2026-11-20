@@ -202,6 +202,9 @@ importers:
       '@cuadre/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@cuadre/dev-env':
+        specifier: workspace:*
+        version: link:../../packages/dev-env
       '@cuadre/shared-kernel':
         specifier: workspace:*
         version: link:../../packages/shared-kernel
@@ -291,6 +294,9 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
     devDependencies:
+      '@cuadre/dev-env':
+        specifier: workspace:*
+        version: link:../../packages/dev-env
       '@playwright/test':
         specifier: 1.65.1
         version: 1.65.1
@@ -330,6 +336,8 @@ importers:
       zod:
         specifier: 4.6.7
         version: 4.6.7
+
+  packages/dev-env: {}
 
   packages/shared-kernel: {}
 

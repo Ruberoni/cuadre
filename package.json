@@ -9,8 +9,8 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck && tsc --noEmit -p scripts/tsconfig.json",
-    "test": "turbo run test:unit test:integration",
-    "test:unit": "turbo run test:unit",
+    "test": "turbo run test:unit test:integration && pnpm test:hooks",
+    "test:unit": "turbo run test:unit && pnpm test:hooks",
     "test:integration": "turbo run test:integration",
     "test:e2e": "turbo run test:e2e",
     "lint": "biome check . && pnpm lint:boundaries",
@@ -18,7 +18,8 @@
     "format": "biome check --write .",
     "verify": "node scripts/verify.mts",
     "db:migrate": "pnpm --filter @cuadre/api db:migrate",
-    "db:seed": "pnpm --filter @cuadre/api db:seed"
+    "db:seed": "pnpm --filter @cuadre/api db:seed",
+    "test:hooks": "node --test \".claude/hooks/*.test.mjs\""
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",

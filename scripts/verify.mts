@@ -2,19 +2,20 @@
 // smoke E2E (Playwright starts and stops the api and web servers itself). Each step is named, so a
 // failure says where it happened instead of timing out.
 //
-// Runs on Node's type stripping (no build, no dependencies). One `verify` per machine at a time:
-// the e2e database and ports are shared.
+// Runs on Node's type stripping (no build, no dependencies). Each worktree has its own e2e
+// database, but ports 3100/4173 are shared: one `verify` per machine at a time.
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { createConnection } from "node:net";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+// A relative path: the root package does not depend on workspace packages.
+import { defaultDatabaseUrl } from "../packages/dev-env/src/index.ts";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const MINUTE = 60_000;
 
-const e2eDatabaseUrl =
-  process.env.DATABASE_URL_E2E ?? "postgres://cuadre:cuadre@127.0.0.1:5433/cuadre_e2e";
+const e2eDatabaseUrl = process.env.DATABASE_URL_E2E ?? defaultDatabaseUrl("e2e");
 const apiPort = Number(process.env.E2E_API_PORT ?? 3100);
 const webPort = Number(process.env.E2E_WEB_PORT ?? 4173);
 

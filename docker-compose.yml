@@ -1,3 +1,8 @@
+# One project name for every checkout: worktrees reuse the same container (and port 5433) instead
+# of each starting its own. Each worktree gets its own databases (see packages/dev-env), created on
+# first use, so nothing here depends on the checkout's path.
+name: cuadre
+
 services:
   postgres:
     image: postgres:18-alpine
@@ -9,7 +14,6 @@ services:
       - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U cuadre -d cuadre"]
       interval: 2s

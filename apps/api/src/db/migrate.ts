@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { loadConfig } from "../config.ts";
 import { createDb } from "./client.ts";
+import { createDatabaseIfMissing } from "./create-database.ts";
 
 const migrationsFolder = fileURLToPath(new URL("../../drizzle", import.meta.url));
 
@@ -16,7 +17,9 @@ export async function runMigrations(url: string): Promise<void> {
 
 // Run as a script: `pnpm db:migrate`
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const { DATABASE_URL } = loadConfig();
+  const { DATABASE_URL, NODE_ENV } = loadConfig();
+  // Locally a worktree's database may not exist yet (created only on "does not exist").
+  if (NODE_ENV !== "production") await createDatabaseIfMissing(DATABASE_URL);
   await runMigrations(DATABASE_URL);
   console.log("Migrations applied.");
 }
