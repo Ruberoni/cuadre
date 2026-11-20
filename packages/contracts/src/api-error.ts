@@ -5,6 +5,8 @@ export const API_ERROR_CODES = [
   "VALIDATION_ERROR",
   "SKU_ALREADY_EXISTS",
   "NOT_FOUND",
+  /** No valid session (none, expired or signed out). The web goes to Login; never shown. */
+  "UNAUTHORIZED",
   "INTERNAL_ERROR",
 ] as const;
 export const ApiErrorCode = z.enum(API_ERROR_CODES);

@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from "vitest";
+import { createTestApp } from "../../test/sign-in.ts";
 import { testDatabaseUrl } from "../../test/test-database.ts";
-import { createApp } from "../app.ts";
 import { createDb } from "../db/client.ts";
 
 const real = createDb(testDatabaseUrl());
@@ -13,20 +13,20 @@ afterAll(async () => {
 });
 
 describe("GET /health", () => {
-  it("answers 200 when the database is reachable", async () => {
-    const res = await createApp({ db: real.db }).request("/health");
+  it("answers 200 when the database is reachable, without a session", async () => {
+    const res = await createTestApp(real.db).app.request("/health");
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ status: "ok", database: "up" });
   });
 
   it("does not answer 200 when the database is down", async () => {
-    const res = await createApp({ db: unreachable.db }).request("/health");
+    const res = await createTestApp(unreachable.db).app.request("/health");
     expect(res.status).toBe(503);
     expect(await res.json()).toEqual({ status: "error", database: "down" });
   });
 
-  it("serves the OpenAPI document", async () => {
-    const res = await createApp({ db: real.db }).request("/openapi.json");
+  it("serves the OpenAPI document without a session", async () => {
+    const res = await createTestApp(real.db).app.request("/openapi.json");
     expect(res.status).toBe(200);
     const doc = (await res.json()) as { paths: Record<string, unknown> };
     expect(Object.keys(doc.paths)).toContain("/health");
