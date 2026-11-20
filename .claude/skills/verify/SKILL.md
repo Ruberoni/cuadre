@@ -13,7 +13,7 @@ Verification means running the change, not just compiling it. `pnpm verify` is t
 pnpm verify
 ```
 
-Needs Docker running (or a Postgres already answering on `localhost:5433`). On a machine without the Playwright browser download, use an installed one: `PLAYWRIGHT_CHANNEL=msedge pnpm verify` (or `chrome`). Run **one `verify` at a time per machine**: the `cuadre_e2e` database and ports 3100/4173 are shared (`E2E_API_PORT`, `E2E_WEB_PORT` override the ports).
+Needs Docker running (or a Postgres already answering on `localhost:5433`). On a machine without the Playwright browser download, use an installed one: `PLAYWRIGHT_CHANNEL=msedge pnpm verify` (or `chrome`). Run **one `verify` at a time per machine**: ports 3100/4173 are shared (`E2E_API_PORT`, `E2E_WEB_PORT` override them). The e2e database is the checkout's own (`cuadre_e2e`, or `cuadre_<worktree>_e2e` in a worktree).
 
 ## What it does
 
@@ -23,8 +23,8 @@ Each step prints `▶ verify: <name>`; a failure ends with `verify: step "<name>
 |---|---|---|
 | `postgres` | Reuses Postgres if it answers, else `docker compose up -d --wait postgres` | Docker is not running or the container is unhealthy |
 | `ports` | Checks 3100 and 4173 are free | Another `verify` or server is running |
-| `database` | Drops and recreates `cuadre_e2e`, runs the migrations | A broken or conflicting migration |
-| `seed` | Runs `pnpm db:seed` against `cuadre_e2e` | The seed does not apply on the current schema |
+| `database` | Drops and recreates the e2e database, runs the migrations | A broken or conflicting migration |
+| `seed` | Runs `pnpm db:seed` against the e2e database | The seed does not apply on the current schema |
 | `smoke` | Playwright starts the api and web servers, runs the smoke E2E | The app does not boot, or the smoke flow broke |
 
 On a smoke failure it prints the paths of the Playwright `trace.zip` and screenshots under `apps/web/test-results/`. Open a trace with `pnpm --filter @cuadre/web exec playwright show-trace <trace.zip>`; read screenshots with the Read tool.

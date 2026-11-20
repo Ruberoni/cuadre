@@ -19,7 +19,7 @@
       "Bash(docker compose up *)",
       "Bash(docker compose ps)",
       "Bash(docker compose logs *)",
-      "Bash(docker compose stop)"
+      "Bash(pnpm test:hooks)"
     ]
   },
   "hooks": {
@@ -30,6 +30,15 @@
           {
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/branch-name.mjs\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/worktree-guard.mjs\""
           }
         ]
       }

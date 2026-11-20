@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { createDatabaseIfMissing } from "../src/db/create-database.ts";
 import { runMigrations } from "../src/db/migrate.ts";
 import { testDatabaseUrl } from "./test-database.ts";
 
@@ -8,5 +9,7 @@ const envFile = fileURLToPath(new URL("../../../.env", import.meta.url));
 if (existsSync(envFile)) process.loadEnvFile(envFile);
 
 export async function setup() {
-  await runMigrations(testDatabaseUrl());
+  const url = testDatabaseUrl();
+  await createDatabaseIfMissing(url);
+  await runMigrations(url);
 }

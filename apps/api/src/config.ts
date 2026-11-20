@@ -1,6 +1,8 @@
+import { defaultDatabaseUrl } from "@cuadre/dev-env";
 import { z } from "zod";
 
-const DEFAULT_DATABASE_URL = "postgres://cuadre:cuadre@localhost:5433/cuadre";
+/** `cuadre` in the main checkout, `cuadre_<worktree>` in a worktree (one database set each). */
+const DEFAULT_DATABASE_URL = defaultDatabaseUrl("dev");
 
 /** Development-only signing secret for sessions. Production must set its own (checked below). */
 export const DEV_AUTH_SECRET = "cuadre-dev-only-secret-not-for-production";

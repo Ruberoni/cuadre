@@ -46,7 +46,7 @@ Dependency direction: `http → application → domain`, and `infrastructure →
 ## Tests
 
 - Unit (`*.test.ts`): domain only, no I/O.
-- Integration (`*.int.test.ts`): use cases and HTTP (`createApp({ db }).request(...)`) against the `cuadre_test` database.
+- Integration (`*.int.test.ts`): use cases and HTTP (`createApp({ db }).request(...)`) against the integration database (`cuadre_test`, or the worktree's own).
 - Seed data goes through the use case, so it obeys every rule, and is idempotent.
 
 ## Not shown by this template yet

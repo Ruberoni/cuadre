@@ -1,12 +1,12 @@
+import { defaultDatabaseUrl } from "@cuadre/dev-env";
 import { defineConfig, devices } from "@playwright/test";
 
 const API_PORT = Number(process.env.E2E_API_PORT ?? 3100);
 const WEB_PORT = Number(process.env.E2E_WEB_PORT ?? 4173);
 const API_URL = `http://127.0.0.1:${API_PORT}`;
 const WEB_URL = `http://127.0.0.1:${WEB_PORT}`;
-// A database of its own (rebuilt by `pnpm verify`), never the dev one.
-const E2E_DATABASE_URL =
-  process.env.DATABASE_URL_E2E ?? "postgres://cuadre:cuadre@127.0.0.1:5433/cuadre_e2e";
+// A database of its own (rebuilt by `pnpm verify`), never the dev one; one per worktree.
+const E2E_DATABASE_URL = process.env.DATABASE_URL_E2E ?? defaultDatabaseUrl("e2e");
 
 export default defineConfig({
   testDir: "./e2e",

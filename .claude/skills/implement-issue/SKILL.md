@@ -53,7 +53,7 @@ Run, and fix until green (three rounds, then escalate by commenting on the issue
 
 Anything not run is declared in the PR with its reason, never silently skipped. `PLAYWRIGHT_CHANNEL=msedge` where the Playwright download is unreachable.
 
-**Parallel sessions.** `verify` and `pnpm test:e2e` share ports 3100/4173 and the `cuadre_e2e` database; the integration tests share `cuadre_test`. If `verify` or `test:e2e` fails at the `ports` step, or a database is busy, assume another session is running: wait (about a minute between tries, up to 10 minutes) and retry. Two integration runs at once give no clear error, only odd failures: before "fixing" an inexplicable integration failure, check whether another session is running (`docker compose logs`, open connections to `cuadre_test`) and retry alone. Waiting does not count as a fix round. After 10 minutes, stop and say so.
+**Parallel sessions.** Each worktree has its own databases (AGENTS.md → Worktrees), but `verify` and `pnpm test:e2e` share ports 3100/4173. If either fails at the `ports` step (or Playwright cannot bind them), assume another session is running: wait (about a minute between tries, up to 10 minutes) and retry. Waiting does not count as a fix round. After 10 minutes, stop and say so.
 
 ## Phase 4 — Draft PR
 
