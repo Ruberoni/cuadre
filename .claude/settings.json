@@ -18,8 +18,7 @@
       "Bash(pnpm exec biome *)",
       "Bash(docker compose up *)",
       "Bash(docker compose ps)",
-      "Bash(docker compose logs *)",
-      "Bash(pnpm test:hooks)"
+      "Bash(docker compose logs *)"
     ]
   },
   "hooks": {

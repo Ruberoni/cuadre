@@ -11,7 +11,14 @@ const root = resolve("/repo/.claude/worktrees/wt");
 const main = resolve("/repo");
 
 describe("segments", () => {
-  it("splits on shell separators and keeps quoted words whole", () => {
+  it("splits on shell separators, keeps quoted words whole and marks subshells", () => {
+    assert.deepEqual(segments("(cd .. && git status); ls"), [
+      "(",
+      ["cd", ".."],
+      ["git", "status"],
+      ")",
+      ["ls"],
+    ]);
     assert.deepEqual(segments(`cd "../a b" && pnpm add x; git status | cat`), [
       ["cd", "../a b"],
       ["pnpm", "add", "x"],
@@ -52,6 +59,15 @@ describe("writingCommands", () => {
       "git -c core.x=y switch main",
       "git stash push -m x",
       "git push",
+      "git mv a b",
+      "git branch -m new-name",
+      "pnpm dlx shadcn@4.23.0 add button",
+      "pnpm format",
+      "pnpm exec biome check --write .",
+      "pnpm --filter @cuadre/web tokens:generate",
+      "npm run db:generate",
+      "env CI=1 pnpm install",
+      "git --work-tree ../.. add .",
     ]) {
       assert.equal(writes(command), true, command);
     }
@@ -64,10 +80,32 @@ describe("writingCommands", () => {
       "git log --oneline",
       "git diff",
       "git fetch origin",
+      "git branch -a",
+      "git branch --show-current",
       "ls",
     ]) {
       assert.equal(writes(command), false, command);
     }
+  });
+
+  it("does not take cd flags for the target", () => {
+    assert.equal(
+      writingCommands("cd -P ../.. && git commit -m x", root)[0]?.dir,
+      resolve(root, "../.."),
+    );
+  });
+
+  it("restores the directory after a subshell and popd", () => {
+    const dirs = (command) => writingCommands(command, root).map((c) => c.dir);
+    assert.deepEqual(dirs("(cd ../.. && git status); git commit -m x"), [root]);
+    assert.deepEqual(dirs("pushd ../.. && git log && popd && git commit -m x"), [root]);
+  });
+
+  it("looks into bash -c", () => {
+    assert.deepEqual(
+      writingCommands("bash -c 'cd ../.. && pnpm install'", root).map((c) => c.dir),
+      [resolve(root, "../..")],
+    );
   });
 
   it("leaves a directory it cannot resolve undefined", () => {
@@ -81,6 +119,7 @@ describe("isInside", () => {
     assert.equal(isInside(root, join(root, "apps/api")), true);
     assert.equal(isInside(root, main), false);
     assert.equal(isInside(root, resolve(root, "../wt2")), false);
+    assert.equal(isInside(root, join(root, "..foo")), true);
   });
 });
 

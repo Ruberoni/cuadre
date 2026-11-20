@@ -13,7 +13,7 @@ Verification means running the change, not just compiling it. `pnpm verify` is t
 pnpm verify
 ```
 
-Needs Docker running (or a Postgres already answering on `localhost:5433`). On a machine without the Playwright browser download, use an installed one: `PLAYWRIGHT_CHANNEL=msedge pnpm verify` (or `chrome`). Run **one `verify` at a time per machine**: ports 3100/4173 are shared (`E2E_API_PORT`, `E2E_WEB_PORT` override them). The e2e database is the checkout's own (`cuadre_e2e`, or `cuadre_<worktree>_e2e` in a worktree).
+Needs Docker running (or a Postgres already answering on `localhost:5433`). On a machine without the Playwright browser download, use an installed one: `PLAYWRIGHT_CHANNEL=msedge pnpm verify` (or `chrome`). Run **one `verify` at a time per machine**: ports 3100/4173 are shared (`E2E_API_PORT`, `E2E_WEB_PORT` override them). The e2e database is the checkout's own (`cuadre_e2e`, or `cuadre_wt_<worktree>__e2e` in a worktree).
 
 ## What it does
 

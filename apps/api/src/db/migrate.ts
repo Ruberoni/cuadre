@@ -18,7 +18,7 @@ export async function runMigrations(url: string): Promise<void> {
 // Run as a script: `pnpm db:migrate`
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const { DATABASE_URL, NODE_ENV } = loadConfig();
-  // Locally a worktree's database may not exist yet; production databases are provisioned.
+  // Locally a worktree's database may not exist yet (created only on "does not exist").
   if (NODE_ENV !== "production") await createDatabaseIfMissing(DATABASE_URL);
   await runMigrations(DATABASE_URL);
   console.log("Migrations applied.");

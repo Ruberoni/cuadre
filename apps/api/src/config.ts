@@ -1,7 +1,7 @@
 import { defaultDatabaseUrl } from "@cuadre/dev-env";
 import { z } from "zod";
 
-/** `cuadre` in the main checkout, `cuadre_<worktree>` in a worktree (one database set each). */
+/** `cuadre` in the main checkout, `cuadre_wt_<worktree>__dev` in a worktree (one database set each). */
 const DEFAULT_DATABASE_URL = defaultDatabaseUrl("dev");
 
 /** Development-only signing secret for sessions. Production must set its own (checked below). */
