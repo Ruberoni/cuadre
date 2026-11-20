@@ -74,3 +74,7 @@ Canonical domain vocabulary. Code uses the **Term** column; the UI uses the **Sp
 |---|---|---|
 | `User` | Usuario | A person who signs in. Has exactly one `Role`. |
 | `Role` | Rol | `admin` (Administrador), `sales` (Ventas), `purchasing` (Compras) or `warehouse` (Almacén). |
+| `Session` | Sesión | A signed-in `User`'s access, opened with Iniciar sesión (email + password) and ended with Cerrar sesión or on expiry. Every API route except signing in and health needs one. |
+| `SignIn` / `SignOut` | Iniciar sesión / Cerrar sesión | Opening and ending a `Session`. |
+| `Email` | Correo electrónico | The address a `User` signs in with. |
+| `Password` | Contraseña | The secret a `User` signs in with. Users and their passwords come from the seed; there is no sign-up. |

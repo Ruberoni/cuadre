@@ -1,7 +1,8 @@
 // The one place that turns failures into HTTP answers (ADR-009): every non-2xx body is an
-// `ApiError` from `@cuadre/contracts`. Modules map their own error codes to statuses with an
+// `ApiError` from `@cuadre/contracts`, except Better Auth's own routes (`/api/auth/*`,
+// src/auth). Modules map their own error codes to statuses with an
 // exhaustive `Record`, and use `errorBody` to build the body.
-import type { ApiError, ApiErrorCode, FieldIssue } from "@cuadre/contracts";
+import { ApiError, type ApiErrorCode, type FieldIssue } from "@cuadre/contracts";
 import type { Hook, OpenAPIHono } from "@hono/zod-openapi";
 import type { Context, Env } from "hono";
 import { HTTPException } from "hono/http-exception";
@@ -52,6 +53,17 @@ async function sentValues(target: string, c: Context): Promise<Record<string, un
   const body: unknown = await c.req.json().catch(() => undefined);
   return typeof body === "object" && body !== null ? (body as Record<string, unknown>) : {};
 }
+
+/**
+ * The 401 every route behind the session gate can answer (`src/auth/require-session.ts`): spread
+ * into each `createRoute`'s `responses` so the OpenAPI document shows it.
+ */
+export const unauthorizedResponse = {
+  401: {
+    description: "No valid session.",
+    content: { "application/json": { schema: ApiError } },
+  },
+} as const;
 
 /** Every `OpenAPIHono` needs the hook itself: sub-apps do not inherit it. */
 export const openApiOptions = { defaultHook: validationHook };

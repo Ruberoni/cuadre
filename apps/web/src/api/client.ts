@@ -28,6 +28,13 @@ const fail = (error: ApiFailure): ApiResult<never> => ({ ok: false, error });
 
 const INTERNAL: ApiFailure = { code: "INTERNAL_ERROR" satisfies ApiErrorCode };
 
+let onUnauthorized: () => void = () => {};
+
+/** What to do when an API call answers 401 (the session ended): set once by the app, to go to Login. */
+export function setUnauthorizedHandler(handler: () => void): void {
+  onUnauthorized = handler;
+}
+
 /**
  * Calls the API on the page's own origin (`/api/...`, proxied in dev and preview). The success body
  * is parsed with the contract's schema, so a drifting API fails here, not three components later.
@@ -49,6 +56,10 @@ export async function apiRequest<S extends z.ZodType>(
     return fail({ code: "NETWORK_ERROR" });
   }
 
+  if (response.status === 401) {
+    onUnauthorized();
+    return fail({ code: "UNAUTHORIZED" });
+  }
   const body: unknown = await response.json().catch(() => undefined);
   if (response.ok) {
     const parsed = success.safeParse(body);

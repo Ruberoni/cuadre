@@ -1,11 +1,15 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { resetDatabase } from "../../../../test/reset-database.ts";
+import { createTestApp, signIn } from "../../../../test/sign-in.ts";
 import { testDatabaseUrl } from "../../../../test/test-database.ts";
-import { createApp } from "../../../app.ts";
 import { createDb } from "../../../db/client.ts";
 
 const { db, close } = createDb(testDatabaseUrl());
-const app = createApp({ db });
+const testApp = createTestApp(db);
+const { app } = testApp;
+/** A signed-in admin's cookie and origin, renewed after each reset. */
+let session: Record<string, string> = {};
+const get = (path: string) => app.request(path, { headers: session });
 
 const flour = {
   sku: "HAR-PAN-1K",
@@ -18,16 +22,19 @@ const flour = {
 const post = (body: unknown) =>
   app.request("/api/products", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { ...session, "content-type": "application/json" },
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
 
 type Page = { items: { sku: string }[]; total: number; page: number; pageSize: number };
 const getPage = async (query = ""): Promise<Page> =>
-  (await (await app.request(`/api/products${query}`)).json()) as Page;
+  (await (await get(`/api/products${query}`)).json()) as Page;
 const skusOf = (page: Page) => page.items.map((item) => item.sku);
 
-beforeEach(() => resetDatabase(db));
+beforeEach(async () => {
+  await resetDatabase(db);
+  session = await signIn(db, testApp);
+});
 afterAll(close);
 
 describe("POST /api/products", () => {
@@ -132,7 +139,7 @@ describe("POST /api/products", () => {
   it("stores nothing when the input is invalid", async () => {
     await post({ ...flour, sku: "" });
 
-    const list = await app.request("/api/products");
+    const list = await get("/api/products");
     expect(await list.json()).toMatchObject({ items: [], total: 0 });
   });
 });
@@ -164,7 +171,7 @@ describe("GET /api/products", () => {
   it.each(["page=0", "page=abc", "sort=price", "order=up"])(
     "answers 400 VALIDATION_ERROR for ?%s",
     async (query) => {
-      const res = await app.request(`/api/products?${query}`);
+      const res = await get(`/api/products?${query}`);
 
       expect(res.status).toBe(400);
       expect(await res.json()).toMatchObject({ code: "VALIDATION_ERROR" });
@@ -173,8 +180,8 @@ describe("GET /api/products", () => {
 });
 
 describe("the API in general", () => {
-  it("answers unknown routes with the NOT_FOUND ApiError body", async () => {
-    const res = await app.request("/api/nope");
+  it("answers unknown routes with the NOT_FOUND ApiError body when signed in", async () => {
+    const res = await get("/api/nope");
 
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ code: "NOT_FOUND" });

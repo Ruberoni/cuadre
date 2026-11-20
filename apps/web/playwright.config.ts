@@ -28,21 +28,24 @@ export default defineConfig({
   // PLAYWRIGHT_CHANNEL=msedge (or chrome). CI uses the bundled Chromium.
   projects: ["smoke", "acceptance"].map((name) => ({
     name,
-    testMatch: name === "smoke" ? "smoke.spec.ts" : "products/**/*.spec.ts",
+    testMatch: name === "smoke" ? "smoke.spec.ts" : ["products/**/*.spec.ts", "auth/**/*.spec.ts"],
     use: {
       ...devices["Desktop Chrome"],
       ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}),
     },
   })),
   // Playwright starts the web servers before anything else, so the API prepares its own database
-  // (create if missing, migrate) as part of its start command.
+  // (create if missing, migrate, seed the users every test signs in with) as part of its start
+  // command. The browser reaches the API through the web server's proxy: that is its origin.
   webServer: [
     {
-      command: "pnpm --filter @cuadre/api db:e2e:prepare && pnpm --filter @cuadre/api start",
+      command:
+        "pnpm --filter @cuadre/api db:e2e:prepare && pnpm --filter @cuadre/api db:seed:users && pnpm --filter @cuadre/api start",
       env: {
         DATABASE_URL: E2E_DATABASE_URL,
         DATABASE_URL_E2E: E2E_DATABASE_URL,
         API_PORT: String(API_PORT),
+        BETTER_AUTH_URL: WEB_URL,
       },
       url: `${API_URL}/health`,
       // Never reuse a server already on the port: it could be another worktree's.
