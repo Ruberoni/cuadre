@@ -8,6 +8,7 @@ Designs live in two Claude artifacts: **Cuadre Design System** (tokens, componen
 
 - **Desktop only.** Minimum viewport 1280 px. No mobile or tablet layouts, no motion beyond shadcn's default transitions.
 - **Accessibility target: WCAG 2.2 AA.** Text contrast ≥ 4.5:1 (≥ 3:1 for large text), UI components and focus ring ≥ 3:1, visible focus, everything operable by keyboard, every input labelled. Pointer targets ≥ **24×24 px** (2.5.8). The 44×44 rule (2.5.5) is AAA and does not apply, so compact density is not a failure. Known exception: SC 1.4.10 Reflow, which desktop-only cannot meet; it is accepted until responsive layouts (post-MVP backlog) and is not a review finding.
+- **Sizes: token or justified literal.** A size that one screen alone uses (the width of the Login card) is a literal on the artboard, justified in the handoff's Accepted 🟡 findings. It becomes a Design System token when a component or a second screen needs it.
 - **Copy uses the glossary.** UI text takes the Spanish column of [`GLOSSARY.md`](../GLOSSARY.md) (e.g. "Emitir", never "Confirmar" or "Publicar"; "Cobro" for money we receive). A new term goes into the glossary in the same PR that uses it.
 - **Exit criteria for every review step:** no open 🔴 findings; every 🟡 is fixed or justified in the handoff; 🟢 is optional.
 
