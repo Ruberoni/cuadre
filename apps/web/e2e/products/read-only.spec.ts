@@ -4,16 +4,10 @@ import { resetDatabase } from "../support/database.ts";
 import { givenProduct } from "../support/products.ts";
 
 // Products as a role that only reads them (PLAN → Roles; Products handoff, #7): sales stands for
-// purchasing and warehouse, which get the same screens.
+// purchasing and warehouse, which get the same screens. The footer per role is in products.spec.ts.
 test.beforeEach(async ({ page }) => {
   await resetDatabase();
   await signIn(page, SEED_USERS.sales);
-});
-
-test("the footer says who is signed in: Ventas", async ({ page }) => {
-  await page.goto("/productos");
-
-  await expect(page.getByRole("complementary").getByText("Ventas", { exact: true })).toBeVisible();
 });
 
 test("with no products: the read-only empty state, and no Nuevo producto", async ({ page }) => {

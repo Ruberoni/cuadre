@@ -56,6 +56,32 @@ describe("deny by default", () => {
     }
   });
 
+  it("does not count a policy registered after the handler that answers", async () => {
+    const testApp = createTestApp(db);
+    const { app } = testApp;
+    app.get("/api/late-policy", (c) => c.json({ reached: true }));
+    app.get("/api/late-policy", allowRoles(["admin"]));
+
+    expect(routesWithoutRoles(app)).toEqual(["GET /api/late-policy"]);
+    const res = await app.request("/api/late-policy", {
+      headers: await signIn(db, testApp, "admin"),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("refuses an undeclared catch-all registered outside /api for requests under /api", async () => {
+    const testApp = createTestApp(db);
+    const { app } = testApp;
+    app.get("*", (c) => c.json({ reached: true }));
+
+    const res = await app.request("/api/anything", {
+      headers: await signIn(db, testApp, "admin"),
+    });
+
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ code: "FORBIDDEN" });
+  });
+
   it("leaves unknown paths, Better Auth, health and the OpenAPI document as they were", async () => {
     const testApp = createTestApp(db);
     const admin = await signIn(db, testApp, "admin");

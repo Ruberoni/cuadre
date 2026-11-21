@@ -53,45 +53,55 @@ const isApiPath = (path: string) =>
   !path.startsWith("/api/auth/");
 
 /**
- * A handler that answers a request under /api (Better Auth's routes aside): one registered with a
- * method, or with `ALL` but terminal (`app.all`, a `use` that never calls `next`). Middleware
- * registered with `use` (`ALL`, takes `next`) is not an endpoint.
+ * A handler that answers a request (not an `allowRoles` policy): one registered with a method, or
+ * with `ALL` and no `next` parameter (`app.all`, a terminal `use`). Hono tells middleware apart only
+ * by that parameter, so an `ALL` handler that takes `next` counts as middleware even if it answers.
  */
 function isEndpoint(route: RegisteredRoute): boolean {
-  if (!isApiPath(route.path) || policyOf(route.handler) !== undefined) return false;
+  if (policyOf(route.handler) !== undefined) return false;
   if (route.method !== METHOD_NAME_ALL) return true;
   return !isMiddleware(target(route.handler));
 }
 
 /**
  * Deny by default: an endpoint that declares no roles answers 403 `FORBIDDEN` to everyone. Mounted
- * on `/api/*` after the session gate. A request that matches no endpoint goes on (404).
+ * on `/api/*` after the session gate, so it sees every request under /api but Better Auth's, whatever
+ * path the endpoint was registered with (a catch-all `*` too). No endpoint matched → on to the 404.
  */
 export function requireRoleDeclaration(): MiddlewareHandler {
   return createMiddleware(async (c, next) => {
     const routes: readonly RegisteredRoute[] = matchedRoutes(c);
-    // The first endpoint matched is the one that answers; its own method and path must declare.
-    const endpoint = routes.find(isEndpoint);
+    // The first endpoint matched is the one that answers: a policy on its own method and path must
+    // run before it, or the handler would answer without the check.
+    const index = routes.findIndex(isEndpoint);
+    const endpoint = routes[index];
     if (endpoint === undefined) return next();
-    const declared = routes.some(
-      (route) =>
-        route.method === endpoint.method &&
-        route.path === endpoint.path &&
-        policyOf(route.handler) !== undefined,
-    );
+    const declared = routes
+      .slice(0, index)
+      .some(
+        (route) =>
+          route.method === endpoint.method &&
+          route.path === endpoint.path &&
+          policyOf(route.handler) !== undefined,
+      );
     if (!declared) return c.json(forbidden(), 403);
     await next();
   });
 }
 
-/** Every endpoint of `app` under /api that declares no roles, as `"METHOD /path"`. */
+/**
+ * Every endpoint registered under /api (Better Auth's aside) that declares no roles before its first
+ * handler, as `"METHOD /path"`, in registration order.
+ */
 export function routesWithoutRoles(app: Pick<Hono, "routes">): string[] {
   const declared = new Set<string>();
-  const endpoints = new Set<string>();
+  const undeclared = new Set<string>();
   for (const route of app.routes) {
+    if (!isApiPath(route.path)) continue;
     const key = `${route.method} ${route.path}`;
+    if (declared.has(key) || undeclared.has(key)) continue;
     if (policyOf(route.handler) !== undefined) declared.add(key);
-    else if (isEndpoint(route)) endpoints.add(key);
+    else if (isEndpoint(route)) undeclared.add(key);
   }
-  return [...endpoints].filter((key) => !declared.has(key));
+  return [...undeclared];
 }
