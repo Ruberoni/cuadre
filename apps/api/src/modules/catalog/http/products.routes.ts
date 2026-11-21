@@ -3,10 +3,17 @@ import {
   CreateProductRequest,
   ListProductsQuery,
   ListProductsResponse,
+  PRODUCT_ROLES,
   Product as ProductDto,
 } from "@cuadre/contracts";
 import { createRoute, OpenAPIHono, type z } from "@hono/zod-openapi";
-import { errorBody, openApiOptions, unauthorizedResponse } from "../../../http/api-error.ts";
+import { allowRoles } from "../../../auth/roles.ts";
+import {
+  errorBody,
+  forbiddenResponse,
+  openApiOptions,
+  unauthorizedResponse,
+} from "../../../http/api-error.ts";
 import { createProductUseCase } from "../application/create-product.ts";
 import { listProductsUseCase } from "../application/list-products.ts";
 import type { ProductRepository } from "../application/product-repository.ts";
@@ -18,11 +25,13 @@ const json = <T extends z.ZodType>(schema: T) => ({ "application/json": { schema
 export const createProductRoute = createRoute({
   method: "post",
   path: "/products",
+  middleware: [allowRoles(PRODUCT_ROLES.write)] as const,
   request: { body: { content: json(CreateProductRequest), required: true } },
   responses: {
     201: { description: "The product was created.", content: json(ProductDto) },
     400: { description: "Invalid input; `issues` names the fields.", content: json(ApiError) },
     ...unauthorizedResponse,
+    ...forbiddenResponse,
     409: { description: "The code is already used by another product.", content: json(ApiError) },
   },
 });
@@ -30,11 +39,13 @@ export const createProductRoute = createRoute({
 export const listProductsRoute = createRoute({
   method: "get",
   path: "/products",
+  middleware: [allowRoles(PRODUCT_ROLES.read)] as const,
   request: { query: ListProductsQuery },
   responses: {
     200: { description: "One page of products.", content: json(ListProductsResponse) },
     400: { description: "Invalid query.", content: json(ApiError) },
     ...unauthorizedResponse,
+    ...forbiddenResponse,
   },
 });
 

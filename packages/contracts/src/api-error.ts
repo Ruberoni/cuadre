@@ -7,6 +7,8 @@ export const API_ERROR_CODES = [
   "NOT_FOUND",
   /** No valid session (none, expired or signed out). The web goes to Login; never shown. */
   "UNAUTHORIZED",
+  /** Signed in, but the user's role may not call this route (PLAN → Roles). */
+  "FORBIDDEN",
   "INTERNAL_ERROR",
 ] as const;
 export const ApiErrorCode = z.enum(API_ERROR_CODES);

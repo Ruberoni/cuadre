@@ -1,5 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { resetDatabase } from "../../../../test/reset-database.ts";
+import { expectAllowedRoles, type Sessions, signInAll } from "../../../../test/roles.ts";
 import { createTestApp, signIn } from "../../../../test/sign-in.ts";
 import { testDatabaseUrl } from "../../../../test/test-database.ts";
 import { createDb } from "../../../db/client.ts";
@@ -179,6 +180,60 @@ describe("GET /api/products", () => {
   );
 });
 
+describe("roles (PLAN → Roles: admin writes, every role reads)", () => {
+  let sessions: Sessions;
+  beforeEach(async () => {
+    sessions = await signInAll(db, testApp);
+  });
+
+  it("POST /api/products allows only admin", () =>
+    expectAllowedRoles(
+      testApp,
+      sessions,
+      { method: "POST", path: "/api/products", body: flour },
+      ["admin"],
+      201,
+    ));
+
+  it("GET /api/products allows every role", () =>
+    expectAllowedRoles(
+      testApp,
+      sessions,
+      { method: "GET", path: "/api/products" },
+      ["admin", "sales", "purchasing", "warehouse"],
+      200,
+    ));
+
+  it("a sales user cannot create a product: 403 FORBIDDEN and nothing is stored", async () => {
+    session = sessions.sales;
+
+    const res = await post(flour);
+
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ code: "FORBIDDEN" });
+    expect(await getPage()).toMatchObject({ items: [], total: 0 });
+  });
+
+  it("refuses the role before validating: an invalid body from sales is 403, not 400", async () => {
+    session = sessions.sales;
+
+    const res = await post({ sku: "HAR PAN" });
+
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ code: "FORBIDDEN" });
+  });
+
+  it("a warehouse user lists products", async () => {
+    await post(flour);
+    session = sessions.warehouse;
+
+    const res = await get("/api/products");
+
+    expect(res.status).toBe(200);
+    expect(skusOf((await res.json()) as Page)).toEqual(["HAR-PAN-1K"]);
+  });
+});
+
 describe("the API in general", () => {
   it("answers unknown routes with the NOT_FOUND ApiError body when signed in", async () => {
     const res = await get("/api/nope");
@@ -199,5 +254,15 @@ describe("the API in general", () => {
     expect(Object.keys(doc.paths["/api/products"] ?? {}).sort()).toEqual(["get", "post"]);
     const page = doc.paths["/api/products"]?.get?.parameters?.find((p) => p.name === "page");
     expect(page?.schema.type).toBe("integer");
+  });
+
+  it("documents the 403 of a refused role on both product operations", async () => {
+    const doc = (await (await app.request("/openapi.json")).json()) as {
+      paths: Record<string, Record<string, { responses: Record<string, unknown> }>>;
+    };
+
+    for (const method of ["get", "post"]) {
+      expect(Object.keys(doc.paths["/api/products"]?.[method]?.responses ?? {})).toContain("403");
+    }
   });
 });

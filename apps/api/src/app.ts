@@ -1,6 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { Auth } from "./auth/auth.ts";
 import { requireSession } from "./auth/require-session.ts";
+import { requireRoleDeclaration } from "./auth/roles.ts";
 import type { Db } from "./db/client.ts";
 import { healthRoute, isDatabaseUp } from "./health/health.route.ts";
 import { openApiOptions, useErrorHandlers } from "./http/api-error.ts";
@@ -20,8 +21,9 @@ export function createApp({ db, auth }: { db: Db; auth: Auth }) {
   // Better Auth answers its own routes (sign-in, sign-out, get-session) with its own bodies. It is
   // registered first and never calls `next`, so the session gate below never runs for them.
   app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
-  // Everything else under /api needs a session, unknown paths included (401 before 404).
-  app.use("/api/*", requireSession(auth));
+  // Everything else under /api needs a session, unknown paths included (401 before 404), and every
+  // endpoint must declare its roles with `allowRoles`: one that does not answers 403 to everyone.
+  app.use("/api/*", requireSession(auth), requireRoleDeclaration());
 
   app.route("/api", createCatalogModule({ db }).routes);
 
