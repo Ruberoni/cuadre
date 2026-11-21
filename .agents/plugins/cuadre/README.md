@@ -11,7 +11,7 @@ Workspace plugin that adapts Cuadre's AI-agent engineering workflow (`.claude/`)
   - `plan-reviewer`: read-only reviewer for draft implementation plans against `AGENTS.md`, `docs/GLOSSARY.md`, ADRs, and `REVIEW.md`.
   - `pr-reviewer`: read-only reviewer for pull requests against `REVIEW.md`, issue acceptance criteria, and verification claims.
 - **Lifecycle hooks** (`hooks.json`)
-  - `branch-name` (`PreToolUse` on `run_command`): blocks `git push` / `gh pr create` from unpublished branches that do not match `<type>/<issue>-<slug>`.
+  - `branch-name` (`PreToolUse` on `run_command`, currently `"enabled": false`): blocks `git push` / `gh pr create` from unpublished branches that do not match `<type>/<issue>-<slug>`. Disabled by default because Antigravity's `PreToolUse` currently requires an explicit `decision` on every `run_command` call (treating `{}` as `deny`, while `"allow"` would bypass normal command approvals).
   - `biome-file` (`PostToolUse` on `edit_file|write_file`): runs `biome check --write` on edited repo files.
   - `stop-checks` (`Stop`): runs Biome + `turbo run typecheck test:unit` on touched packages (30 s budget, max 3 rounds before escalation).
 
