@@ -1,4 +1,4 @@
-import type { SessionUser } from "@cuadre/contracts";
+import { PRODUCT_ROLES, type SessionUser } from "@cuadre/contracts";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { LogOutIcon } from "lucide-react";
 import {
@@ -11,6 +11,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { type NavItem, visibleNavItems } from "@/components/nav-items";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { defaultProductsSearch } from "@/features/products/search";
@@ -18,6 +19,8 @@ import { cn } from "@/lib/utils";
 import { roleLabels, shellMessages } from "@/messages";
 
 type PageContext = {
+  /** Undefined only while the session loads, when no page content renders. */
+  user: SessionUser | undefined;
   setTitle: (title: string) => void;
   /** Shows a status line (role="status") above the page content until the next navigation. */
   announce: (text: string) => void;
@@ -36,6 +39,16 @@ export function usePageTitle(title: string): void {
   }, [setTitle, title]);
 }
 
+/**
+ * The signed-in user, for pages that hide what their role cannot use (the API still enforces it).
+ * Page content only renders once the session has loaded, so there always is one.
+ */
+export function useSignedInUser(): SessionUser {
+  const context = useContext(AppPageContext);
+  if (context?.user === undefined) throw new Error("useSignedInUser needs <AppLayout user>");
+  return context.user;
+}
+
 /** Status lines for the next page: `announce("Producto X creado.")`, then navigate. */
 export function useStatusAnnouncer(): (text: string) => void {
   const context = useContext(AppPageContext);
@@ -43,8 +56,11 @@ export function useStatusAnnouncer(): (text: string) => void {
   return context.announce;
 }
 
-// Items of screens that exist. The rest of the Design System's navigation arrives with its slice.
-const NAV_ITEMS = [{ to: "/productos", label: shellMessages.products }] as const;
+// Items of screens that exist, each with the roles that see it (App shell handoff, #7 → "Nav per
+// role"). The rest of the Design System's navigation arrives with its slice.
+const NAV_ITEMS: readonly NavItem<"/productos">[] = [
+  { to: "/productos", label: shellMessages.products, roles: PRODUCT_ROLES.read },
+];
 
 const navLinkClass = cn(
   "relative flex min-h-(--control-height) items-center rounded-md px-3 py-1.5 text-body text-sidebar-foreground",
@@ -90,7 +106,7 @@ export function AppLayout({
     keepStatusOnNextNavigation.current = true;
     setStatus(text);
   }, []);
-  const context = useMemo(() => ({ setTitle, announce }), [announce]);
+  const context = useMemo(() => ({ user, setTitle, announce }), [user, announce]);
 
   return (
     <AppPageContext value={context}>
@@ -110,7 +126,7 @@ export function AppLayout({
               aria-label={shellMessages.navLabel}
               className="flex flex-1 flex-col gap-1 px-2 py-2"
             >
-              {NAV_ITEMS.map((item) => (
+              {visibleNavItems(NAV_ITEMS, user.role).map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}

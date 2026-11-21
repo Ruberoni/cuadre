@@ -5,7 +5,13 @@ import type { APIRequestContext, Page } from "@playwright/test";
  * values only, never real passwords. The API's E2E server seeds them (`db:seed:users`).
  */
 export const SEED_PASSWORD = "cuadre-demo-2026";
-export const ADMIN = { name: "María Fernández", email: "admin@cuadre.test" };
+export const SEED_USERS = {
+  admin: { name: "María Fernández", email: "admin@cuadre.test" },
+  sales: { name: "José Rodríguez", email: "ventas@cuadre.test" },
+  purchasing: { name: "Carmen Pérez", email: "compras@cuadre.test" },
+  warehouse: { name: "Luis González", email: "almacen@cuadre.test" },
+} as const;
+export const ADMIN = SEED_USERS.admin;
 
 /** The browser's origin, which the API trusts (Playwright config: `BETTER_AUTH_URL`). */
 const WEB_ORIGIN = `http://127.0.0.1:${process.env.E2E_WEB_PORT ?? 4173}`;
