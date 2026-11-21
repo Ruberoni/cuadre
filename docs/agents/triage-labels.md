@@ -14,7 +14,6 @@ Project-specific label (no skill role):
 
 | Label in our tracker | Meaning |
 | -------------------- | ------- |
-| `needs-design`       | Adds or changes a screen but its Design handoff is incomplete; cannot become `agent-ready` (ADR-012, `docs/design/README.md`). `/design-screen <n>` drafts the design and the handoff; only the maintainer removes it |
 | `escaped-defect`     | A bug that reached `main`; closes only with a new `REVIEW.md` item, test or hook besides the fix (ADR-014) |
 
 When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.

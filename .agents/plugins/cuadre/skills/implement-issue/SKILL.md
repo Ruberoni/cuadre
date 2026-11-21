@@ -22,7 +22,7 @@ Apply this workflow to the target GitHub issue number `<n>` provided by the main
 1. **Worktree.** Verify you are running in a linked git worktree, not the main checkout:
    - PowerShell: `(git rev-parse --path-format=absolute --git-dir) -ne (git rev-parse --path-format=absolute --git-common-dir)`
    - If running in the main checkout, stop and tell the maintainer to open or create a `git worktree` (parallel sessions share the main checkout).
-2. **Issue.** Run `gh issue view <n> --json number,title,body,labels,comments`. Stop unless it has the `agent-ready` label. If it touches `apps/web` and its **Design handoff** is incomplete (or it carries `needs-design`), stop (ADR-012): comment on the issue and tell the maintainer in the session to run `/design-screen <n>` **in Claude Code** (the design skills depend on Claude Artifacts), which drafts the design and writes the handoff for them to approve. Do not start the implementation and do not touch the labels.
+2. **Issue.** Run `gh issue view <n> --json number,title,body,labels,comments`. Stop unless it has the `agent-ready` label. If it touches `apps/web` and its **UI spec** is missing state, copy, or error details, do not stop here — gather those questions and ask the maintainer in Phase 1 before coding (ADR-012).
 3. **Branch.** Ensure the branch follows `<type>/<n>-<slug>` (Conventional Commits type the PR title will carry; lowercase kebab-case slug from the issue title):
    - If currently on `main`, create the branch with `git checkout -b <type>/<n>-<slug>` (never rename `main`).
    - If on an unpublished temporary work branch that does not match the convention, rename it with `git branch -m <type>/<n>-<slug>` before the first push (renaming after the first push closes the PR).

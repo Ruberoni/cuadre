@@ -8,8 +8,7 @@
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run",
     "test:e2e": "playwright test --project=acceptance && pnpm run test:browser",
-    "test:browser": "vitest run --config vitest.browser.config.ts",
-    "tokens:generate": "node scripts/generate-tokens.ts"
+    "test:browser": "vitest run --config vitest.browser.config.ts"
   },
   "dependencies": {
     "@cuadre/contracts": "workspace:*",

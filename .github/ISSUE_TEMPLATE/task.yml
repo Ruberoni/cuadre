@@ -55,19 +55,23 @@ body:
   - type: textarea
     id: design
     attributes:
-      label: Design handoff
+      label: UI spec (states, copy, errors)
       description: >-
-        Artboard link, completed review checklist and trimmed handoff, using the template in docs/design/README.md (ADR-012).
+        Lightweight UI spec using the template in docs/design/README.md (ADR-012):
+        empty/loading/error states (error code → Spanish message), key Spanish copy from docs/GLOSSARY.md, and focus/keyboard notes.
         Write "N/A — no UI" if the issue adds or changes no screen.
-        A UI issue with an incomplete checklist gets `needs-design` and cannot be `agent-ready`.
       placeholder: |
-        **Artboard:** https://claude.ai/artifact/…
+        ### States
+        - Empty: …
+        - Loading: …
+        - Error: … (error code → Spanish message)
 
-        - [ ] ux-copy
-        - [ ] design-critique
-        - [ ] accessibility-review
-        - [ ] design-handoff
+        ### Key copy (docs/GLOSSARY.md)
+        | Element | Spanish text |
+        |---|---|
 
-        (components and states, empty/loading/error, copy, focus and keyboard, accepted 🟡 findings)
+        ### Focus and keyboard
+        - Tab order / initial focus: …
+        - Shortcuts / Enter / Escape: …
     validations:
       required: true

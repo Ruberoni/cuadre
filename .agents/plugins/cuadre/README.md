@@ -17,12 +17,9 @@ Workspace plugin that adapts Cuadre's AI-agent engineering workflow (`.claude/`)
 
 Project and module rules (`AGENTS.md`, `apps/api/src/auth/AGENTS.md`, `apps/api/src/modules/catalog/AGENTS.md`) are discovered automatically by Antigravity outside this plugin.
 
-## Hybrid workflow (Design phase stays in Claude Code)
+## Antigravity-native workflow
 
-The design-phase skills and agent in `.claude/` (`design-screen`, `sync-design-system`, `design-reviewer`) depend on private Claude Artifacts (`claude.ai/artifact/...`) and Claude-only `design:*` skills. They are intentionally not ported here:
-
-- **Design & token sync** (`/design-screen <n>`, `/sync-design-system`): run in Claude Code.
-- **Engineering** (`implement-issue`, `verify`, `plan-reviewer`, `pr-reviewer`, hooks): run in Antigravity with this plugin enabled.
+Cuadre's workflow is 100% Antigravity-native (ADR-012, amended 2026-11-21): UI issues carry a lightweight Markdown UI spec directly in GitHub Issues, semantic tokens live directly in `apps/web/src/styles/tokens.css`, and visual/accessibility verification runs against the live app via `verify` (`browser` subagent) and `REVIEW.md`.
 
 ## Managing the plugin
 

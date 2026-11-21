@@ -48,5 +48,5 @@ On a smoke failure it prints the paths of the Playwright `trace.zip` and screens
    - `pnpm --filter @cuadre/api dev`
    - `pnpm --filter @cuadre/web dev`
    > On Windows, a server started inside the sandbox is only reachable from the same command that started it — neither the `browser` subagent nor the user's browser can reach it unless started with `BypassSandbox: true`.
-3. Delegate interactive UI inspection to Antigravity's built-in `browser` subagent via `invoke_subagent` (with `TypeName: "browser"` and `Model: "flash"`): navigate to `http://localhost:5173`, check keyboard order and focus, error states (stop the `api` daemon to verify load errors), and browser console / network errors.
+3. Delegate interactive UI inspection to Antigravity's built-in `browser` subagent via `invoke_subagent` (with `TypeName: "browser"` and `Model: "flash"`): navigate to `http://localhost:5173`, check 1280 px desktop layout (no unintended overflow or broken alignment), keyboard/focus order, WCAG 2.2 AA basics (visible focus ring, labelled inputs, ≥ 24×24 px pointer targets, contrast), error states (stop the `api` daemon to verify load errors), and browser console / network errors.
 4. Stop both daemon tasks with `manage_task` (`Action: "kill"`) when finished and before switching worktrees (they share ports 3000 and 5173).

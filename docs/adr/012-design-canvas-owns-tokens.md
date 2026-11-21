@@ -1,6 +1,6 @@
 # ADR-012: Design System owns the tokens; screens are designed before they are built
 
-**Status:** Accepted (amended 2026-11-16, 2026-11-17, 2026-11-18)
+**Status:** Accepted (amended 2026-11-16, 2026-11-17, 2026-11-18, 2026-11-21)
 
 ## Context
 The UI is designed in Claude artifacts: drafted by an agent with the `design-screen` skill and approved by the maintainer. If both the design and the code define tokens, they drift. Agents left without a visual reference invent UI, and each one invents it differently.
@@ -26,3 +26,10 @@ The UI is designed in Claude artifacts: drafted by an agent with the `design-scr
 - UI slices wait on the maintainer's approval of the drafted design; screens are designed just in time, one slice ahead.
 - Dark mode is added later by giving the semantic tokens dark values.
 - The review skills exist only in the maintainer's Claude setup; agents in other tools rely on the handoff in the issue, which they read through `gh`.
+
+## Amendment (2026-11-21) — Simplified design flow & consolidated tokens
+
+- **Claude Artifact artboards and `sync-design-system` are retired.** Maintaining separate Claude Design System / Screens artifacts and syncing `tokens.json` added tool lock-in and friction without proportional benefit once the core tokens and shadcn primitives were established.
+- **`apps/web/src/styles/tokens.css` is the single source of truth for semantic tokens.** All token usage notes and contrast ratios live as comments directly in `tokens.css`; `design-system/tokens.json` and the token generator are removed. UI code must still use semantic token classes (`bg-primary`, etc.) and never color literals or Tailwind's default palette (enforced by `no-hardcoded-tokens.test.ts`).
+- **Lightweight Markdown UI specs replace artboards.** UI issues carry a concise Markdown **UI spec** (states, error code → Spanish message, key `GLOSSARY.md` copy, focus/keyboard notes) using the template in [`docs/design/README.md`](../design/README.md), or `N/A — no UI`. The `needs-design` label is retired.
+- **Visual, accessibility, and copy verification move to `verify` and `REVIEW.md` item 8.** Live browser inspection during `verify` (desktop ≥ 1280 px, keyboard/focus order, WCAG 2.2 AA basics, 24×24 px targets, error states, console) and `REVIEW.md` item 8 enforce the ground rules directly against the running app. The ground rules themselves (desktop ≥ 1280 px, WCAG 2.2 AA, 24×24 px pointer targets, SC 1.4.10 Reflow exception, light theme only for MVP, Spanish glossary copy, `es-VE` formatting) remain unchanged.

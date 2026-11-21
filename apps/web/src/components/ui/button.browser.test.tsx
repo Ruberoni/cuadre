@@ -1,15 +1,15 @@
 import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
-import snapshot from "../../../design-system/tokens.json";
 import "@/styles/globals.css";
+import tokensCss from "@/styles/tokens.css?raw";
 import { Button } from "./button.tsx";
 
-// Expected values come from the synced Design System snapshot, never from literals here.
-const token = (family: "color" | "radius", name: string): string => {
-  const found = snapshot[family].tokens.find((entry) => entry.name === name);
-  if (!found) throw new Error(`Token ${name} is not in the snapshot`);
-  return found.value;
+// Expected values come from tokens.css (the single source of truth), never from literals here.
+const token = (name: string): string => {
+  const match = tokensCss.match(new RegExp(`--${name}:\\s*([^;]+);`));
+  if (!match?.[1]) throw new Error(`Token --${name} is not in tokens.css`);
+  return match[1].trim();
 };
 
 const hexToRgb = (hex: string): string => {
@@ -36,16 +36,16 @@ afterEach(() => {
   mounted = undefined;
 });
 
-describe("shadcn Button with the synced tokens", () => {
-  it("takes its fill, text color and radius from the Design System tokens", () => {
+describe("shadcn Button with Cuadre tokens", () => {
+  it("takes its fill, text color and radius from tokens.css", () => {
     const style = renderButton();
 
-    expect(style.backgroundColor).toBe(hexToRgb(token("color", "primary")));
-    expect(style.color).toBe(hexToRgb(token("color", "primary-foreground")));
-    expect(style.borderTopLeftRadius).toBe(token("radius", "radius-md"));
+    expect(style.backgroundColor).toBe(hexToRgb(token("primary")));
+    expect(style.color).toBe(hexToRgb(token("primary-foreground")));
+    expect(style.borderTopLeftRadius).toBe(token("radius-md"));
   });
 
-  it("uses Inter, the Design System's single sans-serif", () => {
+  it("uses Inter, Cuadre's single sans-serif", () => {
     expect(renderButton().fontFamily).toContain("Inter");
   });
 });
