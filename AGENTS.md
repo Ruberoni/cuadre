@@ -15,7 +15,7 @@ Cuadre is an ERP for a small Venezuelan distribution business (single company). 
 
 ```
 apps/api/                 Hono + @hono/zod-openapi HTTP server hosting all modules
-  src/auth/               Better Auth (email + password), the session gate, the seeded users; cross-cutting, not a module
+  src/auth/               Better Auth (email + password), the session gate, the role gate (deny by default), the seeded users; cross-cutting, not a module
   src/modules/<module>/
     domain/               entities, value objects, pure rules — NO I/O imports
     application/          use cases, one per file

@@ -41,7 +41,8 @@ Dependency direction: `http → application → domain`, and `infrastructure →
 1. Domain rule first, as a failing unit test (`*.test.ts` next to the file).
 2. Use case in `application/<name>.ts` taking the repository port; extend the port in `product-repository.ts` if needed and implement it in `infrastructure/`.
 3. Wire shape in `packages/contracts`; route in `http/` with `createRoute` (every response status declared, errors as `ApiError`); status map entry; `new OpenAPIHono(openApiOptions)` so the validation hook applies.
-4. Integration test (`*.int.test.ts`, real Postgres, `resetDatabase(db)` in `beforeEach`) per acceptance example.
+   **Roles:** every route declares who may call it, `middleware: [allowRoles(PRODUCT_ROLES.write)] as const` (`src/auth/roles.ts`; the lists live in contracts so the web hides with the same ones), and spreads `forbiddenResponse` into its `responses`. A route without it answers 403 to everyone and fails `roles.int.test.ts`.
+4. Integration test (`*.int.test.ts`, real Postgres, `resetDatabase(db)` in `beforeEach`) per acceptance example, plus one `expectAllowedRoles(...)` line per route with the roles written out (REVIEW item 6).
 
 ## Tests
 
@@ -51,4 +52,4 @@ Dependency direction: `http → application → domain`, and `infrastructure →
 
 ## Not shown by this template yet
 
-Role guards (every route needs a session since #10, enforced by the app's gate in `src/auth`, but any signed-in user acts as admin until role enforcement lands; REVIEW item 6 then requires a 403 test), transactions across use cases (ADR-008), and calls into another module. Integration tests sign in with `test/sign-in.ts`. The first module that needs one extends this file.
+Transactions across use cases (ADR-008) and calls into another module. Integration tests sign in with `test/sign-in.ts` (one role) or `test/roles.ts` (all four). The first module that needs one extends this file.
