@@ -1,7 +1,7 @@
-// Finds color values written by hand. Tokens live in the Design System and reach the code only
-// through the generated tokens.css (ADR-012), so source files may use semantic classes
-// (`bg-primary`) but never literals. Because tokens.css resets Tailwind's palette
-// (`--color-*: initial`), classes from the default palette do nothing; they are flagged too.
+// Finds color values written by hand. Semantic tokens live in tokens.css (ADR-012),
+// so source files may use semantic classes (`bg-primary`) but never literals. Because tokens.css
+// resets Tailwind's palette (`--color-*: initial`), classes from the default palette do nothing;
+// they are flagged too.
 
 const PALETTE_NAMES =
   "slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose";

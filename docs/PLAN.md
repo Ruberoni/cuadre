@@ -82,33 +82,18 @@ See ADR-001…004, 008…012, 014.
 - Conventional Commits, squash merge, protected `main`.
 - Local: `docker compose` (Postgres) + realistic fictitious seed from day one.
 
-## Design (required step)
+## Design & UI guidelines
 
-**No UI code is written without a design.** See ADR-012. Two artifacts:
+See ADR-012 (amended 2026-11-21) and [`design/README.md`](design/README.md).
 
-- **Cuadre Design System** (Claude "Design System" artifact): source of truth for tokens and component specs. `sync-design-system` mirrors its tokens into `apps/web`.
-- **Cuadre Screens** (Claude "Design" artifact, built on the Design System): one artboard per screen. Issues link the artboard in their **Design** field.
-
-The gate has two levels:
-
-1. **Phase 0 — blocks all UI work, including the walking skeleton:** the Design System exists and the *App shell* and *Products* artboards exist with completed handoffs. Syncing the tokens into `apps/web` is the first step of the walking skeleton, before any UI code.
-2. **Per issue — blocks `agent-ready`:** an issue that adds or changes a screen has its **Design handoff** filled in: artboard link, completed review checklist, trimmed handoff. Until it does, it carries `needs-design`. Issues with no UI write `N/A — no UI`.
-
-Every design goes through the **review flow** in [`design/README.md`](design/README.md), using the `design` plugin skills:
-- **Design System:** `/design-system extend` per component, `/accessibility-review` on tokens, `/design-system audit` before each sync.
-- **Each screen:** `/ux-copy` → `/design-critique` → `/accessibility-review` → `/design-handoff`. No open 🔴 passes a step; 🟡 is fixed or justified.
-
-The `/design-screen <n>` project skill runs the per-screen flow and writes the handoff into the issue. **The agent proposes; the maintainer approves; the Design System only grows** (additions only: changing an existing token or component spec is the maintainer's decision).
-
-Ground rules: **desktop only** (minimum 1280 px); **WCAG 2.2 AA** with 24×24 px pointer targets, except SC 1.4.10 Reflow, which desktop-only cannot meet until responsive layouts (post-MVP); UI copy uses the glossary's Spanish terms.
-
-Design System content for Phase 0:
-- **Tokens:** start from shadcn's neutral tokens, semantic names (`--background`, `--primary`…); one sans-serif (Inter), a single accent color, small radius, compact density (~32 px table rows). **Light theme only**; dark mode is a post-MVP task.
-- **Components (specs):** app layout (sidebar + header), data table, form with validation, button, input, select, combobox (search product/partner), money input, status badge, confirm dialog. Code comes from the shadcn CLI in `apps/web`; only tokens are synced.
+- **Tokens:** `apps/web/src/styles/tokens.css` is the single source of truth for semantic tokens (`--background`, `--primary`…); one sans-serif (Inter), a single accent color, small radius, compact density (~32 px table rows). **Light theme only**; dark mode is a post-MVP task.
+- **Components:** shadcn/ui primitives in `apps/web/src/components/ui/` (app layout, data table, form with validation, button, input, select, combobox, money input, status badge, confirm dialog).
 - **Formatting guide:** locale `es-VE` (`1.234,56`), symbols `Bs.` and `$` in the UI (`VES`/`USD` only in code and currency pickers), dates `dd/mm/aaaa`. Implemented once as a formatting helper in `apps/web`.
 - **Tone:** sober, information-dense back-office UI.
+- **Ground rules:** **desktop only** (minimum 1280 px); **WCAG 2.2 AA** with 24×24 px pointer targets, except SC 1.4.10 Reflow, which desktop-only cannot meet until responsive layouts (post-MVP); UI copy uses the glossary's Spanish terms.
+- **Per UI issue:** carry a lightweight Markdown **UI spec** (states, error code → Spanish message, key glossary copy, focus/keyboard notes) in the issue body, or `N/A — no UI`. Visual layout, accessibility basics, and copy are verified against the running app during `verify` and `REVIEW.md` item 8.
 
-Screens to design (each one just before its slice becomes `agent-ready`, not all up front):
+MVP screens:
 
 1. Login
 2. App shell (sidebar per role)
@@ -126,14 +111,13 @@ Screens to design (each one just before its slice becomes `agent-ready`, not all
 ## Agent setup
 
 - `AGENTS.md` (root, short) + `AGENTS.md` per module; `CLAUDE.md` imports `AGENTS.md`.
-- `.claude/`: PostToolUse hook (Biome on edited file), Stop hook (typecheck + Biome + unit tests of the touched packages, ≈30 s budget), permissions for pnpm scripts.
-- Project skills: `implement-issue` (run from a worktree: issue → reviewed plan → implementation → `verify` → draft PR → review → ready PR; uses the `plan-reviewer` and `pr-reviewer` agents in `.claude/agents/`), `design-screen` (issue → questions → artboards → review with the `design-reviewer` agent → handoff in the issue; ADR-012), `sync-design-system` (Design System tokens → `apps/web` PR) and `verify` (wraps `pnpm verify`; ADR-014). More only when a pattern repeats 2–3 times.
+- `.agents/plugins/cuadre/`: Antigravity workspace plugin (`implement-issue`, `verify`, `plan-reviewer`, `pr-reviewer`, and lifecycle hooks). `.claude/` holds the original Claude Code config.
 - Issues follow the template in `.github/ISSUE_TEMPLATE/task.yml`; only the maintainer applies `agent-ready`.
 
 ## People
 
-- **Maintainer:** writes and approves issues, approves the designs and handoffs drafted by `/design-screen` in the Design System and Screens artifacts (and applies `agent-ready`), reviews and merges PRs, decides ADRs, fiscal rules and module boundaries.
-- **Agents:** implement issues, write tests and migrations, sync tokens, draft screen designs and handoffs for approval, propose the breakdown of each epic into issues.
+- **Maintainer:** writes and approves issues (and applies `agent-ready`), reviews and merges PRs, decides ADRs, fiscal rules and module boundaries.
+- **Agents:** implement issues, write tests and migrations, inspect the running UI during `verify`, and propose the breakdown of each epic into issues.
 
 ## Build order
 
@@ -162,7 +146,7 @@ Vertical tracer-bullet slices (schema → API → UI → tests). `/to-tickets` b
 
 Clear tasks waiting their turn. `/to-tickets` creates them as issues labelled `needs-triage`.
 
-- **Dark mode:** add dark values for the semantic tokens in the Design System and sync them.
+- **Dark mode:** add dark values for the semantic tokens in `apps/web/src/styles/tokens.css`.
 - **Responsive layouts** (tablet / mobile) for the screens that need them. Also lifts the SC 1.4.10 Reflow exception.
 - **Storybook:** Storybook 8 (Vite) in `apps/web`, stories only for Cuadre's own components (not plain shadcn), interaction tests through the Vitest addon in CI; visual regression later. Trigger: may be pulled into the MVP as soon as `apps/web` gets its first own composite component (likely `MoneyInput` or `DataTable`).
 - **User admin screen.**
