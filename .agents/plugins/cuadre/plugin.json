@@ -1,0 +1,6 @@
+{
+  "name": "cuadre",
+  "displayName": "Cuadre Dev Setup",
+  "version": "1.0.0",
+  "description": "Engineering workflow for Cuadre: issue-to-PR skill, app verification, plan/PR reviewers, and lifecycle hooks."
+}
