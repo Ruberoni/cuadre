@@ -27,6 +27,8 @@ export const errorMessages: Record<
       ? "Ya existe un producto con ese código."
       : `Ya existe un producto con el código ${sku}.`,
   NOT_FOUND: () => "No se encontró lo que se buscaba.",
+  // Products handoff (#7): the only screen that can be refused today is the product form.
+  FORBIDDEN: () => "Solo un administrador puede crear o editar productos.",
   INTERNAL_ERROR: () => "No se pudo guardar el producto. Revisar la conexión e intentar de nuevo.",
   NETWORK_ERROR: () => "No se pudo guardar el producto. Revisar la conexión e intentar de nuevo.",
 };
@@ -106,6 +108,8 @@ export const productsMessages = {
   empty: {
     title: "Aún no hay productos",
     description: "Los productos se usan en las órdenes de compra, los pedidos y las facturas.",
+    /** Roles that cannot create products: no action, only who can. */
+    readOnlyDescription: "Un administrador debe crearlos.",
   },
   noResults: {
     title: (query: string) => `Sin resultados para «${query}»`,

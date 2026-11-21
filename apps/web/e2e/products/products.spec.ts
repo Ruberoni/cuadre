@@ -1,12 +1,12 @@
 import { expect, type Page, test } from "@playwright/test";
 import { formatMoney, NBSP } from "../../src/lib/format/index.ts";
-import { signIn } from "../support/auth.ts";
+import { SEED_USERS, signIn } from "../support/auth.ts";
 import { resetDatabase } from "../support/database.ts";
 import { apiUrl, givenProduct } from "../support/products.ts";
 
 const GENERAL_16 = `General 16${NBSP}%`;
 
-// Every test acts as the seeded admin (role enforcement is a later slice).
+// Every test acts as the seeded admin; read-only roles are in read-only.spec.ts.
 test.beforeEach(async ({ page }) => {
   await resetDatabase();
   await signIn(page);
@@ -253,6 +253,31 @@ test.describe("the product list", () => {
 });
 
 test.describe("app shell", () => {
+  const roleNames = {
+    admin: "Administrador",
+    sales: "Ventas",
+    purchasing: "Compras",
+    warehouse: "Almacén",
+  } as const;
+
+  for (const [role, roleName] of Object.entries(roleNames)) {
+    test(`${role}: the sidebar offers Productos and the footer says ${roleName}`, async ({
+      page,
+    }) => {
+      const user = SEED_USERS[role as keyof typeof roleNames];
+      // Replace the admin signed in by beforeEach.
+      await page.context().clearCookies();
+      await signIn(page, user);
+      await page.goto("/productos");
+
+      const nav = page.getByRole("navigation", { name: "Principal" });
+      await expect(nav.getByRole("link")).toHaveText(["Productos"]);
+      const sidebar = page.getByRole("complementary");
+      await expect(sidebar).toContainText(user.name);
+      await expect(sidebar.getByText(roleName, { exact: true })).toBeVisible();
+    });
+  }
+
   test("the sidebar offers only Productos", async ({ page }) => {
     await page.goto("/productos");
 

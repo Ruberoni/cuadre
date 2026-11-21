@@ -1,9 +1,14 @@
-import { PRODUCTS_PAGE_SIZE, type Product, type ProductSortField } from "@cuadre/contracts";
+import {
+  PRODUCT_ROLES,
+  PRODUCTS_PAGE_SIZE,
+  type Product,
+  type ProductSortField,
+} from "@cuadre/contracts";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { SearchIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useProducts } from "@/api/products";
-import { usePageTitle } from "@/components/app-layout";
+import { usePageTitle, useSignedInUser } from "@/components/app-layout";
 import { type Column, DataTable, Pager, type SortOrder } from "@/components/data-table";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -59,6 +64,8 @@ const columns: readonly Column<Product, ProductSortField>[] = [
 
 function ProductsList() {
   usePageTitle(productsMessages.pageTitle);
+  // Read-only roles see no way to create products (the API refuses them anyway).
+  const canCreate = PRODUCT_ROLES.write.includes(useSignedInUser().role);
   const { q, sort, order, page } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const products = useProducts({ q, sort, order, page });
@@ -125,8 +132,12 @@ function ProductsList() {
       {noProductsAtAll ? (
         <EmptyState
           title={productsMessages.empty.title}
-          description={productsMessages.empty.description}
-          action={<NewProductLink />}
+          description={
+            canCreate
+              ? productsMessages.empty.description
+              : productsMessages.empty.readOnlyDescription
+          }
+          action={canCreate ? <NewProductLink /> : undefined}
         />
       ) : (
         <>
@@ -146,7 +157,7 @@ function ProductsList() {
                 className="pl-9"
               />
             </div>
-            <NewProductLink />
+            {canCreate ? <NewProductLink /> : null}
           </div>
 
           {products.isError && data === undefined ? (
@@ -224,13 +235,13 @@ function EmptyState({
 }: {
   title: string;
   description: string;
-  action: React.ReactNode;
+  action?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col items-center gap-2 rounded-md border border-border px-6 py-12 text-center">
       <p className="text-section-title">{title}</p>
       <p className="text-body text-muted-foreground">{description}</p>
-      <div className="pt-2">{action}</div>
+      {action === undefined ? null : <div className="pt-2">{action}</div>}
     </div>
   );
 }
