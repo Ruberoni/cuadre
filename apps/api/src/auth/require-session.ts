@@ -8,7 +8,7 @@ export type SessionVariables = { user: SessionUser };
 
 /**
  * Every API route behind it needs a valid session: none, expired, signed out or a forged cookie
- * all answer 401 `UNAUTHORIZED` (an `ApiError`). Role checks are the next ticket's.
+ * all answer 401 `UNAUTHORIZED` (an `ApiError`). Role checks build on it (`roles.ts`).
  */
 export function requireSession(auth: Auth) {
   return createMiddleware<{ Variables: SessionVariables }>(async (c, next) => {

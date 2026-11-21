@@ -65,6 +65,17 @@ export const unauthorizedResponse = {
   },
 } as const;
 
+/**
+ * The 403 of a route whose roles do not include the user's (`allowRoles`, `src/auth/roles.ts`):
+ * spread into the `responses` of every route that declares roles.
+ */
+export const forbiddenResponse = {
+  403: {
+    description: "The user's role may not call this route.",
+    content: { "application/json": { schema: ApiError } },
+  },
+} as const;
+
 /** Every `OpenAPIHono` needs the hook itself: sub-apps do not inherit it. */
 export const openApiOptions = { defaultHook: validationHook };
 

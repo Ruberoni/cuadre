@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ROLES, type Role } from "../auth/session.ts";
 import { MoneyDto } from "../money.ts";
 
 // Rule constants: the single source for the domain, the API and the web form.
@@ -7,6 +8,15 @@ export const SKU_MAX_LENGTH = 20;
 export const SKU_PATTERN = new RegExp(`^[A-Za-z0-9-]{1,${SKU_MAX_LENGTH}}$`);
 export const PRODUCT_NAME_MAX_LENGTH = 120;
 export const PRODUCTS_PAGE_SIZE = 25;
+
+/**
+ * Who may call the product routes (PLAN → Roles): the API enforces it on each route, the web hides
+ * what a role cannot use with the same lists. Typed as plain role lists so `.includes(role)` works.
+ */
+export const PRODUCT_ROLES: Readonly<Record<"read" | "write", readonly Role[]>> = {
+  read: ROLES,
+  write: ["admin"],
+};
 
 /** Fixed list, in display order (maintainer decision 2026-11-16). */
 export const UNITS_OF_MEASURE = ["UNIT", "BOX", "BULK", "KILOGRAM", "LITER"] as const;
