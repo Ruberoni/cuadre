@@ -1,0 +1,39 @@
+{
+  "branch-name": {
+    "PreToolUse": [
+      {
+        "matcher": "run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./hooks/branch-name.mjs",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "biome-file": {
+    "PostToolUse": [
+      {
+        "matcher": "edit_file|write_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./hooks/biome-file.mjs",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  },
+  "stop-checks": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node ./hooks/stop-checks.mjs",
+        "timeout": 60
+      }
+    ]
+  }
+}
