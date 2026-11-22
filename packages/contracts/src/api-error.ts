@@ -4,6 +4,10 @@ import { z } from "zod";
 export const API_ERROR_CODES = [
   "VALIDATION_ERROR",
   "SKU_ALREADY_EXISTS",
+  "RATE_ALREADY_EXISTS",
+  "RATE_DATE_TOO_FAR",
+  "RATE_ALREADY_FROZEN",
+  "MISSING_EXCHANGE_RATE",
   "NOT_FOUND",
   /** No valid session (none, expired or signed out). The web goes to Login; never shown. */
   "UNAUTHORIZED",
@@ -25,5 +29,7 @@ export const ApiError = z.object({
   issues: z.array(FieldIssue).optional(),
   /** `SKU_ALREADY_EXISTS` only: the code as stored (normalised), so clients show it as is. */
   sku: z.string().optional(),
+  /** Exchange-rate errors (`RATE_ALREADY_EXISTS`, `RATE_DATE_TOO_FAR`, `RATE_ALREADY_FROZEN`, `MISSING_EXCHANGE_RATE`): `YYYY-MM-DD`. */
+  date: z.string().optional(),
 });
 export type ApiError = z.infer<typeof ApiError>;

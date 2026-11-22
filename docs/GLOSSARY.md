@@ -12,6 +12,7 @@ Canonical domain vocabulary. Code uses the **Term** column; the UI uses the **Sp
 | `DocumentCurrency` | Moneda del documento | Currency a document is issued in. |
 | `ExchangeRate` | Tasa de cambio / Tasa BCV | VES per 1 USD on a given date, as published by the BCV. |
 | `Rate` | Tasa | Exact value of an `ExchangeRate`: VES per 1 USD with 8 decimals, never a float. Only the value; the dated record belongs to the `exchange-rates` module. |
+| `FrozenRate` | Congelada | An `ExchangeRate` already referenced by at least one `Issued` document; can no longer be corrected. |
 | `Bcv` | BCV | Banco Central de Venezuela, source of the official rate. Kept untranslated. |
 | `Iva` | IVA | Value-added tax. Rates: general 16%, reduced 8%, exempt. Kept untranslated. |
 | `TaxRate` | Alícuota | A tax percentage (e.g. IVA general). |

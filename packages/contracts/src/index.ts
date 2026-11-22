@@ -22,4 +22,22 @@ export {
   UNITS_OF_MEASURE,
   type UnitOfMeasure,
 } from "./catalog/products.ts";
+export {
+  CorrectExchangeRateRequest,
+  CurrentExchangeRateResponse,
+  EXCHANGE_RATE_DECIMALS,
+  EXCHANGE_RATE_FIELDS,
+  EXCHANGE_RATE_ISSUE_CODES,
+  EXCHANGE_RATE_MAX_DAYS_AHEAD,
+  EXCHANGE_RATE_MAX_INTEGER_DIGITS,
+  EXCHANGE_RATE_ROLES,
+  EXCHANGE_RATES_PAGE_SIZE,
+  ExchangeRate,
+  ExchangeRateDateParam,
+  type ExchangeRateField,
+  type ExchangeRateIssueCode,
+  ListExchangeRatesQuery,
+  ListExchangeRatesResponse,
+  RecordExchangeRateRequest,
+} from "./exchange-rates/exchange-rates.ts";
 export { MoneyDto } from "./money.ts";
