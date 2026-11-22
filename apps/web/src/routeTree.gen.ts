@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppProductosIndexRouteImport } from './routes/_app/productos/index'
 import { Route as AppProductosNuevoRouteImport } from './routes/_app/productos/nuevo'
+import { Route as AppProveedoresIndexRouteImport } from './routes/_app/proveedores/index'
 import { Route as AppTasasBcvIndexRouteImport } from './routes/_app/tasas-bcv/index'
 
 const IndexRoute = IndexRouteImport.update({
@@ -40,6 +41,11 @@ const AppProductosNuevoRoute = AppProductosNuevoRouteImport.update({
   path: '/productos/nuevo',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProveedoresIndexRoute = AppProveedoresIndexRouteImport.update({
+  id: '/proveedores/',
+  path: '/proveedores/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppTasasBcvIndexRoute = AppTasasBcvIndexRouteImport.update({
   id: '/tasas-bcv/',
   path: '/tasas-bcv/',
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/productos/nuevo': typeof AppProductosNuevoRoute
   '/productos/': typeof AppProductosIndexRoute
+  '/proveedores/': typeof AppProveedoresIndexRoute
   '/tasas-bcv/': typeof AppTasasBcvIndexRoute
 }
 export interface FileRoutesByTo {
@@ -58,6 +65,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/productos/nuevo': typeof AppProductosNuevoRoute
   '/productos': typeof AppProductosIndexRoute
+  '/proveedores': typeof AppProveedoresIndexRoute
   '/tasas-bcv': typeof AppTasasBcvIndexRoute
 }
 export interface FileRoutesById {
@@ -67,13 +75,26 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/productos/nuevo': typeof AppProductosNuevoRoute
   '/_app/productos/': typeof AppProductosIndexRoute
+  '/_app/proveedores/': typeof AppProveedoresIndexRoute
   '/_app/tasas-bcv/': typeof AppTasasBcvIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/productos/nuevo' | '/productos/' | '/tasas-bcv/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/productos/nuevo'
+    | '/productos/'
+    | '/proveedores/'
+    | '/tasas-bcv/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/productos/nuevo' | '/productos' | '/tasas-bcv'
+  to:
+    | '/'
+    | '/login'
+    | '/productos/nuevo'
+    | '/productos'
+    | '/proveedores'
+    | '/tasas-bcv'
   id:
     | '__root__'
     | '/'
@@ -81,6 +102,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/productos/nuevo'
     | '/_app/productos/'
+    | '/_app/proveedores/'
     | '/_app/tasas-bcv/'
   fileRoutesById: FileRoutesById
 }
@@ -127,6 +149,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProductosNuevoRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/proveedores/': {
+      id: '/_app/proveedores/'
+      path: '/proveedores'
+      fullPath: '/proveedores/'
+      preLoaderRoute: typeof AppProveedoresIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/tasas-bcv/': {
       id: '/_app/tasas-bcv/'
       path: '/tasas-bcv'
@@ -140,12 +169,14 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppProductosNuevoRoute: typeof AppProductosNuevoRoute
   AppProductosIndexRoute: typeof AppProductosIndexRoute
+  AppProveedoresIndexRoute: typeof AppProveedoresIndexRoute
   AppTasasBcvIndexRoute: typeof AppTasasBcvIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppProductosNuevoRoute: AppProductosNuevoRoute,
   AppProductosIndexRoute: AppProductosIndexRoute,
+  AppProveedoresIndexRoute: AppProveedoresIndexRoute,
   AppTasasBcvIndexRoute: AppTasasBcvIndexRoute,
 }
 
