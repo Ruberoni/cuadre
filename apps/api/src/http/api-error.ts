@@ -9,12 +9,13 @@ import { HTTPException } from "hono/http-exception";
 
 export function errorBody(
   code: ApiErrorCode,
-  extra: { issues?: readonly FieldIssue[]; sku?: string } = {},
+  extra: { issues?: readonly FieldIssue[]; sku?: string; date?: string } = {},
 ): ApiError {
   return {
     code,
     ...(extra.issues === undefined ? {} : { issues: [...extra.issues] }),
     ...(extra.sku === undefined ? {} : { sku: extra.sku }),
+    ...(extra.date === undefined ? {} : { date: extra.date }),
   };
 }
 

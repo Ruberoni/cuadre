@@ -10,9 +10,12 @@ const config = loadConfig({});
 /** A trusted origin: Better Auth rejects cookie-bearing POSTs without one (CSRF check). */
 export const TEST_ORIGIN = config.BETTER_AUTH_URL;
 
-export function createTestApp(db: Db) {
+export function createTestApp(db: Db, options?: { today?: () => string }) {
   const auth = createAuthFromConfig(db, config);
-  return { app: createApp({ db, auth }), auth };
+  return {
+    app: createApp({ db, auth, ...(options?.today === undefined ? {} : { today: options.today }) }),
+    auth,
+  };
 }
 
 type TestApp = ReturnType<typeof createTestApp>;
