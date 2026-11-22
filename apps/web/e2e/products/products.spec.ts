@@ -16,7 +16,7 @@ async function fillForm(
   page: Page,
   fields: { sku?: string; unit?: string; name?: string; price?: string; tax?: string },
 ) {
-  if (fields.sku !== undefined) await page.getByLabel("Código").fill(fields.sku);
+  if (fields.sku !== undefined) await page.getByLabel("Código", { exact: true }).fill(fields.sku);
   if (fields.unit !== undefined) {
     await page.getByRole("combobox", { name: "Unidad de medida" }).click();
     await page.getByRole("option", { name: fields.unit }).click();

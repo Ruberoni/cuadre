@@ -36,7 +36,8 @@ test("the seeded admin signs in, and a product can be created and found in the l
   // Create one with a unique code (the database is shared with the seed, not reset).
   const sku = `SMK-${Date.now().toString(36).toUpperCase()}`;
   await page.getByRole("link", { name: "Nuevo producto" }).click();
-  await page.getByLabel("Código").fill(sku);
+  await expect(page).toHaveURL(/\/productos\/nuevo/);
+  await page.getByLabel("Código", { exact: true }).fill(sku);
   await page.getByRole("combobox", { name: "Unidad de medida" }).click();
   await page.getByRole("option", { name: "Unidad" }).click();
   await page.getByLabel("Nombre").fill("Producto de prueba de humo");
