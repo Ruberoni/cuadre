@@ -95,7 +95,10 @@ describe("listExchangeRatesUseCase", () => {
     for (let i = 0; i < 30; i++) {
       await recordExchangeRateUseCase(
         rates,
-        { date: addDays("2026-10-01" as CalendarDate, i), rate: `${36 + i * 0.01}` },
+        {
+          date: addDays("2026-10-01" as CalendarDate, i),
+          rate: `36.${String(i).padStart(2, "0")}`,
+        },
         today,
       );
     }

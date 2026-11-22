@@ -219,38 +219,47 @@ function ExchangeRatesList() {
   );
 }
 
-const formSchema = z.object({
-  date: z.string().superRefine((text, context) => {
-    const trimmed = text.trim();
-    if (trimmed === "") {
-      context.addIssue({ code: "custom", message: exchangeRateFieldMessages.date.REQUIRED ?? "" });
-      return;
-    }
-    const parsed = parseDate(trimmed);
-    if (!parsed.ok) {
-      context.addIssue({
-        code: "custom",
-        message: exchangeRateFieldMessages.date.INVALID_DATE ?? "",
-      });
-      return;
-    }
-    const maxDate = addDays(todayCaracas(), EXCHANGE_RATE_MAX_DAYS_AHEAD);
-    if (parsed.value > maxDate) {
-      context.addIssue({ code: "custom", message: errorMessages.RATE_DATE_TOO_FAR({}) });
-    }
-  }),
-  rate: z.string().superRefine((text, context) => {
-    if (text.trim() === "") {
-      context.addIssue({ code: "custom", message: exchangeRateFieldMessages.rate.REQUIRED ?? "" });
-      return;
-    }
-    const parsed = parseRateInput(text);
-    if (!parsed.ok) {
-      context.addIssue({ code: "custom", message: rateParseMessages[parsed.error] });
-    }
-  }),
-});
-type FormValues = z.infer<typeof formSchema>;
+function createFormSchema(enforceDateHorizon: boolean) {
+  return z.object({
+    date: z.string().superRefine((text, context) => {
+      if (!enforceDateHorizon) return;
+      const trimmed = text.trim();
+      if (trimmed === "") {
+        context.addIssue({
+          code: "custom",
+          message: exchangeRateFieldMessages.date.REQUIRED ?? "",
+        });
+        return;
+      }
+      const parsed = parseDate(trimmed);
+      if (!parsed.ok) {
+        context.addIssue({
+          code: "custom",
+          message: exchangeRateFieldMessages.date.INVALID_DATE ?? "",
+        });
+        return;
+      }
+      const maxDate = addDays(todayCaracas(), EXCHANGE_RATE_MAX_DAYS_AHEAD);
+      if (parsed.value > maxDate) {
+        context.addIssue({ code: "custom", message: errorMessages.RATE_DATE_TOO_FAR({}) });
+      }
+    }),
+    rate: z.string().superRefine((text, context) => {
+      if (text.trim() === "") {
+        context.addIssue({
+          code: "custom",
+          message: exchangeRateFieldMessages.rate.REQUIRED ?? "",
+        });
+        return;
+      }
+      const parsed = parseRateInput(text);
+      if (!parsed.ok) {
+        context.addIssue({ code: "custom", message: rateParseMessages[parsed.error] });
+      }
+    }),
+  });
+}
+type FormValues = z.infer<ReturnType<typeof createFormSchema>>;
 
 const isFieldName = (name: string): name is keyof FormValues =>
   (EXCHANGE_RATE_FIELDS as readonly string[]).includes(name);
@@ -269,8 +278,21 @@ function ExchangeRateDialog({
   const [formError, setFormError] = useState<string | undefined>(undefined);
   const alertRef = useRef<HTMLDivElement>(null);
 
+  // Preserve the last active mode while DialogContent runs its exit animation.
+  const [prevDialog, setPrevDialog] = useState<DialogMode | undefined>(dialog);
+  const [activeDialog, setActiveDialog] = useState<DialogMode>(dialog ?? { mode: "record" });
+  if (dialog !== prevDialog) {
+    setPrevDialog(dialog);
+    if (dialog !== undefined) setActiveDialog(dialog);
+  }
+
+  const resolver = useMemo(
+    () => zodResolver(createFormSchema(activeDialog.mode === "record")),
+    [activeDialog.mode],
+  );
+
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver,
     defaultValues: { date: "", rate: "" },
   });
   const { reset, setFocus } = form;
@@ -361,12 +383,12 @@ function ExchangeRateDialog({
       <DialogContent
         onOpenAutoFocus={(event) => {
           event.preventDefault();
-          setFocus(dialog?.mode === "correct" ? "rate" : "date");
+          setFocus(activeDialog.mode === "correct" ? "rate" : "date");
         }}
       >
         <DialogHeader>
           <DialogTitle>
-            {dialog?.mode === "correct"
+            {activeDialog.mode === "correct"
               ? exchangeRatesMessages.form.correctTitle
               : exchangeRatesMessages.form.recordTitle}
           </DialogTitle>
@@ -382,17 +404,17 @@ function ExchangeRateDialog({
                   <FormControl>
                     <Input
                       {...field}
-                      readOnly={dialog?.mode === "correct"}
-                      aria-readonly={dialog?.mode === "correct" || undefined}
+                      readOnly={activeDialog.mode === "correct"}
+                      aria-readonly={activeDialog.mode === "correct" || undefined}
                       placeholder={exchangeRatesMessages.form.datePlaceholder}
                       autoComplete="off"
                       aria-required="true"
                       className={
-                        dialog?.mode === "correct" ? "bg-muted tabular-nums" : "tabular-nums"
+                        activeDialog.mode === "correct" ? "bg-muted tabular-nums" : "tabular-nums"
                       }
                     />
                   </FormControl>
-                  {dialog?.mode === "record" ? (
+                  {activeDialog.mode === "record" ? (
                     <FormDescription>{exchangeRatesMessages.form.dateHelp}</FormDescription>
                   ) : null}
                   <FormMessage />
