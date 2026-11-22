@@ -7,6 +7,7 @@ import { healthRoute, isDatabaseUp } from "./health/health.route.ts";
 import { openApiOptions, useErrorHandlers } from "./http/api-error.ts";
 import { createCatalogModule } from "./modules/catalog/index.ts";
 import { createExchangeRatesModule } from "./modules/exchange-rates/index.ts";
+import { createPartnersModule } from "./modules/partners/index.ts";
 
 export function createApp({ db, auth, today }: { db: Db; auth: Auth; today?: () => string }) {
   const app = new OpenAPIHono(openApiOptions);
@@ -31,6 +32,7 @@ export function createApp({ db, auth, today }: { db: Db; auth: Auth; today?: () 
     "/api",
     createExchangeRatesModule({ db, ...(today === undefined ? {} : { today }) }).routes,
   );
+  app.route("/api", createPartnersModule({ db }).routes);
 
   app.doc("/openapi.json", {
     openapi: "3.1.0",
