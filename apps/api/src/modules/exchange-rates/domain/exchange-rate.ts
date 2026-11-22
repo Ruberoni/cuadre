@@ -6,21 +6,19 @@ import {
   type ExchangeRateIssueCode,
 } from "@cuadre/contracts";
 import {
+  addDays,
+  type CalendarDate,
+  compareCalendarDates,
   err,
   type FieldIssue,
   invalid,
   ok,
+  parseCalendarDate,
   parseRate,
   type Rate,
   type Result,
   type ValidationFailure,
 } from "@cuadre/shared-kernel";
-import {
-  addDays,
-  type CalendarDate,
-  compareCalendarDates,
-  parseCalendarDate,
-} from "./calendar-date.ts";
 
 export type ExchangeRateInput = {
   readonly date: string;

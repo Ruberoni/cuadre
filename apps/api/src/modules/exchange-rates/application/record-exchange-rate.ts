@@ -1,4 +1,4 @@
-import type { CalendarDate } from "../domain/calendar-date.ts";
+import type { CalendarDate } from "@cuadre/shared-kernel";
 import {
   createExchangeRate,
   type ExchangeRateInput,

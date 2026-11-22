@@ -5,7 +5,7 @@ import {
   compareCalendarDates,
   parseCalendarDate,
   todayCaracas,
-} from "./calendar-date.ts";
+} from "./index.ts";
 
 describe("parseCalendarDate", () => {
   it("accepts valid YYYY-MM-DD calendar dates including leap days", () => {
@@ -55,9 +55,7 @@ describe("compareCalendarDates", () => {
 
 describe("todayCaracas", () => {
   it("uses fixed UTC-4 offset (America/Caracas)", () => {
-    // 2026-11-18T03:59:59Z is 2026-11-17 23:59:59 in Caracas (UTC-4)
     expect(todayCaracas(new Date("2026-11-18T03:59:59Z"))).toBe("2026-11-17");
-    // 2026-11-18T04:00:00Z is 2026-11-18 00:00:00 in Caracas (UTC-4)
     expect(todayCaracas(new Date("2026-11-18T04:00:00Z"))).toBe("2026-11-18");
   });
 });

@@ -1,6 +1,6 @@
+import { addDays, type CalendarDate } from "@cuadre/shared-kernel";
 import type { ExchangeRateRepository } from "../application/exchange-rate-repository.ts";
 import { recordExchangeRateUseCase } from "../application/record-exchange-rate.ts";
-import { addDays, type CalendarDate } from "../domain/calendar-date.ts";
 
 /** Five recent daily BCV rates up to `today`, oldest to newest. */
 const SAMPLE_RATES: readonly [daysAgo: number, rate: string][] = [

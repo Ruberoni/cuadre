@@ -1,9 +1,8 @@
-import { rateToString } from "@cuadre/shared-kernel";
+import { addDays, type CalendarDate, rateToString } from "@cuadre/shared-kernel";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { resetDatabase } from "../../../../test/reset-database.ts";
 import { testDatabaseUrl } from "../../../../test/test-database.ts";
 import { createDb } from "../../../db/client.ts";
-import { addDays, type CalendarDate } from "../domain/calendar-date.ts";
 import { createExchangeRatesModule } from "../index.ts";
 import { createDrizzleExchangeRateRepository } from "../infrastructure/drizzle-exchange-rate-repository.ts";
 import { seedExchangeRates } from "../infrastructure/seed-exchange-rates.ts";

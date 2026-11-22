@@ -9,7 +9,7 @@ import {
   ListExchangeRatesResponse,
   RecordExchangeRateRequest,
 } from "@cuadre/contracts";
-import { rateToString } from "@cuadre/shared-kernel";
+import { type CalendarDate, rateToString } from "@cuadre/shared-kernel";
 import { createRoute, OpenAPIHono, type z } from "@hono/zod-openapi";
 import { allowRoles } from "../../../auth/roles.ts";
 import {
@@ -23,7 +23,6 @@ import type { ExchangeRateRepository } from "../application/exchange-rate-reposi
 import { listExchangeRatesUseCase } from "../application/list-exchange-rates.ts";
 import { lookupExchangeRateUseCase } from "../application/lookup-exchange-rate.ts";
 import { recordExchangeRateUseCase } from "../application/record-exchange-rate.ts";
-import type { CalendarDate } from "../domain/calendar-date.ts";
 import type { ExchangeRateRecord } from "../domain/exchange-rate.ts";
 import {
   CORRECT_EXCHANGE_RATE_ERROR_STATUS,

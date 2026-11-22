@@ -1,31 +1,14 @@
-import { err, ok, type Rate, rateToString } from "@cuadre/shared-kernel";
+import { type CalendarDate, err, ok, type Rate, rateToString } from "@cuadre/shared-kernel";
 import { and, count, desc, eq, inArray, lte } from "drizzle-orm";
 import type { Db, DbExecutor, DbTransaction } from "../../../db/client.ts";
+import { postgresError, UNIQUE_VIOLATION } from "../../../db/postgres-error.ts";
 import type { ExchangeRateRepository } from "../application/exchange-rate-repository.ts";
-import type { CalendarDate } from "../domain/calendar-date.ts";
 import { type ExchangeRateRecord, reconstituteExchangeRate } from "../domain/exchange-rate.ts";
 import { exchangeRatesTable } from "./exchange-rates.table.ts";
 
 type ExchangeRateRow = typeof exchangeRatesTable.$inferSelect;
 
-const UNIQUE_VIOLATION = "23505";
 const DATE_PRIMARY_KEY_CONSTRAINT = "rates_pkey";
-
-/** Drizzle wraps driver errors; the Postgres code and constraint sit on the error or its cause. */
-function postgresError(error: unknown): { code?: string; constraint?: string } {
-  let current: unknown = error;
-  while (typeof current === "object" && current !== null) {
-    const { code, constraint_name: constraint } = current as {
-      code?: unknown;
-      constraint_name?: unknown;
-    };
-    if (typeof code === "string") {
-      return { code, ...(typeof constraint === "string" ? { constraint } : {}) };
-    }
-    current = (current as { cause?: unknown }).cause;
-  }
-  return {};
-}
 
 /**
  * Rows are rebuilt through domain rules on read so any row edited directly in Postgres that breaks

@@ -1,6 +1,5 @@
-import type { Rate, Result } from "@cuadre/shared-kernel";
+import type { CalendarDate, Rate, Result } from "@cuadre/shared-kernel";
 import type { DbExecutor, DbTransaction } from "../../../db/client.ts";
-import type { CalendarDate } from "../domain/calendar-date.ts";
 import type { ExchangeRateRecord } from "../domain/exchange-rate.ts";
 
 export type ExchangeRateListResult = {

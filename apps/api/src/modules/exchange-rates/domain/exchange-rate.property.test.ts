@@ -1,7 +1,6 @@
-import { parseRate } from "@cuadre/shared-kernel";
+import { addDays, type CalendarDate, parseRate } from "@cuadre/shared-kernel";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { addDays, type CalendarDate } from "./calendar-date.ts";
 import { type ExchangeRateRecord, lookupAndFreezeRate, lookupRate } from "./exchange-rate.ts";
 
 const baseDate = "2026-01-01" as CalendarDate;

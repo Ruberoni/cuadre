@@ -1,11 +1,11 @@
 // The only public API of the exchange-rates module (ADR-001): other code imports from here,
 // never from domain/, application/, infrastructure/ or http/.
+import { type CalendarDate, parseCalendarDate, todayCaracas } from "@cuadre/shared-kernel";
 import type { Db, DbExecutor, DbTransaction } from "../../db/client.ts";
 import {
   lookupAndFreezeExchangeRateUseCase,
   lookupExchangeRateUseCase,
 } from "./application/lookup-exchange-rate.ts";
-import { type CalendarDate, parseCalendarDate, todayCaracas } from "./domain/calendar-date.ts";
 import { createExchangeRateRoutes } from "./http/exchange-rates.routes.ts";
 import { createDrizzleExchangeRateRepository } from "./infrastructure/drizzle-exchange-rate-repository.ts";
 import { seedExchangeRates } from "./infrastructure/seed-exchange-rates.ts";

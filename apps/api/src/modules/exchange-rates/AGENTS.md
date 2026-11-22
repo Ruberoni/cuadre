@@ -5,7 +5,7 @@ Daily BCV exchange rates (`ExchangeRate`: `date`, 8-decimal `Rate`, `frozen` fla
 ## Layout
 
 ```
-domain/           pure rules, no I/O: CalendarDate, parseExchangeRateValue, createExchangeRate, reconstituteExchangeRate, correctExchangeRate, lookupRate, lookupAndFreezeRate
+domain/           pure rules, no I/O: parseExchangeRateValue, createExchangeRate, reconstituteExchangeRate, correctExchangeRate, lookupRate, lookupAndFreezeRate (uses CalendarDate from @cuadre/shared-kernel)
 application/      use cases (record, correct, list, lookup, lookupAndFreeze) + repository port
 infrastructure/   exchange-rates.table.ts (Drizzle, schema `exchange_rates`), Drizzle repository, seed
 http/             Hono/OpenAPI routes + exhaustive error-to-status maps

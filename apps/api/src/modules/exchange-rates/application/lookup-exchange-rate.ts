@@ -1,6 +1,5 @@
-import { err, invalid, ok, type Result } from "@cuadre/shared-kernel";
+import { err, invalid, ok, parseCalendarDate, type Result } from "@cuadre/shared-kernel";
 import type { DbExecutor, DbTransaction } from "../../../db/client.ts";
-import { parseCalendarDate } from "../domain/calendar-date.ts";
 import type { ExchangeRateRecord, ExchangeRateValidationFailure } from "../domain/exchange-rate.ts";
 import type { ExchangeRateRepository } from "./exchange-rate-repository.ts";
 

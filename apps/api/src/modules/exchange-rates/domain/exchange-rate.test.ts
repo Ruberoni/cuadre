@@ -1,6 +1,5 @@
-import { rateToString } from "@cuadre/shared-kernel";
+import { type CalendarDate, rateToString } from "@cuadre/shared-kernel";
 import { describe, expect, it } from "vitest";
-import type { CalendarDate } from "./calendar-date.ts";
 import {
   correctExchangeRate,
   createExchangeRate,

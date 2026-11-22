@@ -1,5 +1,4 @@
-import { invalid } from "@cuadre/shared-kernel";
-import { type CalendarDate, parseCalendarDate } from "../domain/calendar-date.ts";
+import { type CalendarDate, invalid, parseCalendarDate } from "@cuadre/shared-kernel";
 import {
   type ExchangeRateRecord,
   type ExchangeRateValidationFailure,

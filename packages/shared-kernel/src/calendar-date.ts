@@ -1,4 +1,5 @@
-import { type Brand, err, ok, type Result } from "@cuadre/shared-kernel";
+import type { Brand } from "./brand.ts";
+import { err, ok, type Result } from "./result.ts";
 
 /** A calendar date in `YYYY-MM-DD` format (no time zones). */
 export type CalendarDate = string & Brand<"CalendarDate">;
@@ -8,12 +9,12 @@ const CARACAS_OFFSET_MS = 4 * 60 * 60 * 1000;
 
 const isLeapYear = (year: number) => (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 
-function daysInMonth(year: number, month: number): number {
+export function daysInMonth(year: number, month: number): number {
   if (month === 2) return isLeapYear(year) ? 29 : 28;
   return [4, 6, 9, 11].includes(month) ? 30 : 31;
 }
 
-function isRealDate(year: number, month: number, day: number): boolean {
+export function isRealDate(year: number, month: number, day: number): boolean {
   return year >= 1 && month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth(year, month);
 }
 

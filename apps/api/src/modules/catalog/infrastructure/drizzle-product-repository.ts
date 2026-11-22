@@ -1,30 +1,14 @@
 import { err, ok } from "@cuadre/shared-kernel";
 import { asc, count, desc, ilike, or, type SQL, sql } from "drizzle-orm";
 import type { Db } from "../../../db/client.ts";
+import { postgresError, UNIQUE_VIOLATION } from "../../../db/postgres-error.ts";
 import type { ProductListParams, ProductRepository } from "../application/product-repository.ts";
 import { createProduct, type NewProduct, type Product } from "../domain/product.ts";
 import { productsTable } from "./products.table.ts";
 
 type ProductRow = typeof productsTable.$inferSelect;
 
-const UNIQUE_VIOLATION = "23505";
 const SKU_UNIQUE_CONSTRAINT = "products_sku_unique";
-
-/** Drizzle wraps driver errors; the Postgres code and constraint sit on the error or its cause. */
-function postgresError(error: unknown): { code?: string; constraint?: string } {
-  let current: unknown = error;
-  while (typeof current === "object" && current !== null) {
-    const { code, constraint_name: constraint } = current as {
-      code?: unknown;
-      constraint_name?: unknown;
-    };
-    if (typeof code === "string") {
-      return { code, ...(typeof constraint === "string" ? { constraint } : {}) };
-    }
-    current = (current as { cause?: unknown }).cause;
-  }
-  return {};
-}
 
 /** `%`, `_` and `\` are LIKE wildcards: searching for them must match them literally. */
 function escapeLike(text: string): string {
