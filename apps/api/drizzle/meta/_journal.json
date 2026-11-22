@@ -15,6 +15,13 @@
       "when": 1795032775997,
       "tag": "0001_simple_venus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795305121122,
+      "tag": "0002_tan_sage",
+      "breakpoints": true
     }
   ]
 }

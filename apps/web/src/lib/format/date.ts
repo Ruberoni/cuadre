@@ -1,26 +1,26 @@
 // Calendar dates are `YYYY-MM-DD` strings (like `DocumentDate`): no `Date`, no time zones.
-import { err, ok, type Result } from "@cuadre/shared-kernel";
+import {
+  addDays as addCalendarDays,
+  daysInMonth,
+  err,
+  isRealDate,
+  ok,
+  parseCalendarDate,
+  type Result,
+  todayCaracas,
+} from "@cuadre/shared-kernel";
 
-const ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
 const DISPLAY = /^(\d{2})\/(\d{2})\/(\d{4})$/;
 
-const isLeapYear = (year: number) => (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-
-export function daysInMonth(year: number, month: number): number {
-  if (month === 2) return isLeapYear(year) ? 29 : 28;
-  return [4, 6, 9, 11].includes(month) ? 30 : 31;
-}
-
-function isRealDate(year: number, month: number, day: number): boolean {
-  return year >= 1 && month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth(year, month);
-}
+export { daysInMonth, todayCaracas };
 
 /** `2026-11-17` → `17/11/2026`. Throws on anything that is not a real calendar date. */
 export function formatDate(date: string): string {
-  const [, year = "", month = "", day = ""] = ISO.exec(date) ?? [];
-  if (!isRealDate(Number(year), Number(month), Number(day))) {
+  const parsed = parseCalendarDate(date.trim() === date ? date : "");
+  if (!parsed.ok) {
     throw new RangeError(`Expected a calendar date as YYYY-MM-DD, got "${date}"`);
   }
+  const [year, month, day] = parsed.value.split("-");
   return `${day}/${month}/${year}`;
 }
 
@@ -29,4 +29,13 @@ export function parseDate(input: string): Result<string, "INVALID_DATE"> {
   const [, day = "", month = "", year = ""] = DISPLAY.exec(input.trim()) ?? [];
   if (!isRealDate(Number(year), Number(month), Number(day))) return err("INVALID_DATE");
   return ok(`${year}-${month}-${day}`);
+}
+
+/** Adds `days` to a `YYYY-MM-DD` calendar date. */
+export function addDays(date: string, days: number): string {
+  const parsed = parseCalendarDate(date.trim() === date ? date : "");
+  if (!parsed.ok) {
+    throw new RangeError(`Expected a calendar date as YYYY-MM-DD, got "${date}"`);
+  }
+  return addCalendarDays(parsed.value, days);
 }

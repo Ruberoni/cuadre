@@ -8,3 +8,5 @@ export function createDb(url: string) {
 }
 
 export type Db = ReturnType<typeof createDb>["db"];
+export type DbTransaction = Parameters<Parameters<Db["transaction"]>[0]>[0];
+export type DbExecutor = Db | DbTransaction;

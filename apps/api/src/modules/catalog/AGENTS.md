@@ -50,6 +50,10 @@ Dependency direction: `http → application → domain`, and `infrastructure →
 - Integration (`*.int.test.ts`): use cases and HTTP (`createApp({ db }).request(...)`) against the `cuadre_test` database.
 - Seed data goes through the use case, so it obeys every rule, and is idempotent.
 
-## Not shown by this template yet
+## Cross-module transactions (ADR-008)
 
-Transactions across use cases (ADR-008) and calls into another module. Integration tests sign in with `test/sign-in.ts` (one role) or `test/roles.ts` (all four). The first module that needs one extends this file.
+Use cases that participate in a cross-module transaction accept `tx: DbTransaction` (required when mutating state that must commit or roll back atomically with another module's write, e.g. `lookupAndFreezeForDate(date, tx)` in `exchange-rates`) or `tx?: DbExecutor` (for read-only lookups that may run standalone or inside a caller's transaction). Both types live in `src/db/client.ts`.
+
+## Test auth helpers
+
+Integration tests sign in with `test/sign-in.ts` (one role) or `test/roles.ts` (all four).

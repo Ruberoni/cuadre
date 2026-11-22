@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  addDays,
   formatAmount,
+  formatBcvRate,
   formatDate,
   formatMoney,
   formatRate,
   MAX_MINOR_UNITS,
   parseAmount,
   parseDate,
+  parseRateInput,
+  todayCaracas,
 } from "./index.ts";
 
 // The Design System puts a no-break space between the symbol and the amount.
@@ -141,4 +145,59 @@ describe("parseDate", () => {
       expect(parseDate(input)).toEqual({ ok: false, error: "INVALID_DATE" });
     },
   );
+});
+
+describe("formatBcvRate", () => {
+  it("prefixes Bs. and no-break space", () => {
+    expect(formatBcvRate("36.5123")).toBe(`Bs.${NBSP}36,51230000`);
+  });
+});
+
+describe("parseRateInput", () => {
+  it.each([
+    ["36,5123", "36.51230000"],
+    ["1.234,5", "1234.50000000"],
+    ["36", "36.00000000"],
+    ["0,00000001", "0.00000001"],
+    ["Bs. 36,51230000", "36.51230000"],
+    [`Bs.${NBSP}36,5123`, "36.51230000"],
+    ["999.999.999.999,99999999", "999999999999.99999999"],
+  ])("%j → %s", (input, expected) => {
+    expect(parseRateInput(input)).toEqual({ ok: true, value: expected });
+  });
+
+  it("rejects more than 8 decimals instead of rounding", () => {
+    expect(parseRateInput("36,123456789")).toEqual({ ok: false, error: "TOO_MANY_DECIMALS" });
+  });
+
+  it.each(["0", "0,0", "0,00000000", "-1", "-36,5", "-0,00000001"])(
+    "rejects %j as NOT_POSITIVE",
+    (input) => {
+      expect(parseRateInput(input)).toEqual({ ok: false, error: "NOT_POSITIVE" });
+    },
+  );
+
+  it("rejects 13 integer digits as OUT_OF_RANGE", () => {
+    expect(parseRateInput("1000000000000")).toEqual({ ok: false, error: "OUT_OF_RANGE" });
+    expect(parseRateInput("1.000.000.000.000")).toEqual({ ok: false, error: "OUT_OF_RANGE" });
+  });
+
+  it.each(["", "   ", "abc", "36.5", "36,", ",5", "1 000", "Bs."])(
+    "rejects %j as NOT_A_NUMBER",
+    (input) => {
+      expect(parseRateInput(input)).toEqual({ ok: false, error: "NOT_A_NUMBER" });
+    },
+  );
+});
+
+describe("todayCaracas and addDays", () => {
+  it("computes UTC-4 calendar date", () => {
+    expect(todayCaracas(new Date("2026-11-18T03:59:59Z"))).toBe("2026-11-17");
+    expect(todayCaracas(new Date("2026-11-18T04:00:00Z"))).toBe("2026-11-18");
+  });
+
+  it("adds days across month/year boundaries", () => {
+    expect(addDays("2026-11-17", 7)).toBe("2026-11-24");
+    expect(addDays("2026-12-28", 7)).toBe("2027-01-04");
+  });
 });

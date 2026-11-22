@@ -16,7 +16,7 @@ async function fillForm(
   page: Page,
   fields: { sku?: string; unit?: string; name?: string; price?: string; tax?: string },
 ) {
-  if (fields.sku !== undefined) await page.getByLabel("Código").fill(fields.sku);
+  if (fields.sku !== undefined) await page.getByLabel("Código", { exact: true }).fill(fields.sku);
   if (fields.unit !== undefined) {
     await page.getByRole("combobox", { name: "Unidad de medida" }).click();
     await page.getByRole("option", { name: fields.unit }).click();
@@ -203,7 +203,10 @@ test.describe("the product list", () => {
     await search.fill("harina");
     await expect(page.locator("tbody tr")).toHaveCount(1);
 
-    await page.getByRole("navigation", { name: "Principal" }).getByRole("link").click();
+    await page
+      .getByRole("navigation", { name: "Principal" })
+      .getByRole("link", { name: "Productos" })
+      .click();
 
     await expect(page.locator("tbody tr")).toHaveCount(2);
     await expect(search).toHaveValue("");
@@ -271,18 +274,19 @@ test.describe("app shell", () => {
       await page.goto("/productos");
 
       const nav = page.getByRole("navigation", { name: "Principal" });
-      await expect(nav.getByRole("link")).toHaveText(["Productos"]);
+      await expect(nav.getByRole("link")).toHaveText(["Productos", "Tasas BCV"]);
       const sidebar = page.getByRole("complementary");
       await expect(sidebar).toContainText(user.name);
       await expect(sidebar.getByText(roleName, { exact: true })).toBeVisible();
     });
   }
 
-  test("the sidebar offers only Productos", async ({ page }) => {
+  test("the sidebar offers Productos and Tasas BCV", async ({ page }) => {
     await page.goto("/productos");
 
     const nav = page.getByRole("navigation", { name: "Principal" });
-    await expect(nav.getByRole("link")).toHaveCount(1);
+    await expect(nav.getByRole("link")).toHaveCount(2);
+    await expect(nav.getByRole("link")).toHaveText(["Productos", "Tasas BCV"]);
     await expect(nav.getByRole("link", { name: "Productos" })).toHaveAttribute(
       "aria-current",
       "page",

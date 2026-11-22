@@ -1,5 +1,14 @@
 export type { Brand } from "./brand.ts";
 export {
+  addDays,
+  type CalendarDate,
+  compareCalendarDates,
+  daysInMonth,
+  isRealDate,
+  parseCalendarDate,
+  todayCaracas,
+} from "./calendar-date.ts";
+export {
   add,
   applyPercentage,
   type Currency,

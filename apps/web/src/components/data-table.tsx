@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 export type SortOrder = "asc" | "desc";
 
-export type Column<Row, SortKey extends string> = {
+export type Column<Row, SortKey extends string = never> = {
   id: string;
   header: string;
   /** Numbers, money and dates are right-aligned, header included. */
@@ -25,15 +25,15 @@ export type Column<Row, SortKey extends string> = {
   cell: (row: Row) => ReactNode;
 };
 
-type DataTableProps<Row, SortKey extends string> = {
+type DataTableProps<Row, SortKey extends string = never> = {
   columns: readonly Column<Row, SortKey>[];
   rows: readonly Row[];
   rowKey: (row: Row) => string;
   /** Screen-reader caption naming the list. */
   caption: string;
-  sort: SortKey;
-  order: SortOrder;
-  onSort: (key: SortKey) => void;
+  sort?: SortKey;
+  order?: SortOrder;
+  onSort?: (key: SortKey) => void;
   /** First load: 5 skeleton rows instead of data. */
   loading?: boolean;
   /** Refetching: the previous rows stay, the table is marked busy for assistive technology. */
@@ -43,13 +43,13 @@ type DataTableProps<Row, SortKey extends string> = {
 const SKELETON_ROWS = 5;
 
 /** Compact table for a list screen (Design System → DataTable): 32 px rows, sortable headers. */
-export function DataTable<Row, SortKey extends string>({
+export function DataTable<Row, SortKey extends string = never>({
   columns,
   rows,
   rowKey,
   caption,
   sort,
-  order,
+  order = "asc",
   onSort,
   loading = false,
   busy = false,
@@ -85,7 +85,7 @@ export function DataTable<Row, SortKey extends string>({
                       active={sorted}
                       order={order}
                       right={column.align === "right"}
-                      onClick={() => onSort(column.sortKey as SortKey)}
+                      onClick={() => onSort?.(column.sortKey as SortKey)}
                     />
                   )}
                 </TableHead>

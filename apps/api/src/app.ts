@@ -6,8 +6,9 @@ import type { Db } from "./db/client.ts";
 import { healthRoute, isDatabaseUp } from "./health/health.route.ts";
 import { openApiOptions, useErrorHandlers } from "./http/api-error.ts";
 import { createCatalogModule } from "./modules/catalog/index.ts";
+import { createExchangeRatesModule } from "./modules/exchange-rates/index.ts";
 
-export function createApp({ db, auth }: { db: Db; auth: Auth }) {
+export function createApp({ db, auth, today }: { db: Db; auth: Auth; today?: () => string }) {
   const app = new OpenAPIHono(openApiOptions);
   useErrorHandlers(app);
 
@@ -26,6 +27,10 @@ export function createApp({ db, auth }: { db: Db; auth: Auth }) {
   app.use("/api/*", requireSession(auth), requireRoleDeclaration());
 
   app.route("/api", createCatalogModule({ db }).routes);
+  app.route(
+    "/api",
+    createExchangeRatesModule({ db, ...(today === undefined ? {} : { today }) }).routes,
+  );
 
   app.doc("/openapi.json", {
     openapi: "3.1.0",
