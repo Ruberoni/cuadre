@@ -41,3 +41,21 @@ export {
   RecordExchangeRateRequest,
 } from "./exchange-rates/exchange-rates.ts";
 export { MoneyDto } from "./money.ts";
+export {
+  CreateSupplierRequest,
+  ListSuppliersQuery,
+  ListSuppliersResponse,
+  PARTNER_ADDRESS_MAX_LENGTH,
+  PARTNER_EMAIL_MAX_LENGTH,
+  PARTNER_NAME_MAX_LENGTH,
+  PARTNER_PHONE_MAX_LENGTH,
+  SUPPLIER_FIELDS,
+  SUPPLIER_ISSUE_CODES,
+  SUPPLIER_ROLES,
+  SUPPLIER_SORT_FIELDS,
+  SUPPLIERS_PAGE_SIZE,
+  Supplier,
+  type SupplierField,
+  type SupplierIssueCode,
+  type SupplierSortField,
+} from "./partners/suppliers.ts";

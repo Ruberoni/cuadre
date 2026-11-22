@@ -27,6 +27,7 @@ Canonical domain vocabulary. Code uses the **Term** column; the UI uses the **Sp
 | `Supplier` | Proveedor | Partner we buy from. |
 | `Customer` | Cliente | Partner we sell to. |
 | `Rif` | RIF | Venezuelan tax ID (e.g. `J-12345678-9`). Kept untranslated. |
+| `LegalName` | Razón social | Registered legal name of a `Partner`. |
 
 ## Catalog and inventory
 
