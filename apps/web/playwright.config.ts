@@ -28,10 +28,9 @@ export default defineConfig({
   // PLAYWRIGHT_CHANNEL=msedge (or chrome). CI uses the bundled Chromium.
   projects: ["smoke", "acceptance"].map((name) => ({
     name,
-    testMatch:
-      name === "smoke"
-        ? "smoke.spec.ts"
-        : ["products/**/*.spec.ts", "auth/**/*.spec.ts", "exchange-rates/**/*.spec.ts"],
+    ...(name === "smoke"
+      ? { testMatch: "smoke.spec.ts" }
+      : { testMatch: "**/*.spec.ts", testIgnore: "smoke.spec.ts" }),
     use: {
       ...devices["Desktop Chrome"],
       ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}),
