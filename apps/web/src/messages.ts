@@ -326,7 +326,6 @@ export const suppliersMessages = {
     email: "Correo electrónico",
     emailPlaceholder: "nombre@empresa.com",
     address: "Dirección",
-    optionalHint: "Opcional.",
     submit: "Guardar proveedor",
     submitting: "Guardando…",
     cancel: "Cancelar",

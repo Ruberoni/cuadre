@@ -5,7 +5,6 @@ import {
   PARTNER_PHONE_MAX_LENGTH,
   SUPPLIER_FIELDS,
   SUPPLIER_ROLES,
-  SUPPLIERS_PAGE_SIZE,
   type Supplier,
   type SupplierSortField,
 } from "@cuadre/contracts";
@@ -242,8 +241,8 @@ function SuppliersList() {
               {data === undefined ? null : (
                 <Pager
                   summary={suppliersMessages.pager(
-                    (data.page - 1) * SUPPLIERS_PAGE_SIZE + 1,
-                    (data.page - 1) * SUPPLIERS_PAGE_SIZE + data.items.length,
+                    (data.page - 1) * data.pageSize + 1,
+                    (data.page - 1) * data.pageSize + data.items.length,
                     data.total,
                   )}
                   previousLabel={suppliersMessages.previousPage}

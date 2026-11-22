@@ -168,8 +168,15 @@ export function AppLayout({
               className="flex flex-1 flex-col gap-4 px-2 py-2"
             >
               {visibleNavGroups(NAV_GROUPS, user.role).map((group) => (
-                <div key={group.id} className="flex flex-col gap-1">
-                  <p className="px-3 text-caption font-medium text-muted-foreground">
+                <section
+                  key={group.id}
+                  aria-labelledby={`nav-group-${group.id}`}
+                  className="flex flex-col gap-1"
+                >
+                  <p
+                    id={`nav-group-${group.id}`}
+                    className="px-3 text-caption font-medium text-muted-foreground"
+                  >
                     {group.label}
                   </p>
                   {group.items.map((item) => (
@@ -184,7 +191,7 @@ export function AppLayout({
                       {item.label}
                     </Link>
                   ))}
-                </div>
+                </section>
               ))}
             </nav>
             <div className="flex items-center justify-between gap-2 border-t border-sidebar-border px-4 py-3">
