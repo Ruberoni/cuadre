@@ -3,11 +3,14 @@ import { describe, expect, it } from "vitest";
 import { daysInMonth } from "./date.ts";
 import {
   formatAmount,
+  formatBcvRate,
   formatDate,
   formatMoney,
+  formatRate,
   MAX_MINOR_UNITS,
   parseAmount,
   parseDate,
+  parseRateInput,
 } from "./index.ts";
 
 // fc.integer stops at 2^31 - 1, so the range up to 10^15 comes from bigInt.
@@ -52,5 +55,19 @@ describe("es-VE formatting round trips (ADR-014)", () => {
     for (const date of ["2000-02-29", "2028-02-29", "1900-02-28", "0004-02-29"]) {
       expect(parseDate(formatDate(date))).toEqual({ ok: true, value: date });
     }
+  });
+
+  it("formatting an 8-decimal rate and parsing it gives the same canonical rate", () => {
+    const rateStringArb = fc.bigInt({ min: 1n, max: 999_999_999_999_99999999n }).map((scaled) => {
+      const digits = scaled.toString().padStart(9, "0");
+      return `${digits.slice(0, -8)}.${digits.slice(-8)}`;
+    });
+
+    fc.assert(
+      fc.property(rateStringArb, (rate) => {
+        expect(parseRateInput(formatRate(rate))).toEqual({ ok: true, value: rate });
+        expect(parseRateInput(formatBcvRate(rate))).toEqual({ ok: true, value: rate });
+      }),
+    );
   });
 });

@@ -2,6 +2,8 @@
 // comes from an error code or a domain value lives here, in Spanish, verbatim from the design
 // handoffs. Screens never write these strings inline and never show a raw code.
 import type {
+  ExchangeRateField,
+  ExchangeRateIssueCode,
   ProductField,
   ProductIssueCode,
   Role,
@@ -11,7 +13,13 @@ import type {
 import type { ClientErrorCode } from "@/api/client";
 import type { PasswordInputLabels } from "@/components/password-input";
 import type { SignInError } from "@/features/auth/sign-in-error";
-import { formatMoney, NBSP, type ParseAmountError } from "@/lib/format";
+import {
+  formatDate,
+  formatMoney,
+  NBSP,
+  type ParseAmountError,
+  type ParseRateError,
+} from "@/lib/format";
 
 /**
  * Message for an error that belongs to no field, shown in the form alert. `UNAUTHORIZED` has none:
@@ -19,15 +27,23 @@ import { formatMoney, NBSP, type ParseAmountError } from "@/lib/format";
  */
 export const errorMessages: Record<
   Exclude<ClientErrorCode, "UNAUTHORIZED">,
-  (details: { sku?: string }) => string
+  (details: { sku?: string; date?: string }) => string
 > = {
   VALIDATION_ERROR: () => "Algunos datos no son válidos. Revisar los campos marcados.",
   SKU_ALREADY_EXISTS: ({ sku }) =>
     sku === undefined
       ? "Ya existe un producto con ese código."
       : `Ya existe un producto con el código ${sku}.`,
+  RATE_ALREADY_EXISTS: ({ date }) =>
+    date === undefined
+      ? "Ya existe una tasa para esa fecha. Para cambiarla, corregir la existente."
+      : `Ya existe una tasa para el ${formatDate(date)}. Para cambiarla, corregir la existente.`,
+  RATE_DATE_TOO_FAR: () => "La fecha no puede superar 7 días desde hoy.",
+  RATE_ALREADY_FROZEN: () =>
+    "Esta tasa ya fue usada en un documento emitido y no se puede corregir.",
+  MISSING_EXCHANGE_RATE: () => "No hay una tasa BCV registrada para esa fecha.",
   NOT_FOUND: () => "No se encontró lo que se buscaba.",
-  // Products handoff (#7): the only screen that can be refused today is the product form.
+  // Products handoff (#7): default screen is Productos; module-specific alerts override below.
   FORBIDDEN: () => "Solo un administrador puede crear o editar productos.",
   INTERNAL_ERROR: () => "No se pudo guardar el producto. Revisar la conexión e intentar de nuevo.",
   NETWORK_ERROR: () => "No se pudo guardar el producto. Revisar la conexión e intentar de nuevo.",
@@ -138,10 +154,93 @@ export const shellMessages = {
   skipLink: "Saltar al contenido",
   navLabel: "Principal",
   products: "Productos",
+  exchangeRates: "Tasas BCV",
+  headerRatePrefix: (date: string) => `Tasa BCV ${date}`,
+  noRateBadge: "Sin tasa BCV",
+  registerRateLink: "Registrar tasa",
+  noRateOtherRoles: "Un administrador debe registrarla.",
   signOut: "Cerrar sesión",
   /** Not in the App shell handoff: proposed in #51, same pattern as the sign-in network message. */
   signOutFailed: "No se pudo cerrar la sesión. Revisar la conexión e intentar de nuevo.",
   documentTitle: (pageTitle: string) => `${pageTitle} · Cuadre`,
+} as const;
+
+const RATE_NOT_A_NUMBER = "Escribir solo números, con coma para los decimales.";
+const DATE_FORMAT_INVALID = "Escribir una fecha válida con formato dd/mm/aaaa.";
+
+export const exchangeRateFieldMessages: Record<
+  ExchangeRateField,
+  Partial<Record<ExchangeRateIssueCode, string>>
+> = {
+  date: {
+    REQUIRED: "Falta la fecha.",
+    INVALID_DATE: DATE_FORMAT_INVALID,
+    INVALID: DATE_FORMAT_INVALID,
+  },
+  rate: {
+    REQUIRED: "Falta la tasa.",
+    INVALID_FORMAT: RATE_NOT_A_NUMBER,
+    TOO_MANY_DECIMALS: "Usar como máximo 8 decimales.",
+    NOT_POSITIVE: "La tasa debe ser mayor que 0.",
+    OUT_OF_RANGE: "Escribir un valor de tasa válido.",
+    INVALID: RATE_NOT_A_NUMBER,
+  },
+};
+
+export function exchangeRateFieldMessage(field: string, code: string): string | undefined {
+  const messages: Partial<Record<string, Partial<Record<string, string>>>> =
+    exchangeRateFieldMessages;
+  return messages[field]?.[code];
+}
+
+export const rateParseMessages: Record<ParseRateError, string> = {
+  NOT_A_NUMBER: RATE_NOT_A_NUMBER,
+  TOO_MANY_DECIMALS: "Usar como máximo 8 decimales.",
+  NOT_POSITIVE: "La tasa debe ser mayor que 0.",
+  OUT_OF_RANGE: "Escribir un valor de tasa válido.",
+};
+
+export const exchangeRatesMessages = {
+  pageTitle: "Tasas BCV",
+  registerAction: "Registrar tasa",
+  correctAction: "Corregir",
+  frozenBadge: "Congelada",
+  tableCaption: "Tasas BCV, ordenadas por fecha más reciente",
+  columns: {
+    date: "Fecha",
+    rate: "Tasa",
+    status: "Estado",
+    actions: "Acciones",
+  },
+  pager: (from: number, to: number, total: number) => `${from}–${to} de ${total} tasas`,
+  previousPage: "Página anterior",
+  nextPage: "Página siguiente",
+  recorded: (date: string) => `Tasa del ${date} registrada.`,
+  corrected: (date: string) => `Tasa del ${date} corregida.`,
+  empty: {
+    title: "Aún no hay tasas BCV",
+    description: "Las tasas BCV se usan al emitir órdenes de compra, facturas, cobros y pagos.",
+    readOnlyDescription: "Un administrador debe registrarlas.",
+  },
+  loadError: "No se pudo cargar la lista de tasas BCV. Revisar la conexión e intentar de nuevo.",
+  retry: "Reintentar",
+  form: {
+    recordTitle: "Registrar tasa BCV",
+    correctTitle: "Corregir tasa BCV",
+    date: "Fecha",
+    datePlaceholder: "dd/mm/aaaa",
+    dateHelp: "Formato dd/mm/aaaa. Hasta 7 días desde hoy.",
+    rate: "Tasa",
+    rateHelp: "Bolívares por 1 USD; hasta 8 decimales.",
+    currencyPrefix: "Bs.",
+    submit: "Guardar tasa",
+    submitting: "Guardando…",
+    cancel: "Cancelar",
+  },
+  errors: {
+    FORBIDDEN: "Solo un administrador puede registrar o corregir tasas BCV.",
+    saveFailed: "No se pudo guardar la tasa BCV. Revisar la conexión e intentar de nuevo.",
+  },
 } as const;
 
 /** Role names in the sidebar footer (App shell handoff, #7). */

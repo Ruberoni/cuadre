@@ -1,4 +1,4 @@
-import { PRODUCT_ROLES, type SessionUser } from "@cuadre/contracts";
+import { EXCHANGE_RATE_ROLES, PRODUCT_ROLES, type Role, type SessionUser } from "@cuadre/contracts";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { LogOutIcon } from "lucide-react";
 import {
@@ -11,10 +11,14 @@ import {
   useRef,
   useState,
 } from "react";
+import { useCurrentExchangeRate } from "@/api/exchange-rates";
 import { type NavItem, visibleNavItems } from "@/components/nav-items";
 import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { defaultExchangeRatesSearch } from "@/features/exchange-rates/search";
 import { defaultProductsSearch } from "@/features/products/search";
+import { formatBcvRate, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { roleLabels, shellMessages } from "@/messages";
 
@@ -22,8 +26,8 @@ type PageContext = {
   /** Undefined only while the session loads, when no page content renders. */
   user: SessionUser | undefined;
   setTitle: (title: string) => void;
-  /** Shows a status line (role="status") above the page content until the next navigation. */
-  announce: (text: string) => void;
+  /** Shows a status line (role="status") above the page content. */
+  announce: (text: string, options?: { persistAcrossNextNavigation?: boolean }) => void;
 };
 
 const AppPageContext = createContext<PageContext | undefined>(undefined);
@@ -49,8 +53,11 @@ export function useSignedInUser(): SessionUser {
   return context.user;
 }
 
-/** Status lines for the next page: `announce("Producto X creado.")`, then navigate. */
-export function useStatusAnnouncer(): (text: string) => void {
+/** Status lines: `announce("Producto X creado.")` persists across navigation; pass `false` on the same page. */
+export function useStatusAnnouncer(): (
+  text: string,
+  options?: { persistAcrossNextNavigation?: boolean },
+) => void {
   const context = useContext(AppPageContext);
   if (context === undefined) throw new Error("useStatusAnnouncer needs <AppLayout>");
   return context.announce;
@@ -58,8 +65,9 @@ export function useStatusAnnouncer(): (text: string) => void {
 
 // Items of screens that exist, each with the roles that see it (App shell handoff, #7 → "Nav per
 // role"). The rest of the Design System's navigation arrives with its slice.
-const NAV_ITEMS: readonly NavItem<"/productos">[] = [
+const NAV_ITEMS: readonly NavItem<"/productos" | "/tasas-bcv">[] = [
   { to: "/productos", label: shellMessages.products, roles: PRODUCT_ROLES.read },
+  { to: "/tasas-bcv", label: shellMessages.exchangeRates, roles: EXCHANGE_RATE_ROLES.read },
 ];
 
 const navLinkClass = cn(
@@ -102,10 +110,13 @@ export function AppLayout({
     setStatus(undefined);
   }, [pathname]);
 
-  const announce = useCallback((text: string) => {
-    keepStatusOnNextNavigation.current = true;
-    setStatus(text);
-  }, []);
+  const announce = useCallback(
+    (text: string, options?: { persistAcrossNextNavigation?: boolean }) => {
+      keepStatusOnNextNavigation.current = options?.persistAcrossNextNavigation ?? true;
+      setStatus(text);
+    },
+    [],
+  );
   const context = useMemo(() => ({ user, setTitle, announce }), [user, announce]);
 
   return (
@@ -130,7 +141,9 @@ export function AppLayout({
                 <Link
                   key={item.to}
                   to={item.to}
-                  search={defaultProductsSearch}
+                  search={
+                    item.to === "/productos" ? defaultProductsSearch : defaultExchangeRatesSearch
+                  }
                   // Active on every page of the section, whatever its search params or sub-page.
                   activeOptions={{ includeSearch: false }}
                   className={navLinkClass}
@@ -160,8 +173,9 @@ export function AppLayout({
         )}
       </aside>
       <div className="pl-(--sidebar-width)">
-        <header className="sticky top-0 z-10 flex h-(--header-height) items-center border-b border-border bg-background px-6">
+        <header className="sticky top-0 z-10 flex h-(--header-height) items-center justify-between gap-4 border-b border-border bg-background px-6">
           <h1 className="text-page-title">{title}</h1>
+          {user === undefined ? null : <HeaderExchangeRate role={user.role} />}
         </header>
         <main id="contenido" tabIndex={-1} className="p-6 outline-none">
           {/* Always mounted: a live region that appears together with its text is often not read. */}
@@ -181,5 +195,39 @@ export function AppLayout({
         </main>
       </div>
     </AppPageContext>
+  );
+}
+
+function HeaderExchangeRate({ role }: { role: Role }) {
+  const current = useCurrentExchangeRate();
+  if (current.isPending || current.isError || current.data === undefined) return null;
+
+  const { rate } = current.data;
+  if (rate !== null) {
+    return (
+      <div className="flex items-center gap-1.5 text-body">
+        <span className="text-muted-foreground">
+          {shellMessages.headerRatePrefix(formatDate(rate.date))}
+        </span>
+        <span className="font-semibold tabular-nums">{formatBcvRate(rate.rate)}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Badge variant="warning">{shellMessages.noRateBadge}</Badge>
+      {EXCHANGE_RATE_ROLES.write.includes(role) ? (
+        <Link
+          to="/tasas-bcv"
+          search={{ page: 1, registrar: true }}
+          className="inline-flex min-h-(--target-min) items-center rounded-sm text-label text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          {shellMessages.registerRateLink}
+        </Link>
+      ) : (
+        <span className="text-caption text-muted-foreground">{shellMessages.noRateOtherRoles}</span>
+      )}
+    </div>
   );
 }

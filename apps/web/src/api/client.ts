@@ -9,6 +9,7 @@ export type ApiFailure = {
   code: ClientErrorCode;
   issues?: readonly FieldIssue[];
   sku?: string;
+  date?: string;
 };
 
 /** Thrown by query functions, which TanStack Query needs as an exception. */
@@ -42,7 +43,7 @@ export function setUnauthorizedHandler(handler: () => void): void {
 export async function apiRequest<S extends z.ZodType>(
   path: string,
   success: S,
-  init?: { method: "POST"; body: unknown },
+  init?: { method: "POST" | "PATCH"; body: unknown },
 ): Promise<ApiResult<z.infer<S>>> {
   let response: Response;
   try {
@@ -67,11 +68,12 @@ export async function apiRequest<S extends z.ZodType>(
   }
   const failure = ApiError.safeParse(body);
   if (!failure.success) return fail(INTERNAL);
-  const { code, issues, sku } = failure.data;
+  const { code, issues, sku, date } = failure.data;
   return fail({
     code,
     ...(issues === undefined ? {} : { issues }),
     ...(sku === undefined ? {} : { sku }),
+    ...(date === undefined ? {} : { date }),
   });
 }
 
