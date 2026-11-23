@@ -263,30 +263,38 @@ test.describe("app shell", () => {
     warehouse: "Almacén",
   } as const;
 
+  const expectedNavByRole: Record<keyof typeof roleNames, readonly string[]> = {
+    admin: ["Productos", "Tasas BCV", "Proveedores"],
+    sales: ["Productos", "Tasas BCV"],
+    purchasing: ["Productos", "Tasas BCV", "Proveedores"],
+    warehouse: ["Productos", "Tasas BCV"],
+  };
+
   for (const [role, roleName] of Object.entries(roleNames)) {
-    test(`${role}: the sidebar offers Productos and the footer says ${roleName}`, async ({
+    test(`${role}: the sidebar offers expected links and the footer says ${roleName}`, async ({
       page,
     }) => {
-      const user = SEED_USERS[role as keyof typeof roleNames];
+      const roleKey = role as keyof typeof roleNames;
+      const user = SEED_USERS[roleKey];
       // Replace the admin signed in by beforeEach.
       await page.context().clearCookies();
       await signIn(page, user);
       await page.goto("/productos");
 
       const nav = page.getByRole("navigation", { name: "Principal" });
-      await expect(nav.getByRole("link")).toHaveText(["Productos", "Tasas BCV"]);
+      await expect(nav.getByRole("link")).toHaveText([...expectedNavByRole[roleKey]]);
       const sidebar = page.getByRole("complementary");
       await expect(sidebar).toContainText(user.name);
-      await expect(sidebar.getByText(roleName, { exact: true })).toBeVisible();
+      await expect(sidebar.getByText(roleName, { exact: true }).last()).toBeVisible();
     });
   }
 
-  test("the sidebar offers Productos and Tasas BCV", async ({ page }) => {
+  test("the sidebar offers Productos, Tasas BCV, and Proveedores for admin", async ({ page }) => {
     await page.goto("/productos");
 
     const nav = page.getByRole("navigation", { name: "Principal" });
-    await expect(nav.getByRole("link")).toHaveCount(2);
-    await expect(nav.getByRole("link")).toHaveText(["Productos", "Tasas BCV"]);
+    await expect(nav.getByRole("link")).toHaveCount(3);
+    await expect(nav.getByRole("link")).toHaveText(["Productos", "Tasas BCV", "Proveedores"]);
     await expect(nav.getByRole("link", { name: "Productos" })).toHaveAttribute(
       "aria-current",
       "page",

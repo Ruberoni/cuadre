@@ -9,6 +9,7 @@ export type ApiFailure = {
   code: ClientErrorCode;
   issues?: readonly FieldIssue[];
   sku?: string;
+  rif?: string;
   date?: string;
 };
 
@@ -68,11 +69,12 @@ export async function apiRequest<S extends z.ZodType>(
   }
   const failure = ApiError.safeParse(body);
   if (!failure.success) return fail(INTERNAL);
-  const { code, issues, sku, date } = failure.data;
+  const { code, issues, sku, rif, date } = failure.data;
   return fail({
     code,
     ...(issues === undefined ? {} : { issues }),
     ...(sku === undefined ? {} : { sku }),
+    ...(rif === undefined ? {} : { rif }),
     ...(date === undefined ? {} : { date }),
   });
 }

@@ -7,6 +7,8 @@ import type {
   ProductField,
   ProductIssueCode,
   Role,
+  SupplierField,
+  SupplierIssueCode,
   TaxRate,
   UnitOfMeasure,
 } from "@cuadre/contracts";
@@ -27,13 +29,17 @@ import {
  */
 export const errorMessages: Record<
   Exclude<ClientErrorCode, "UNAUTHORIZED">,
-  (details: { sku?: string; date?: string }) => string
+  (details: { sku?: string; rif?: string; date?: string }) => string
 > = {
   VALIDATION_ERROR: () => "Algunos datos no son válidos. Revisar los campos marcados.",
   SKU_ALREADY_EXISTS: ({ sku }) =>
     sku === undefined
       ? "Ya existe un producto con ese código."
       : `Ya existe un producto con el código ${sku}.`,
+  RIF_ALREADY_EXISTS: ({ rif }) =>
+    rif === undefined
+      ? "Ya existe un tercero con ese RIF."
+      : `Ya existe un tercero con el RIF ${rif}.`,
   RATE_ALREADY_EXISTS: ({ date }) =>
     date === undefined
       ? "Ya existe una tasa para esa fecha. Para cambiarla, corregir la existente."
@@ -153,8 +159,13 @@ export const shellMessages = {
   wordmark: "Cuadre",
   skipLink: "Saltar al contenido",
   navLabel: "Principal",
+  navGroups: {
+    general: "General",
+    purchasing: "Compras",
+  },
   products: "Productos",
   exchangeRates: "Tasas BCV",
+  suppliers: "Proveedores",
   headerRatePrefix: (date: string) => `Tasa BCV ${date}`,
   noRateBadge: "Sin tasa BCV",
   registerRateLink: "Registrar tasa",
@@ -240,6 +251,88 @@ export const exchangeRatesMessages = {
   errors: {
     FORBIDDEN: "Solo un administrador puede registrar o corregir tasas BCV.",
     saveFailed: "No se pudo guardar la tasa BCV. Revisar la conexión e intentar de nuevo.",
+  },
+} as const;
+
+export const supplierFieldMessages: Record<
+  SupplierField,
+  Partial<Record<SupplierIssueCode, string>>
+> = {
+  rif: {
+    REQUIRED: "Falta el RIF.",
+    INVALID_FORMAT: "Escribir un RIF válido, como J-12345678-9.",
+    INVALID_CHECK_DIGIT: "El dígito verificador del RIF no coincide.",
+    INVALID: "Escribir un RIF válido, como J-12345678-9.",
+  },
+  name: {
+    REQUIRED: "Falta la razón social.",
+    TOO_LONG: "Usar como máximo 120 caracteres.",
+    INVALID: "Falta la razón social.",
+  },
+  phone: {
+    TOO_LONG: "Usar como máximo 30 caracteres.",
+    INVALID: "Usar como máximo 30 caracteres.",
+  },
+  email: {
+    INVALID_FORMAT: "Escribir un correo electrónico válido, como nombre@empresa.com.",
+    TOO_LONG: "Usar como máximo 120 caracteres.",
+    INVALID: "Escribir un correo electrónico válido, como nombre@empresa.com.",
+  },
+  address: {
+    TOO_LONG: "Usar como máximo 250 caracteres.",
+    INVALID: "Usar como máximo 250 caracteres.",
+  },
+};
+
+export function supplierFieldMessage(field: string, code: string): string | undefined {
+  const messages: Partial<Record<string, Partial<Record<string, string>>>> = supplierFieldMessages;
+  return messages[field]?.[code];
+}
+
+export const suppliersMessages = {
+  pageTitle: "Proveedores",
+  newSupplier: "Nuevo proveedor",
+  searchPlaceholder: "Buscar por razón social o RIF",
+  tableCaption: (sortedBy: string) => `Proveedores, ordenados por ${sortedBy}`,
+  columns: {
+    rif: "RIF",
+    name: "Razón social",
+    phone: "Teléfono",
+    email: "Correo electrónico",
+  },
+  emptyCell: "—",
+  pager: (from: number, to: number, total: number) => `${from}–${to} de ${total} proveedores`,
+  previousPage: "Página anterior",
+  nextPage: "Página siguiente",
+  created: (rif: string) => `Proveedor ${rif} creado.`,
+  empty: {
+    title: "Aún no hay proveedores",
+    description: "Los proveedores se usan en las órdenes de compra y los pagos.",
+  },
+  noResults: {
+    title: (query: string) => `Sin resultados para «${query}»`,
+    description: "Buscar por otra parte de la razón social o por el RIF.",
+    clear: "Limpiar búsqueda",
+  },
+  loadError: "No se pudo cargar la lista de proveedores. Revisar la conexión e intentar de nuevo.",
+  retry: "Reintentar",
+  form: {
+    title: "Nuevo proveedor",
+    rif: "RIF",
+    rifPlaceholder: "J-12345678-9",
+    rifHelp: "Ej.: J-12345678-9. Se normaliza automáticamente.",
+    name: "Razón social",
+    phone: "Teléfono",
+    email: "Correo electrónico",
+    emailPlaceholder: "nombre@empresa.com",
+    address: "Dirección",
+    submit: "Guardar proveedor",
+    submitting: "Guardando…",
+    cancel: "Cancelar",
+  },
+  errors: {
+    FORBIDDEN: "Solo un administrador o compras puede gestionar proveedores.",
+    saveFailed: "No se pudo guardar el proveedor. Revisar la conexión e intentar de nuevo.",
   },
 } as const;
 

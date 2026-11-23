@@ -1,4 +1,10 @@
-import { EXCHANGE_RATE_ROLES, PRODUCT_ROLES, type Role, type SessionUser } from "@cuadre/contracts";
+import {
+  EXCHANGE_RATE_ROLES,
+  PRODUCT_ROLES,
+  type Role,
+  type SessionUser,
+  SUPPLIER_ROLES,
+} from "@cuadre/contracts";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { LogOutIcon } from "lucide-react";
 import {
@@ -12,12 +18,13 @@ import {
   useState,
 } from "react";
 import { useCurrentExchangeRate } from "@/api/exchange-rates";
-import { type NavItem, visibleNavItems } from "@/components/nav-items";
+import { type NavGroup, visibleNavGroups } from "@/components/nav-items";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { defaultExchangeRatesSearch } from "@/features/exchange-rates/search";
 import { defaultProductsSearch } from "@/features/products/search";
+import { defaultSuppliersSearch } from "@/features/suppliers/search";
 import { formatBcvRate, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { roleLabels, shellMessages } from "@/messages";
@@ -63,12 +70,35 @@ export function useStatusAnnouncer(): (
   return context.announce;
 }
 
-// Items of screens that exist, each with the roles that see it (App shell handoff, #7 → "Nav per
-// role"). The rest of the Design System's navigation arrives with its slice.
-const NAV_ITEMS: readonly NavItem<"/productos" | "/tasas-bcv">[] = [
-  { to: "/productos", label: shellMessages.products, roles: PRODUCT_ROLES.read },
-  { to: "/tasas-bcv", label: shellMessages.exchangeRates, roles: EXCHANGE_RATE_ROLES.read },
+type NavRoute = "/productos" | "/tasas-bcv" | "/proveedores";
+
+// Grouped sidebar items for screens that exist, each with the roles that see it (PLAN → Roles).
+const NAV_GROUPS: readonly NavGroup<NavRoute>[] = [
+  {
+    id: "general",
+    label: shellMessages.navGroups.general,
+    items: [
+      { to: "/productos", label: shellMessages.products, roles: PRODUCT_ROLES.read },
+      { to: "/tasas-bcv", label: shellMessages.exchangeRates, roles: EXCHANGE_RATE_ROLES.read },
+    ],
+  },
+  {
+    id: "purchasing",
+    label: shellMessages.navGroups.purchasing,
+    items: [{ to: "/proveedores", label: shellMessages.suppliers, roles: SUPPLIER_ROLES.read }],
+  },
 ];
+
+function defaultSearchFor(to: NavRoute) {
+  switch (to) {
+    case "/productos":
+      return defaultProductsSearch;
+    case "/tasas-bcv":
+      return defaultExchangeRatesSearch;
+    case "/proveedores":
+      return defaultSuppliersSearch;
+  }
+}
 
 const navLinkClass = cn(
   "relative flex min-h-(--control-height) items-center rounded-md px-3 py-1.5 text-body text-sidebar-foreground",
@@ -135,21 +165,33 @@ export function AppLayout({
           <>
             <nav
               aria-label={shellMessages.navLabel}
-              className="flex flex-1 flex-col gap-1 px-2 py-2"
+              className="flex flex-1 flex-col gap-4 px-2 py-2"
             >
-              {visibleNavItems(NAV_ITEMS, user.role).map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  search={
-                    item.to === "/productos" ? defaultProductsSearch : defaultExchangeRatesSearch
-                  }
-                  // Active on every page of the section, whatever its search params or sub-page.
-                  activeOptions={{ includeSearch: false }}
-                  className={navLinkClass}
+              {visibleNavGroups(NAV_GROUPS, user.role).map((group) => (
+                <section
+                  key={group.id}
+                  aria-labelledby={`nav-group-${group.id}`}
+                  className="flex flex-col gap-1"
                 >
-                  {item.label}
-                </Link>
+                  <p
+                    id={`nav-group-${group.id}`}
+                    className="px-3 text-caption font-medium text-muted-foreground"
+                  >
+                    {group.label}
+                  </p>
+                  {group.items.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      search={defaultSearchFor(item.to)}
+                      // Active on every page of the section, whatever its search params or sub-page.
+                      activeOptions={{ includeSearch: false }}
+                      className={navLinkClass}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </section>
               ))}
             </nav>
             <div className="flex items-center justify-between gap-2 border-t border-sidebar-border px-4 py-3">
