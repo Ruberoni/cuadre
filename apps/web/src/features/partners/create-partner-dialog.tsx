@@ -1,16 +1,18 @@
 import {
+  type CreatePartnerRequest,
   PARTNER_ADDRESS_MAX_LENGTH,
   PARTNER_EMAIL_MAX_LENGTH,
+  PARTNER_FIELDS,
   PARTNER_NAME_MAX_LENGTH,
   PARTNER_PHONE_MAX_LENGTH,
-  SUPPLIER_FIELDS,
+  type Partner,
 } from "@cuadre/contracts";
 import { parseRif } from "@cuadre/shared-kernel";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useCreateSupplier } from "@/api/suppliers";
+import type { ApiResult } from "@/api/client";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,12 +32,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  errorMessages,
-  supplierFieldMessage,
-  supplierFieldMessages,
-  suppliersMessages,
-} from "@/messages";
+import { errorMessages, partnerFieldMessage, partnerFieldMessages } from "@/messages";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -45,52 +42,86 @@ const formSchema = z.object({
     if (!parsed.ok) {
       context.addIssue({
         code: "custom",
-        message: supplierFieldMessages.rif[parsed.error] ?? "",
+        message: partnerFieldMessages.rif[parsed.error] ?? "",
       });
     }
   }),
   name: z
     .string()
     .trim()
-    .min(1, supplierFieldMessages.name.REQUIRED)
-    .max(PARTNER_NAME_MAX_LENGTH, supplierFieldMessages.name.TOO_LONG),
-  phone: z.string().trim().max(PARTNER_PHONE_MAX_LENGTH, supplierFieldMessages.phone.TOO_LONG),
+    .min(1, partnerFieldMessages.name.REQUIRED)
+    .max(PARTNER_NAME_MAX_LENGTH, partnerFieldMessages.name.TOO_LONG),
+  phone: z.string().trim().max(PARTNER_PHONE_MAX_LENGTH, partnerFieldMessages.phone.TOO_LONG),
   email: z.string().superRefine((text, context) => {
     const trimmed = text.trim();
     if (trimmed === "") return;
     if (trimmed.length > PARTNER_EMAIL_MAX_LENGTH) {
-      context.addIssue({ code: "custom", message: supplierFieldMessages.email.TOO_LONG ?? "" });
+      context.addIssue({ code: "custom", message: partnerFieldMessages.email.TOO_LONG ?? "" });
       return;
     }
     if (!EMAIL_PATTERN.test(trimmed)) {
       context.addIssue({
         code: "custom",
-        message: supplierFieldMessages.email.INVALID_FORMAT ?? "",
+        message: partnerFieldMessages.email.INVALID_FORMAT ?? "",
       });
     }
   }),
-  address: z
-    .string()
-    .trim()
-    .max(PARTNER_ADDRESS_MAX_LENGTH, supplierFieldMessages.address.TOO_LONG),
+  address: z.string().trim().max(PARTNER_ADDRESS_MAX_LENGTH, partnerFieldMessages.address.TOO_LONG),
 });
 type FormValues = z.infer<typeof formSchema>;
 
 const isFieldName = (name: string): name is keyof FormValues =>
-  (SUPPLIER_FIELDS as readonly string[]).includes(name);
+  (PARTNER_FIELDS as readonly string[]).includes(name);
 
-export function CreateSupplierDialog({
+export type PartnerDialogMessages = {
+  readonly form: {
+    readonly title: string;
+    readonly rif: string;
+    readonly rifPlaceholder: string;
+    readonly rifHelp: string;
+    readonly name: string;
+    readonly phone: string;
+    readonly email: string;
+    readonly emailPlaceholder: string;
+    readonly address: string;
+    readonly submit: string;
+    readonly confirmExistingSubmit: string;
+    readonly existingPartnerWarning: (rif: string, partnerName: string) => string;
+    readonly submitting: string;
+    readonly cancel: string;
+  };
+  readonly errors: {
+    readonly FORBIDDEN: string;
+    readonly saveFailed: string;
+  };
+};
+
+type ExistingPartnerPrompt = {
+  readonly rif: string;
+  readonly name: string;
+};
+
+export function CreatePartnerDialog({
   open,
   onClose,
-  onCreated,
+  onSaved,
+  isPending,
+  onSubmitPartner,
+  messages,
 }: {
   open: boolean;
   onClose: () => void;
-  onCreated: (rif: string) => void;
+  onSaved: (rif: string, promoted: boolean) => void;
+  isPending: boolean;
+  onSubmitPartner: (request: CreatePartnerRequest) => Promise<ApiResult<Partner>>;
+  messages: PartnerDialogMessages;
 }) {
-  const createSupplier = useCreateSupplier();
   const [formError, setFormError] = useState<string | undefined>(undefined);
+  const [existingPartner, setExistingPartner] = useState<ExistingPartnerPrompt | undefined>(
+    undefined,
+  );
   const alertRef = useRef<HTMLDivElement>(null);
+  const existingAlertRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -101,6 +132,7 @@ export function CreateSupplierDialog({
   useEffect(() => {
     if (!open) return;
     setFormError(undefined);
+    setExistingPartner(undefined);
     reset({ rif: "", name: "", phone: "", email: "", address: "" });
   }, [open, reset]);
 
@@ -108,23 +140,42 @@ export function CreateSupplierDialog({
     if (formError !== undefined) alertRef.current?.focus();
   }, [formError]);
 
+  useEffect(() => {
+    if (existingPartner !== undefined) existingAlertRef.current?.focus();
+  }, [existingPartner]);
+
   async function onSubmit(values: FormValues) {
     setFormError(undefined);
-    const result = await createSupplier.mutateAsync({
+    const parsedRif = parseRif(values.rif);
+    const confirming =
+      existingPartner !== undefined && parsedRif.ok && parsedRif.value === existingPartner.rif;
+
+    const result = await onSubmitPartner({
       rif: values.rif,
       name: values.name,
       phone: values.phone.trim() === "" ? null : values.phone.trim(),
       email: values.email.trim() === "" ? null : values.email.trim(),
       address: values.address.trim() === "" ? null : values.address.trim(),
+      ...(confirming ? { confirmExistingPartner: true } : {}),
     });
 
     if (result.ok) {
-      onCreated(result.value.rif);
+      onSaved(result.value.rif, confirming);
       return;
     }
 
     const failure = result.error;
     if (failure.code === "UNAUTHORIZED") return;
+    if (failure.code === "PARTNER_ALREADY_EXISTS") {
+      setExistingPartner({
+        rif: failure.rif ?? (parsedRif.ok ? parsedRif.value : values.rif),
+        name: failure.partnerName ?? "",
+      });
+      return;
+    }
+
+    setExistingPartner(undefined);
+
     if (failure.code === "RIF_ALREADY_EXISTS") {
       form.setError(
         "rif",
@@ -140,7 +191,7 @@ export function CreateSupplierDialog({
     if (failure.code === "VALIDATION_ERROR") {
       let focused = false;
       for (const issue of failure.issues ?? []) {
-        const message = supplierFieldMessage(issue.field, issue.code);
+        const message = partnerFieldMessage(issue.field, issue.code);
         if (message === undefined || !isFieldName(issue.field)) continue;
         form.setError(issue.field, { message }, { shouldFocus: !focused });
         focused = true;
@@ -148,11 +199,11 @@ export function CreateSupplierDialog({
       if (focused) return;
     }
     if (failure.code === "FORBIDDEN") {
-      setFormError(suppliersMessages.errors.FORBIDDEN);
+      setFormError(messages.errors.FORBIDDEN);
       return;
     }
     if (failure.code === "INTERNAL_ERROR" || failure.code === "NETWORK_ERROR") {
-      setFormError(suppliersMessages.errors.saveFailed);
+      setFormError(messages.errors.saveFailed);
       return;
     }
     setFormError(errorMessages[failure.code]({}));
@@ -167,7 +218,7 @@ export function CreateSupplierDialog({
         }}
       >
         <DialogHeader>
-          <DialogTitle>{suppliersMessages.form.title}</DialogTitle>
+          <DialogTitle>{messages.form.title}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
@@ -176,16 +227,25 @@ export function CreateSupplierDialog({
               name="rif"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{suppliersMessages.form.rif}</FormLabel>
+                  <FormLabel>{messages.form.rif}</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder={suppliersMessages.form.rifPlaceholder}
+                      onChange={(event) => {
+                        field.onChange(event);
+                        if (existingPartner !== undefined) {
+                          const parsed = parseRif(event.target.value);
+                          if (!parsed.ok || parsed.value !== existingPartner.rif) {
+                            setExistingPartner(undefined);
+                          }
+                        }
+                      }}
+                      placeholder={messages.form.rifPlaceholder}
                       autoComplete="off"
                       aria-required="true"
                     />
                   </FormControl>
-                  <FormDescription>{suppliersMessages.form.rifHelp}</FormDescription>
+                  <FormDescription>{messages.form.rifHelp}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -196,7 +256,7 @@ export function CreateSupplierDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{suppliersMessages.form.name}</FormLabel>
+                  <FormLabel>{messages.form.name}</FormLabel>
                   <FormControl>
                     <Input {...field} autoComplete="off" aria-required="true" />
                   </FormControl>
@@ -211,7 +271,7 @@ export function CreateSupplierDialog({
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{suppliersMessages.form.phone}</FormLabel>
+                    <FormLabel>{messages.form.phone}</FormLabel>
                     <FormControl>
                       <Input {...field} type="tel" autoComplete="off" />
                     </FormControl>
@@ -225,12 +285,12 @@ export function CreateSupplierDialog({
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{suppliersMessages.form.email}</FormLabel>
+                    <FormLabel>{messages.form.email}</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         type="email"
-                        placeholder={suppliersMessages.form.emailPlaceholder}
+                        placeholder={messages.form.emailPlaceholder}
                         autoComplete="off"
                       />
                     </FormControl>
@@ -245,7 +305,7 @@ export function CreateSupplierDialog({
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{suppliersMessages.form.address}</FormLabel>
+                  <FormLabel>{messages.form.address}</FormLabel>
                   <FormControl>
                     <Input {...field} autoComplete="off" />
                   </FormControl>
@@ -253,6 +313,20 @@ export function CreateSupplierDialog({
                 </FormItem>
               )}
             />
+
+            {existingPartner === undefined ? null : (
+              <Alert
+                ref={existingAlertRef}
+                variant="warning"
+                role="alert"
+                tabIndex={-1}
+                className="block"
+              >
+                {existingPartner.name !== ""
+                  ? messages.form.existingPartnerWarning(existingPartner.rif, existingPartner.name)
+                  : errorMessages.PARTNER_ALREADY_EXISTS({ rif: existingPartner.rif })}
+              </Alert>
+            )}
 
             {formError === undefined ? null : (
               <Alert
@@ -268,12 +342,14 @@ export function CreateSupplierDialog({
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>
-                {suppliersMessages.form.cancel}
+                {messages.form.cancel}
               </Button>
-              <Button type="submit" loading={createSupplier.isPending}>
-                {createSupplier.isPending
-                  ? suppliersMessages.form.submitting
-                  : suppliersMessages.form.submit}
+              <Button type="submit" loading={isPending}>
+                {isPending
+                  ? messages.form.submitting
+                  : existingPartner !== undefined
+                    ? messages.form.confirmExistingSubmit
+                    : messages.form.submit}
               </Button>
             </DialogFooter>
           </form>

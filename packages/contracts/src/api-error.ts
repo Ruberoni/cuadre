@@ -5,6 +5,7 @@ export const API_ERROR_CODES = [
   "VALIDATION_ERROR",
   "SKU_ALREADY_EXISTS",
   "RIF_ALREADY_EXISTS",
+  "PARTNER_ALREADY_EXISTS",
   "RATE_ALREADY_EXISTS",
   "RATE_DATE_TOO_FAR",
   "RATE_ALREADY_FROZEN",
@@ -30,8 +31,10 @@ export const ApiError = z.object({
   issues: z.array(FieldIssue).optional(),
   /** `SKU_ALREADY_EXISTS` only: the code as stored (normalised), so clients show it as is. */
   sku: z.string().optional(),
-  /** `RIF_ALREADY_EXISTS` only: the RIF as stored (normalised), so clients show it as is. */
+  /** `RIF_ALREADY_EXISTS` and `PARTNER_ALREADY_EXISTS`: the RIF as stored (normalised), so clients show it as is. */
   rif: z.string().optional(),
+  /** `PARTNER_ALREADY_EXISTS` only: the existing partner's legal name. */
+  partnerName: z.string().optional(),
   /** Exchange-rate errors (`RATE_ALREADY_EXISTS`, `RATE_DATE_TOO_FAR`, `RATE_ALREADY_FROZEN`, `MISSING_EXCHANGE_RATE`): `YYYY-MM-DD`. */
   date: z.string().optional(),
 });

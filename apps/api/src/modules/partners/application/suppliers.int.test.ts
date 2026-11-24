@@ -4,7 +4,9 @@ import { testDatabaseUrl } from "../../../../test/test-database.ts";
 import { createDb } from "../../../db/client.ts";
 import { createDrizzlePartnerRepository } from "../infrastructure/drizzle-partner-repository.ts";
 import { seedPartners } from "../infrastructure/seed-partners.ts";
+import { createCustomerUseCase } from "./create-customer.ts";
 import { createSupplierUseCase } from "./create-supplier.ts";
+import { listCustomersUseCase } from "./list-customers.ts";
 import { listSuppliersUseCase } from "./list-suppliers.ts";
 
 const { db, close } = createDb(testDatabaseUrl());
@@ -25,6 +27,7 @@ describe("createSupplierUseCase & listSuppliersUseCase", () => {
 
     expect(created.ok).toBe(true);
     if (!created.ok) return;
+    expect(created.promoted).toBe(false);
     expect(created.value).toMatchObject({
       rif: "J-30123456-1",
       name: "Distribuidora Andina, C.A.",
@@ -58,7 +61,7 @@ describe("createSupplierUseCase & listSuppliersUseCase", () => {
     });
   });
 
-  it("searches by legal name and by RIF prefix", async () => {
+  it("searches by legal name and by RIF prefix and excludes customer-only partners", async () => {
     await createSupplierUseCase(partners, {
       rif: "J-30123456-1",
       name: "Distribuidora Andina, C.A.",
@@ -67,6 +70,13 @@ describe("createSupplierUseCase & listSuppliersUseCase", () => {
       rif: "J-40234567-4",
       name: "Alimentos del Sur, C.A.",
     });
+    await createCustomerUseCase(partners, {
+      rif: "J-40987654-3",
+      name: "Abastos La Esquina, C.A.",
+    });
+
+    const all = await listSuppliersUseCase(partners, { sort: "name", order: "asc", page: 1 });
+    expect(all.total).toBe(2);
 
     const byName = await listSuppliersUseCase(partners, {
       q: "andina",
@@ -105,11 +115,59 @@ describe("createSupplierUseCase & listSuppliersUseCase", () => {
     expect(byRif.items.map((item) => item.rif)).toEqual(["J-30123456-1", "J-40234567-4"]);
   });
 
-  it("seeds demo suppliers idempotently", async () => {
+  it("warns on an existing customer RIF and promotes it on confirm keeping legal name and contact fields", async () => {
+    const customer = await createCustomerUseCase(partners, {
+      rif: "J-40987654-3",
+      name: "Abastos La Esquina, C.A.",
+      phone: "+58 212-555-0201",
+      email: "compras@laesquina.test",
+      address: "Av. Francisco de Miranda, Chacao, Caracas",
+    });
+    expect(customer.ok).toBe(true);
+    if (!customer.ok) return;
+
+    const warned = await createSupplierUseCase(partners, {
+      rif: "J-40987654-3",
+      name: "Otro Proveedor, C.A.",
+    });
+    expect(warned).toEqual({
+      ok: false,
+      error: "PARTNER_ALREADY_EXISTS",
+      rif: "J-40987654-3",
+      partnerName: "Abastos La Esquina, C.A.",
+    });
+
+    const confirmed = await createSupplierUseCase(partners, {
+      rif: "J-40987654-3",
+      name: "Otro Proveedor, C.A.",
+      confirmExistingPartner: true,
+    });
+    expect(confirmed).toEqual({
+      ok: true,
+      promoted: true,
+      value: {
+        id: customer.value.id,
+        rif: "J-40987654-3",
+        name: "Abastos La Esquina, C.A.",
+        phone: "+58 212-555-0201",
+        email: "compras@laesquina.test",
+        address: "Av. Francisco de Miranda, Chacao, Caracas",
+        isSupplier: true,
+        isCustomer: true,
+      },
+    });
+  });
+
+  it("seeds demo suppliers and customers idempotently", async () => {
     const first = await seedPartners(partners);
     const second = await seedPartners(partners);
 
-    expect(first).toBeGreaterThan(0);
+    expect(first).toBe(10);
     expect(second).toBe(0);
+
+    const suppliers = await listSuppliersUseCase(partners, { sort: "name", order: "asc", page: 1 });
+    const customers = await listCustomersUseCase(partners, { sort: "name", order: "asc", page: 1 });
+    expect(suppliers.total).toBe(5);
+    expect(customers.total).toBe(5);
   });
 });

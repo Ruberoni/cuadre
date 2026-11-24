@@ -1,5 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { SEED_USERS, signIn } from "../support/auth.ts";
+import { givenCustomer } from "../support/customers.ts";
 import { resetDatabase } from "../support/database.ts";
 import { givenSupplier } from "../support/suppliers.ts";
 
@@ -155,6 +156,36 @@ test.describe("suppliers as purchasing", () => {
     await expect(search).toBeFocused();
     await expect(page.getByRole("row", { name: /Alimentos del Sur, C\.A\./ })).toBeVisible();
   });
+
+  test("warns when RIF belongs to an existing customer and promotes it on confirm keeping its legal name", async ({
+    page,
+    request,
+  }) => {
+    await givenCustomer(request, {
+      rif: "J-40987654-3",
+      name: "Abastos La Esquina, C.A.",
+    });
+
+    await page.goto("/proveedores");
+    await openCreateDialog(page);
+    await fillSupplierForm(page, {
+      rif: "J-40987654-3",
+      name: "Otro Proveedor, C.A.",
+    });
+    await submitDialog(page);
+
+    const dialog = page.getByRole("dialog", { name: "Nuevo proveedor" });
+    await expect(dialog.getByRole("alert")).toHaveText(
+      "El RIF J-40987654-3 ya pertenece al tercero «Abastos La Esquina, C.A.». Al confirmar, también se registrará como proveedor conservando sus datos actuales.",
+    );
+    await dialog.getByRole("button", { name: "Agregar como proveedor" }).click();
+
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.getByRole("status")).toHaveText("Proveedor J-40987654-3 agregado.");
+    const row = page.getByRole("row", { name: /J-40987654-3/ });
+    await expect(row).toBeVisible();
+    await expect(row).toContainText("Abastos La Esquina, C.A.");
+  });
 });
 
 test.describe("suppliers role restriction", () => {
@@ -163,8 +194,10 @@ test.describe("suppliers role restriction", () => {
   }) => {
     await resetDatabase();
     await signIn(page, SEED_USERS.sales);
+    await page.goto("/productos");
 
     const nav = page.getByRole("navigation", { name: "Principal" });
+    await expect(nav.getByRole("link", { name: "Productos" })).toBeVisible();
     await expect(nav.getByRole("link", { name: "Proveedores" })).toHaveCount(0);
     await expect(nav.getByText("Compras")).toHaveCount(0);
 

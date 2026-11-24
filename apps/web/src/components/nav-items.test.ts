@@ -43,18 +43,27 @@ describe("visibleNavGroups", () => {
       label: "Compras",
       items: [{ to: "/proveedores", label: "Proveedores", roles: ["admin", "purchasing"] }],
     },
+    {
+      id: "sales",
+      label: "Ventas",
+      items: [{ to: "/clientes", label: "Clientes", roles: ["admin", "sales"] }],
+    },
   ];
 
-  it("shows Compras group to admin and purchasing", () => {
-    expect(visibleNavGroups(groups, "admin").map((g) => g.label)).toEqual(["General", "Compras"]);
+  it("shows Compras and Ventas groups to the roles allowed by PLAN → Roles", () => {
+    expect(visibleNavGroups(groups, "admin").map((g) => g.label)).toEqual([
+      "General",
+      "Compras",
+      "Ventas",
+    ]);
     expect(visibleNavGroups(groups, "purchasing").map((g) => g.label)).toEqual([
       "General",
       "Compras",
     ]);
+    expect(visibleNavGroups(groups, "sales").map((g) => g.label)).toEqual(["General", "Ventas"]);
   });
 
   it("omits empty groups for roles that cannot access any item in them", () => {
-    expect(visibleNavGroups(groups, "sales").map((g) => g.label)).toEqual(["General"]);
     expect(visibleNavGroups(groups, "warehouse").map((g) => g.label)).toEqual(["General"]);
   });
 });

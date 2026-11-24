@@ -1,21 +1,29 @@
-import type { SupplierSortField } from "@cuadre/contracts";
-import type { Result } from "@cuadre/shared-kernel";
+import type { PartnerRole, PartnerSortField } from "@cuadre/contracts";
 import type { NewPartner, Partner } from "../domain/partner.ts";
 
-export type SupplierListParams = {
+export type PartnerListParams = {
   readonly search?: string;
-  readonly sort: SupplierSortField;
+  readonly sort: PartnerSortField;
   readonly order: "asc" | "desc";
   readonly page: number;
   readonly pageSize: number;
 };
 
-export type SupplierListPage = {
+export type PartnerListPage = {
   readonly items: readonly Partner[];
   readonly total: number;
 };
 
+export type SavePartnerResult =
+  | { ok: true; value: Partner; promoted: boolean }
+  | { ok: false; error: "RIF_ALREADY_EXISTS" }
+  | { ok: false; error: "PARTNER_ALREADY_EXISTS"; partnerName: string };
+
 export type PartnerRepository = {
-  insert(partner: NewPartner): Promise<Result<Partner, "RIF_ALREADY_EXISTS">>;
-  listSuppliers(params: SupplierListParams): Promise<SupplierListPage>;
+  saveForRole(
+    partner: NewPartner,
+    role: PartnerRole,
+    options: { readonly confirmExistingPartner: boolean },
+  ): Promise<SavePartnerResult>;
+  listByRole(role: PartnerRole, params: PartnerListParams): Promise<PartnerListPage>;
 };

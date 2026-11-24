@@ -1,4 +1,4 @@
-import type { SupplierField, SupplierIssueCode } from "@cuadre/contracts";
+import type { PartnerField, PartnerIssueCode } from "@cuadre/contracts";
 import {
   err,
   type FieldIssue,
@@ -12,14 +12,17 @@ import {
 import { parsePartnerAddress, parsePartnerEmail, parsePartnerPhone } from "./partner-contact.ts";
 import { type PartnerName, parsePartnerName } from "./partner-name.ts";
 
-/** What a caller sends to create a supplier: untrusted text, checked by `createSupplier`. */
-export type SupplierInput = {
+/** What a caller sends to create a partner: untrusted text, checked by `createSupplier` / `createCustomer`. */
+export type PartnerInput = {
   readonly rif: string;
   readonly name: string;
   readonly phone?: string | null | undefined;
   readonly email?: string | null | undefined;
   readonly address?: string | null | undefined;
 };
+
+export type SupplierInput = PartnerInput;
+export type CustomerInput = PartnerInput;
 
 /** A valid partner that has not been stored yet. */
 export type NewPartner = {
@@ -34,20 +37,25 @@ export type NewPartner = {
 
 export type Partner = NewPartner & { readonly id: string };
 
-export type SupplierFieldIssue = FieldIssue<SupplierField, SupplierIssueCode>;
-export type SupplierValidationFailure = ValidationFailure<SupplierField, SupplierIssueCode>;
+export type PartnerFieldIssue = FieldIssue<PartnerField, PartnerIssueCode>;
+export type PartnerValidationFailure = ValidationFailure<PartnerField, PartnerIssueCode>;
+export type SupplierFieldIssue = PartnerFieldIssue;
+export type SupplierValidationFailure = PartnerValidationFailure;
+export type CustomerFieldIssue = PartnerFieldIssue;
+export type CustomerValidationFailure = PartnerValidationFailure;
 
-/** Enforces every supplier rule and reports all invalid fields at once. */
-export function createSupplier(
-  input: SupplierInput,
-): { ok: true; value: NewPartner } | SupplierValidationFailure {
+/** Enforces every partner rule and reports all invalid fields at once. */
+function createPartnerForRole(
+  input: PartnerInput,
+  roles: { readonly isSupplier: boolean; readonly isCustomer: boolean },
+): { ok: true; value: NewPartner } | PartnerValidationFailure {
   const rif = parseRif(input.rif);
   const name = parsePartnerName(input.name);
   const phone = parsePartnerPhone(input.phone);
   const email = parsePartnerEmail(input.email);
   const address = parsePartnerAddress(input.address);
 
-  const issues: SupplierFieldIssue[] = [];
+  const issues: PartnerFieldIssue[] = [];
   if (!rif.ok) issues.push({ field: "rif", code: rif.error });
   if (!name.ok) issues.push({ field: "name", code: name.error });
   if (!phone.ok) issues.push({ field: "phone", code: phone.error });
@@ -64,9 +72,23 @@ export function createSupplier(
     phone: phone.value,
     email: email.value,
     address: address.value,
-    isSupplier: true,
-    isCustomer: false,
+    isSupplier: roles.isSupplier,
+    isCustomer: roles.isCustomer,
   });
+}
+
+/** Enforces every supplier rule and reports all invalid fields at once. */
+export function createSupplier(
+  input: SupplierInput,
+): { ok: true; value: NewPartner } | SupplierValidationFailure {
+  return createPartnerForRole(input, { isSupplier: true, isCustomer: false });
+}
+
+/** Enforces every customer rule and reports all invalid fields at once. */
+export function createCustomer(
+  input: CustomerInput,
+): { ok: true; value: NewPartner } | CustomerValidationFailure {
+  return createPartnerForRole(input, { isSupplier: false, isCustomer: true });
 }
 
 export type PartnerRowInput = {
