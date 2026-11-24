@@ -1,6 +1,13 @@
 // es-VE quantity formatting and parsing (Design System → Formatting, ADR-005).
 // Works on exact decimal strings, never floats.
-import { err, ok, parseQuantity, type QuantityError, type Result } from "@cuadre/shared-kernel";
+import {
+  err,
+  ok,
+  parseQuantity,
+  type QuantityError,
+  quantityToString,
+  type Result,
+} from "@cuadre/shared-kernel";
 import { groupThousands } from "./money.ts";
 
 /** Canonical dot-decimal `"1234.5"` → es-VE `"1.234,5"`, `"100"` → `"100"`. */
@@ -33,9 +40,5 @@ export function parseQuantityInput(
 
   const parsed = parseQuantity(canonical, { allowDecimals });
   if (!parsed.ok) return err(parsed.error);
-
-  const whole = parsed.value.scaled / 1000n;
-  const frac = parsed.value.scaled % 1000n;
-  if (frac === 0n) return ok(whole.toString());
-  return ok(`${whole.toString()}.${frac.toString().padStart(3, "0").replace(/0+$/, "")}`);
+  return ok(quantityToString(parsed.value));
 }
