@@ -95,6 +95,44 @@ describe("POST /api/suppliers", () => {
       rif: "J-30123456-1",
     });
   });
+
+  it("warns with 409 PARTNER_ALREADY_EXISTS for an existing customer and promotes on confirm (200) keeping legal name", async () => {
+    const sales = await signIn(db, testApp, "sales");
+    const createdCustomer = await app.request("/api/customers", {
+      method: "POST",
+      headers: { ...sales, "content-type": "application/json" },
+      body: JSON.stringify({
+        rif: "J-40987654-3",
+        name: "Abastos La Esquina, C.A.",
+        phone: "+58 212-555-0201",
+      }),
+    });
+    expect(createdCustomer.status).toBe(201);
+    const customerDto = (await createdCustomer.json()) as { id: string };
+
+    const warned = await post({ rif: "J-40987654-3", name: "Otro Nombre, C.A." });
+    expect(warned.status).toBe(409);
+    expect(await warned.json()).toEqual({
+      code: "PARTNER_ALREADY_EXISTS",
+      rif: "J-40987654-3",
+      partnerName: "Abastos La Esquina, C.A.",
+    });
+
+    const promoted = await post({
+      rif: "J-40987654-3",
+      name: "Otro Nombre, C.A.",
+      confirmExistingPartner: true,
+    });
+    expect(promoted.status).toBe(200);
+    expect(await promoted.json()).toEqual({
+      id: customerDto.id,
+      rif: "J-40987654-3",
+      name: "Abastos La Esquina, C.A.",
+      phone: "+58 212-555-0201",
+      email: null,
+      address: null,
+    });
+  });
 });
 
 describe("GET /api/suppliers", () => {

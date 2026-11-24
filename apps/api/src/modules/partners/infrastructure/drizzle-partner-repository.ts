@@ -1,8 +1,9 @@
-import { err, ok } from "@cuadre/shared-kernel";
+import type { PartnerRole } from "@cuadre/contracts";
+import { err } from "@cuadre/shared-kernel";
 import { and, asc, count, desc, eq, ilike, or, type SQL, sql } from "drizzle-orm";
 import type { Db } from "../../../db/client.ts";
 import { postgresError, UNIQUE_VIOLATION } from "../../../db/postgres-error.ts";
-import type { PartnerRepository, SupplierListParams } from "../application/partner-repository.ts";
+import type { PartnerListParams, PartnerRepository } from "../application/partner-repository.ts";
 import { type NewPartner, type Partner, reconstitutePartner } from "../domain/partner.ts";
 import { partnersTable } from "./partners.table.ts";
 
@@ -36,7 +37,7 @@ function toPartner(row: PartnerRow): Partner {
   return partner.value;
 }
 
-function orderBy(params: SupplierListParams): SQL[] {
+function orderBy(params: PartnerListParams): SQL[] {
   const direction = params.order === "asc" ? asc : desc;
   // `COLLATE "C"` makes the order of RIFs identical on every machine and database.
   const rifC = sql`${partnersTable.rif} collate "C"`;
@@ -48,9 +49,13 @@ function orderBy(params: SupplierListParams): SQL[] {
   }
 }
 
+function roleColumn(role: PartnerRole) {
+  return role === "customer" ? partnersTable.isCustomer : partnersTable.isSupplier;
+}
+
 export function createDrizzlePartnerRepository(db: Db): PartnerRepository {
   return {
-    async insert(partner: NewPartner) {
+    async saveForRole(partner: NewPartner, role, { confirmExistingPartner }) {
       try {
         const [row] = await db
           .insert(partnersTable)
@@ -65,27 +70,61 @@ export function createDrizzlePartnerRepository(db: Db): PartnerRepository {
           })
           .returning();
         if (row === undefined) throw new Error("Insert returned no row");
-        return ok(toPartner(row));
+        return { ok: true, value: toPartner(row), promoted: false };
       } catch (error) {
         // Only the RIF's own unique index means "the RIF exists": another constraint is a bug.
         const { code, constraint } = postgresError(error);
-        if (code === UNIQUE_VIOLATION && constraint === RIF_UNIQUE_CONSTRAINT) {
-          return err("RIF_ALREADY_EXISTS");
+        if (code !== UNIQUE_VIOLATION || constraint !== RIF_UNIQUE_CONSTRAINT) {
+          throw error;
         }
-        throw error;
       }
+
+      const targetColumn = roleColumn(role);
+
+      if (confirmExistingPartner) {
+        // Atomically add the requested role only if the partner does not already have it, keeping
+        // the existing legal name and contact fields completely untouched.
+        const [updated] = await db
+          .update(partnersTable)
+          .set(role === "customer" ? { isCustomer: true } : { isSupplier: true })
+          .where(and(eq(partnersTable.rif, partner.rif), eq(targetColumn, false)))
+          .returning();
+        if (updated !== undefined) {
+          return { ok: true, value: toPartner(updated), promoted: true };
+        }
+        return err("RIF_ALREADY_EXISTS");
+      }
+
+      const [existing] = await db
+        .select()
+        .from(partnersTable)
+        .where(eq(partnersTable.rif, partner.rif))
+        .limit(1);
+      if (existing === undefined) {
+        throw new Error(`Partner with RIF ${partner.rif} disappeared after unique violation`);
+      }
+
+      const reconstituted = toPartner(existing);
+      const alreadyHasRole =
+        role === "customer" ? reconstituted.isCustomer : reconstituted.isSupplier;
+      if (alreadyHasRole) {
+        return err("RIF_ALREADY_EXISTS");
+      }
+      return {
+        ok: false,
+        error: "PARTNER_ALREADY_EXISTS",
+        partnerName: reconstituted.name,
+      };
     },
 
-    async listSuppliers(params) {
+    async listByRole(role, params) {
       const pattern = params.search === undefined ? undefined : `%${escapeLike(params.search)}%`;
       const searchFilter =
         pattern === undefined
           ? undefined
           : or(ilike(partnersTable.rif, pattern), ilike(partnersTable.name, pattern));
-      const where =
-        searchFilter === undefined
-          ? eq(partnersTable.isSupplier, true)
-          : and(eq(partnersTable.isSupplier, true), searchFilter);
+      const roleFilter = eq(roleColumn(role), true);
+      const where = searchFilter === undefined ? roleFilter : and(roleFilter, searchFilter);
 
       const [rows, totals] = await Promise.all([
         db

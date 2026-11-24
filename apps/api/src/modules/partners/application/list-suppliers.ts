@@ -21,7 +21,7 @@ export async function listSuppliersUseCase(
   input: ListSuppliersInput,
 ): Promise<ListSuppliersOutput> {
   const search = input.q?.trim();
-  const page = await partners.listSuppliers({
+  const page = await partners.listByRole("supplier", {
     ...(search === undefined || search === "" ? {} : { search }),
     sort: input.sort,
     order: input.order,
