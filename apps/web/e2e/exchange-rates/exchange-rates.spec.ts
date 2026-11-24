@@ -67,25 +67,30 @@ test.describe("record and list BCV rates (admin)", () => {
     // 9 decimals
     await fillAndSubmitRateDialog(page, { date: todayDisplay, rate: "36,123456789" });
     await expect(dialog.getByText("Usar como máximo 8 decimales.")).toBeVisible();
+    await expect(dialog.getByLabel("Tasa")).toBeFocused();
 
     // Zero
     await fillAndSubmitRateDialog(page, { rate: "0" });
     await expect(dialog.getByText("La tasa debe ser mayor que 0.")).toBeVisible();
+    await expect(dialog.getByLabel("Tasa")).toBeFocused();
 
     // Negative
     await fillAndSubmitRateDialog(page, { rate: "-36,5" });
     await expect(dialog.getByText("La tasa debe ser mayor que 0.")).toBeVisible();
+    await expect(dialog.getByLabel("Tasa")).toBeFocused();
 
     // Invalid calendar date
     await fillAndSubmitRateDialog(page, { date: "30/02/2026", rate: "36,5" });
     await expect(
       dialog.getByText("Escribir una fecha válida con formato dd/mm/aaaa."),
     ).toBeVisible();
+    await expect(dialog.getByLabel("Fecha")).toBeFocused();
 
     // +8 days ahead
     const plus8Display = formatDate(addDays(today, 8));
     await fillAndSubmitRateDialog(page, { date: plus8Display, rate: "36,5" });
     await expect(dialog.getByText("La fecha no puede superar 7 días desde hoy.")).toBeVisible();
+    await expect(dialog.getByLabel("Fecha")).toBeFocused();
 
     // Duplicate date
     await fillAndSubmitRateDialog(page, { date: todayDisplay, rate: "36,6" });
