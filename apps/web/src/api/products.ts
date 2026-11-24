@@ -18,11 +18,12 @@ function listPath(query: ListProductsQuery): string {
 }
 
 /** One page of the product list. Keeps the previous page on screen while the next one loads. */
-export function useProducts(query: ListProductsQuery) {
+export function useProducts(query: ListProductsQuery, enabled = true) {
   return useQuery({
     queryKey: ["products", query],
     queryFn: async () => unwrapOrThrow(await apiRequest(listPath(query), ListProductsResponse)),
     placeholderData: keepPreviousData,
+    enabled,
   });
 }
 

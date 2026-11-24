@@ -5,6 +5,6 @@ import { defineConfig } from "drizzle-kit";
 export default defineConfig({
   dialect: "postgresql",
   schema: ["./src/modules/*/infrastructure/*.table.ts", "./src/auth/*.table.ts"],
-  schemaFilter: ["catalog", "exchange_rates", "partners", "auth"],
+  schemaFilter: ["catalog", "exchange_rates", "partners", "purchasing", "auth"],
   out: "./drizzle",
 });

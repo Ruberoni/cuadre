@@ -2,12 +2,14 @@
 // comes from an error code or a domain value lives here, in Spanish, verbatim from the design
 // handoffs. Screens never write these strings inline and never show a raw code.
 import type {
+  DocumentStatus,
   ExchangeRateField,
   ExchangeRateIssueCode,
   PartnerField,
   PartnerIssueCode,
   ProductField,
   ProductIssueCode,
+  PurchaseOrderIssueCode,
   Role,
   TaxRate,
   UnitOfMeasure,
@@ -52,6 +54,7 @@ export const errorMessages: Record<
   RATE_ALREADY_FROZEN: () =>
     "Esta tasa ya fue usada en un documento emitido y no se puede corregir.",
   MISSING_EXCHANGE_RATE: () => "No hay una tasa BCV registrada para esa fecha.",
+  DOCUMENT_NOT_DRAFT: () => "Esta orden de compra ya fue emitida y no se puede editar ni eliminar.",
   NOT_FOUND: () => "No se encontró lo que se buscaba.",
   // Products handoff (#7): default screen is Productos; module-specific alerts override below.
   FORBIDDEN: () => "Solo un administrador puede crear o editar productos.",
@@ -171,6 +174,7 @@ export const shellMessages = {
   products: "Productos",
   exchangeRates: "Tasas BCV",
   suppliers: "Proveedores",
+  purchaseOrders: "Órdenes de compra",
   customers: "Clientes",
   headerRatePrefix: (date: string) => `Tasa BCV ${date}`,
   noRateBadge: "Sin tasa BCV",
@@ -435,3 +439,137 @@ export const signInErrorMessages: Record<Exclude<SignInError, "INVALID_EMAIL">, 
   TOO_MANY_ATTEMPTS: "Demasiados intentos seguidos. Esperar unos segundos e intentar de nuevo.",
   NETWORK_ERROR: "No se pudo iniciar sesión. Revisar la conexión e intentar de nuevo.",
 };
+
+export const documentStatusLabels: Record<DocumentStatus, string> = {
+  DRAFT: "Borrador",
+  ISSUED: "Emitido",
+};
+
+const QUANTITY_NOT_A_NUMBER = "Escribir solo números, con coma para los decimales.";
+
+export const purchaseOrderFieldMessages: Record<
+  "supplierId" | "currency" | "documentDate" | "productId" | "quantity" | "unitCost",
+  Partial<Record<PurchaseOrderIssueCode, string>>
+> = {
+  supplierId: {
+    REQUIRED: "Falta el proveedor.",
+    NOT_FOUND: "El proveedor seleccionado no existe.",
+    INVALID: "Falta el proveedor.",
+  },
+  currency: {
+    REQUIRED: "Falta la moneda.",
+    INVALID: "Falta la moneda.",
+  },
+  documentDate: {
+    REQUIRED: "Falta la fecha.",
+    INVALID_DATE: DATE_FORMAT_INVALID,
+    INVALID: DATE_FORMAT_INVALID,
+    DOCUMENT_DATE_IN_FUTURE: "La fecha no puede ser futura.",
+  },
+  productId: {
+    REQUIRED: "Falta el producto.",
+    NOT_FOUND: "El producto seleccionado no existe.",
+    INVALID: "Falta el producto.",
+  },
+  quantity: {
+    REQUIRED: "Falta la cantidad.",
+    INVALID_FORMAT: QUANTITY_NOT_A_NUMBER,
+    INVALID: QUANTITY_NOT_A_NUMBER,
+    NOT_POSITIVE: "La cantidad debe ser mayor que 0.",
+    OUT_OF_RANGE: "Escribir una cantidad válida.",
+    QUANTITY_NOT_WHOLE: "Esta unidad solo admite números enteros.",
+    QUANTITY_TOO_PRECISE: "Usar como máximo 3 decimales.",
+  },
+  unitCost: {
+    REQUIRED: "Falta el costo unitario.",
+    INVALID: PRICE_NOT_A_NUMBER,
+    INVALID_FORMAT: PRICE_NOT_A_NUMBER,
+    OUT_OF_RANGE: PRICE_NOT_A_NUMBER,
+    NOT_POSITIVE: "El costo unitario debe ser mayor que 0.",
+    CURRENCY_MISMATCH: "El costo unitario debe estar en la misma moneda de la orden.",
+  },
+};
+
+export function purchaseOrderFieldMessage(field: string, code: string): string | undefined {
+  const leaf = field.includes(".") ? (field.split(".").at(-1) ?? field) : field;
+  const messages: Partial<Record<string, Partial<Record<string, string>>>> =
+    purchaseOrderFieldMessages;
+  return messages[leaf]?.[code];
+}
+
+export const purchaseOrdersMessages = {
+  pageTitle: "Órdenes de compra",
+  newPageTitle: "Nueva orden de compra",
+  detailPageTitle: "Orden de compra",
+  newOrder: "Nueva orden de compra",
+  tableCaption: "Órdenes de compra, ordenadas por fecha más reciente",
+  columns: {
+    documentDate: "Fecha",
+    supplier: "Proveedor",
+    currency: "Moneda",
+    status: "Estado",
+    total: "Total",
+  },
+  pager: (from: number, to: number, total: number) => `${from}–${to} de ${total} órdenes`,
+  previousPage: "Página anterior",
+  nextPage: "Página siguiente",
+  saved: "Borrador guardado.",
+  deleted: "Borrador eliminado.",
+  empty: {
+    title: "Aún no hay órdenes de compra",
+    description:
+      "Las órdenes de compra en borrador se pueden editar o eliminar antes de emitirlas.",
+    readOnlyDescription: "Compras o un administrador debe crearlas.",
+  },
+  loadError:
+    "No se pudo cargar la lista de órdenes de compra. Revisar la conexión e intentar de nuevo.",
+  detailLoadError: "No se pudo cargar la orden de compra. Revisar la conexión e intentar de nuevo.",
+  notFound: "No se encontró la orden de compra.",
+  retry: "Reintentar",
+  form: {
+    supplier: "Proveedor",
+    supplierPlaceholder: "Seleccionar proveedor…",
+    currency: "Moneda",
+    currencies: {
+      USD: "USD ($)",
+      VES: "VES (Bs.)",
+    },
+    documentDate: "Fecha",
+    documentDatePlaceholder: "dd/mm/aaaa",
+    documentDateHelp: "Formato dd/mm/aaaa. Hoy o una fecha pasada.",
+    linesHeading: "Líneas",
+    noLines: "Sin líneas. Puedes guardar el borrador así o agregar productos.",
+    product: "Producto",
+    productPlaceholder: "Seleccionar producto…",
+    quantity: "Cantidad",
+    unitCost: "Costo unitario",
+    iva: "IVA",
+    lineSubtotal: "Subtotal",
+    addLine: "Agregar línea",
+    removeLine: "Quitar línea",
+    totals: {
+      subtotal: "Subtotal",
+      ivaGeneral: `IVA 16${NBSP}%`,
+      ivaReduced: `IVA 8${NBSP}%`,
+      total: "Total",
+    },
+    submit: "Guardar borrador",
+    submitting: "Guardando…",
+    delete: "Eliminar borrador",
+    deleting: "Eliminando…",
+    cancel: "Cancelar",
+    back: "Volver",
+    deleteDialog: {
+      title: "¿Eliminar este borrador?",
+      description: "Esta acción elimina el borrador de la orden de compra y no se puede deshacer.",
+      confirm: "Eliminar",
+      cancel: "Cancelar",
+    },
+  },
+  errors: {
+    FORBIDDEN_READ: "Solo un administrador, compras o almacén puede ver órdenes de compra.",
+    FORBIDDEN_WRITE: "Solo un administrador o compras puede gestionar órdenes de compra.",
+    saveFailed: "No se pudo guardar el borrador. Revisar la conexión e intentar de nuevo.",
+    deleteFailed: "No se pudo eliminar el borrador. Revisar la conexión e intentar de nuevo.",
+  },
+} as const;

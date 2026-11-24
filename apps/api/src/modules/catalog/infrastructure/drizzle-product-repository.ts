@@ -1,5 +1,5 @@
 import { err, ok } from "@cuadre/shared-kernel";
-import { asc, count, desc, ilike, or, type SQL, sql } from "drizzle-orm";
+import { asc, count, desc, ilike, inArray, or, type SQL, sql } from "drizzle-orm";
 import type { Db } from "../../../db/client.ts";
 import { postgresError, UNIQUE_VIOLATION } from "../../../db/postgres-error.ts";
 import type { ProductListParams, ProductRepository } from "../application/product-repository.ts";
@@ -92,6 +92,16 @@ export function createDrizzleProductRepository(db: Db): ProductRepository {
         db.select({ total: count() }).from(productsTable).where(where),
       ]);
       return { items: rows.map(toProduct), total: totals[0]?.total ?? 0 };
+    },
+
+    async findByIds(ids, tx = db) {
+      const uniqueIds = [...new Set(ids)];
+      if (uniqueIds.length === 0) return new Map();
+      const rows = await tx
+        .select()
+        .from(productsTable)
+        .where(inArray(productsTable.id, uniqueIds));
+      return new Map(rows.map((row) => [row.id, toProduct(row)]));
     },
   };
 }

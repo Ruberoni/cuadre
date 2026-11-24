@@ -45,13 +45,13 @@ export function setUnauthorizedHandler(handler: () => void): void {
 export async function apiRequest<S extends z.ZodType>(
   path: string,
   success: S,
-  init?: { method: "POST" | "PATCH"; body: unknown },
+  init?: { method: "POST" | "PUT" | "PATCH" | "DELETE"; body?: unknown },
 ): Promise<ApiResult<z.infer<S>>> {
   let response: Response;
   try {
     response = await fetch(`/api${path}`, {
       method: init?.method ?? "GET",
-      ...(init === undefined
+      ...(init?.body === undefined
         ? {}
         : { headers: { "content-type": "application/json" }, body: JSON.stringify(init.body) }),
     });
@@ -62,6 +62,10 @@ export async function apiRequest<S extends z.ZodType>(
   if (response.status === 401) {
     onUnauthorized();
     return fail({ code: "UNAUTHORIZED" });
+  }
+  if (response.status === 204) {
+    const parsed = success.safeParse(undefined);
+    return parsed.success ? ok(parsed.data) : fail(INTERNAL);
   }
   const body: unknown = await response.json().catch(() => undefined);
   if (response.ok) {

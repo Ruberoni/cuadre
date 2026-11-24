@@ -10,6 +10,7 @@ export const API_ERROR_CODES = [
   "RATE_DATE_TOO_FAR",
   "RATE_ALREADY_FROZEN",
   "MISSING_EXCHANGE_RATE",
+  "DOCUMENT_NOT_DRAFT",
   "NOT_FOUND",
   /** No valid session (none, expired or signed out). The web goes to Login; never shown. */
   "UNAUTHORIZED",

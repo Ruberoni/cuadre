@@ -8,4 +8,5 @@ export {
   type ParseAmountError,
   parseAmount,
 } from "./money.ts";
+export { formatQuantity, parseQuantityInput } from "./quantity.ts";
 export { formatBcvRate, formatRate, type ParseRateError, parseRateInput } from "./rate.ts";
