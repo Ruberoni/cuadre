@@ -38,6 +38,7 @@ test.describe("suppliers as purchasing", () => {
   test("purchasing user creates a supplier from empty state and sees it in the list", async ({
     page,
   }) => {
+    await page.goto("/");
     await page
       .getByRole("navigation", { name: "Principal" })
       .getByRole("link", {
@@ -193,8 +194,10 @@ test.describe("suppliers role restriction", () => {
   }) => {
     await resetDatabase();
     await signIn(page, SEED_USERS.sales);
+    await page.goto("/productos");
 
     const nav = page.getByRole("navigation", { name: "Principal" });
+    await expect(nav.getByRole("link", { name: "Productos" })).toBeVisible();
     await expect(nav.getByRole("link", { name: "Proveedores" })).toHaveCount(0);
     await expect(nav.getByText("Compras")).toHaveCount(0);
 

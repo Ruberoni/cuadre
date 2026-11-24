@@ -36,6 +36,7 @@ test.describe("customers as sales", () => {
   test("sales user creates a customer from empty state and sees it in the list", async ({
     page,
   }) => {
+    await page.goto("/");
     const nav = page.getByRole("navigation", { name: "Principal" });
     await expect(nav.getByText("Ventas")).toBeVisible();
     await nav.getByRole("link", { name: "Clientes" }).click();
@@ -201,8 +202,10 @@ test.describe("customers role restriction", () => {
     }) => {
       await resetDatabase();
       await signIn(page, SEED_USERS[role]);
+      await page.goto("/productos");
 
       const nav = page.getByRole("navigation", { name: "Principal" });
+      await expect(nav.getByRole("link", { name: "Productos" })).toBeVisible();
       await expect(nav.getByRole("link", { name: "Clientes" })).toHaveCount(0);
       await expect(nav.getByText("Ventas")).toHaveCount(0);
 
