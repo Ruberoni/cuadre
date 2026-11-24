@@ -1,4 +1,5 @@
 import {
+  CUSTOMER_ROLES,
   EXCHANGE_RATE_ROLES,
   PRODUCT_ROLES,
   type Role,
@@ -23,8 +24,8 @@ import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { defaultExchangeRatesSearch } from "@/features/exchange-rates/search";
+import { defaultPartnersSearch } from "@/features/partners/search";
 import { defaultProductsSearch } from "@/features/products/search";
-import { defaultSuppliersSearch } from "@/features/suppliers/search";
 import { formatBcvRate, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { roleLabels, shellMessages } from "@/messages";
@@ -70,7 +71,7 @@ export function useStatusAnnouncer(): (
   return context.announce;
 }
 
-type NavRoute = "/productos" | "/tasas-bcv" | "/proveedores";
+type NavRoute = "/productos" | "/tasas-bcv" | "/proveedores" | "/clientes";
 
 // Grouped sidebar items for screens that exist, each with the roles that see it (PLAN → Roles).
 const NAV_GROUPS: readonly NavGroup<NavRoute>[] = [
@@ -87,6 +88,11 @@ const NAV_GROUPS: readonly NavGroup<NavRoute>[] = [
     label: shellMessages.navGroups.purchasing,
     items: [{ to: "/proveedores", label: shellMessages.suppliers, roles: SUPPLIER_ROLES.read }],
   },
+  {
+    id: "sales",
+    label: shellMessages.navGroups.sales,
+    items: [{ to: "/clientes", label: shellMessages.customers, roles: CUSTOMER_ROLES.read }],
+  },
 ];
 
 function defaultSearchFor(to: NavRoute) {
@@ -96,7 +102,8 @@ function defaultSearchFor(to: NavRoute) {
     case "/tasas-bcv":
       return defaultExchangeRatesSearch;
     case "/proveedores":
-      return defaultSuppliersSearch;
+    case "/clientes":
+      return defaultPartnersSearch;
   }
 }
 

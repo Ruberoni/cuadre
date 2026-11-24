@@ -4,11 +4,11 @@
 import type {
   ExchangeRateField,
   ExchangeRateIssueCode,
+  PartnerField,
+  PartnerIssueCode,
   ProductField,
   ProductIssueCode,
   Role,
-  SupplierField,
-  SupplierIssueCode,
   TaxRate,
   UnitOfMeasure,
 } from "@cuadre/contracts";
@@ -29,7 +29,7 @@ import {
  */
 export const errorMessages: Record<
   Exclude<ClientErrorCode, "UNAUTHORIZED">,
-  (details: { sku?: string; rif?: string; date?: string }) => string
+  (details: { sku?: string; rif?: string; partnerName?: string; date?: string }) => string
 > = {
   VALIDATION_ERROR: () => "Algunos datos no son válidos. Revisar los campos marcados.",
   SKU_ALREADY_EXISTS: ({ sku }) =>
@@ -40,6 +40,10 @@ export const errorMessages: Record<
     rif === undefined
       ? "Ya existe un tercero con ese RIF."
       : `Ya existe un tercero con el RIF ${rif}.`,
+  PARTNER_ALREADY_EXISTS: ({ rif, partnerName }) =>
+    rif !== undefined && partnerName !== undefined
+      ? `El RIF ${rif} ya pertenece al tercero «${partnerName}».`
+      : "Este RIF ya pertenece a un tercero registrado.",
   RATE_ALREADY_EXISTS: ({ date }) =>
     date === undefined
       ? "Ya existe una tasa para esa fecha. Para cambiarla, corregir la existente."
@@ -162,10 +166,12 @@ export const shellMessages = {
   navGroups: {
     general: "General",
     purchasing: "Compras",
+    sales: "Ventas",
   },
   products: "Productos",
   exchangeRates: "Tasas BCV",
   suppliers: "Proveedores",
+  customers: "Clientes",
   headerRatePrefix: (date: string) => `Tasa BCV ${date}`,
   noRateBadge: "Sin tasa BCV",
   registerRateLink: "Registrar tasa",
@@ -254,9 +260,9 @@ export const exchangeRatesMessages = {
   },
 } as const;
 
-export const supplierFieldMessages: Record<
-  SupplierField,
-  Partial<Record<SupplierIssueCode, string>>
+export const partnerFieldMessages: Record<
+  PartnerField,
+  Partial<Record<PartnerIssueCode, string>>
 > = {
   rif: {
     REQUIRED: "Falta el RIF.",
@@ -284,14 +290,14 @@ export const supplierFieldMessages: Record<
   },
 };
 
-export function supplierFieldMessage(field: string, code: string): string | undefined {
-  const messages: Partial<Record<string, Partial<Record<string, string>>>> = supplierFieldMessages;
+export function partnerFieldMessage(field: string, code: string): string | undefined {
+  const messages: Partial<Record<string, Partial<Record<string, string>>>> = partnerFieldMessages;
   return messages[field]?.[code];
 }
 
 export const suppliersMessages = {
   pageTitle: "Proveedores",
-  newSupplier: "Nuevo proveedor",
+  newPartner: "Nuevo proveedor",
   searchPlaceholder: "Buscar por razón social o RIF",
   tableCaption: (sortedBy: string) => `Proveedores, ordenados por ${sortedBy}`,
   columns: {
@@ -305,6 +311,7 @@ export const suppliersMessages = {
   previousPage: "Página anterior",
   nextPage: "Página siguiente",
   created: (rif: string) => `Proveedor ${rif} creado.`,
+  promoted: (rif: string) => `Proveedor ${rif} agregado.`,
   empty: {
     title: "Aún no hay proveedores",
     description: "Los proveedores se usan en las órdenes de compra y los pagos.",
@@ -327,12 +334,66 @@ export const suppliersMessages = {
     emailPlaceholder: "nombre@empresa.com",
     address: "Dirección",
     submit: "Guardar proveedor",
+    confirmExistingSubmit: "Agregar como proveedor",
+    existingPartnerWarning: (rif: string, partnerName: string) =>
+      `El RIF ${rif} ya pertenece al tercero «${partnerName}». Al confirmar, también se registrará como proveedor conservando sus datos actuales.`,
     submitting: "Guardando…",
     cancel: "Cancelar",
   },
   errors: {
     FORBIDDEN: "Solo un administrador o compras puede gestionar proveedores.",
     saveFailed: "No se pudo guardar el proveedor. Revisar la conexión e intentar de nuevo.",
+  },
+} as const;
+
+export const customersMessages = {
+  pageTitle: "Clientes",
+  newPartner: "Nuevo cliente",
+  searchPlaceholder: "Buscar por razón social o RIF",
+  tableCaption: (sortedBy: string) => `Clientes, ordenados por ${sortedBy}`,
+  columns: {
+    rif: "RIF",
+    name: "Razón social",
+    phone: "Teléfono",
+    email: "Correo electrónico",
+  },
+  emptyCell: "—",
+  pager: (from: number, to: number, total: number) => `${from}–${to} de ${total} clientes`,
+  previousPage: "Página anterior",
+  nextPage: "Página siguiente",
+  created: (rif: string) => `Cliente ${rif} creado.`,
+  promoted: (rif: string) => `Cliente ${rif} agregado.`,
+  empty: {
+    title: "Aún no hay clientes",
+    description: "Los clientes se usan en los pedidos, las facturas y los cobros.",
+  },
+  noResults: {
+    title: (query: string) => `Sin resultados para «${query}»`,
+    description: "Buscar por otra parte de la razón social o por el RIF.",
+    clear: "Limpiar búsqueda",
+  },
+  loadError: "No se pudo cargar la lista de clientes. Revisar la conexión e intentar de nuevo.",
+  retry: "Reintentar",
+  form: {
+    title: "Nuevo cliente",
+    rif: "RIF",
+    rifPlaceholder: "J-12345678-9",
+    rifHelp: "Ej.: J-12345678-9 o V-12345678-1. Se normaliza automáticamente.",
+    name: "Razón social",
+    phone: "Teléfono",
+    email: "Correo electrónico",
+    emailPlaceholder: "nombre@empresa.com",
+    address: "Dirección",
+    submit: "Guardar cliente",
+    confirmExistingSubmit: "Agregar como cliente",
+    existingPartnerWarning: (rif: string, partnerName: string) =>
+      `El RIF ${rif} ya pertenece al tercero «${partnerName}». Al confirmar, también se registrará como cliente conservando sus datos actuales.`,
+    submitting: "Guardando…",
+    cancel: "Cancelar",
+  },
+  errors: {
+    FORBIDDEN: "Solo un administrador o ventas puede gestionar clientes.",
+    saveFailed: "No se pudo guardar el cliente. Revisar la conexión e intentar de nuevo.",
   },
 } as const;
 

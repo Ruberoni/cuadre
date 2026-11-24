@@ -6,22 +6,14 @@ import {
 } from "@cuadre/contracts";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, unwrapOrThrow } from "./client.ts";
-
-function listPath(query: ListSuppliersQuery): string {
-  const params = new URLSearchParams({
-    sort: query.sort,
-    order: query.order,
-    page: String(query.page),
-  });
-  if (query.q !== undefined && query.q !== "") params.set("q", query.q);
-  return `/suppliers?${params}`;
-}
+import { partnerListPath } from "./partners.ts";
 
 /** One page of the supplier list. Keeps the previous page on screen while the next one loads. */
 export function useSuppliers(query: ListSuppliersQuery, enabled = true) {
   return useQuery({
     queryKey: ["suppliers", query],
-    queryFn: async () => unwrapOrThrow(await apiRequest(listPath(query), ListSuppliersResponse)),
+    queryFn: async () =>
+      unwrapOrThrow(await apiRequest(partnerListPath("/suppliers", query), ListSuppliersResponse)),
     placeholderData: keepPreviousData,
     enabled,
   });
@@ -31,7 +23,7 @@ export function createSupplier(request: CreateSupplierRequest) {
   return apiRequest("/suppliers", Supplier, { method: "POST", body: request });
 }
 
-/** Creates a supplier and refreshes every cached list. Resolves to the `Result`, never throws. */
+/** Creates or promotes a supplier and refreshes every cached list. Resolves to the `Result`, never throws. */
 export function useCreateSupplier() {
   const queryClient = useQueryClient();
   return useMutation({
