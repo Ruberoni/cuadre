@@ -37,6 +37,7 @@ test.describe("suppliers as purchasing", () => {
   test("purchasing user creates a supplier from empty state and sees it in the list", async ({
     page,
   }) => {
+    await page.goto("/productos");
     await page
       .getByRole("navigation", { name: "Principal" })
       .getByRole("link", {
