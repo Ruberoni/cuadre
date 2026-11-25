@@ -1,9 +1,9 @@
 import { PURCHASE_ORDERS_PAGE_SIZE } from "@cuadre/contracts";
-import { calculatePurchaseOrderTotals } from "../domain/purchase-order.ts";
-import type {
-  EnrichedPurchaseOrder,
-  PurchaseOrderRepository,
-  PurchasingLookups,
+import {
+  type EnrichedPurchaseOrder,
+  enrichPurchaseOrder,
+  type PurchaseOrderRepository,
+  type PurchasingLookups,
 } from "./purchase-order-repository.ts";
 
 export type ListPurchaseOrdersResult = {
@@ -38,12 +38,7 @@ export async function listPurchaseOrdersUseCase(
         `Supplier ${order.supplierId} referenced by purchase order ${order.id} not found`,
       );
     }
-    return {
-      order,
-      supplier,
-      productsById,
-      totals: calculatePurchaseOrderTotals(order, productsById),
-    };
+    return enrichPurchaseOrder(order, supplier, productsById);
   });
 
   return {

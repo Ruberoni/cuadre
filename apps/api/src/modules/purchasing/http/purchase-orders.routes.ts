@@ -9,9 +9,10 @@ import {
   type PurchaseOrderTotals,
   SavePurchaseOrderRequest,
 } from "@cuadre/contracts";
-import { type CalendarDate, quantityToString } from "@cuadre/shared-kernel";
+import { type CalendarDate, quantityToString, rateToString } from "@cuadre/shared-kernel";
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { allowRoles } from "../../../auth/roles.ts";
+import type { Db } from "../../../db/client.ts";
 import {
   errorBody,
   forbiddenResponse,
@@ -21,6 +22,10 @@ import {
 import { createPurchaseOrderUseCase } from "../application/create-purchase-order.ts";
 import { deletePurchaseOrderUseCase } from "../application/delete-purchase-order.ts";
 import { getPurchaseOrderUseCase } from "../application/get-purchase-order.ts";
+import {
+  type IssuePurchaseOrderExchangeRates,
+  issuePurchaseOrderUseCase,
+} from "../application/issue-purchase-order.ts";
 import { listPurchaseOrdersUseCase } from "../application/list-purchase-orders.ts";
 import type {
   EnrichedPurchaseOrder,
@@ -32,6 +37,7 @@ import {
   CREATE_PURCHASE_ORDER_ERROR_STATUS,
   DELETE_PURCHASE_ORDER_ERROR_STATUS,
   GET_PURCHASE_ORDER_ERROR_STATUS,
+  ISSUE_PURCHASE_ORDER_ERROR_STATUS,
   UPDATE_PURCHASE_ORDER_ERROR_STATUS,
 } from "./error-status.ts";
 
@@ -69,6 +75,7 @@ function toPurchaseOrderDto(enriched: EnrichedPurchaseOrder): PurchaseOrder {
     currency: enriched.order.currency,
     documentDate: enriched.order.documentDate,
     status: enriched.order.status,
+    frozenRate: enriched.order.frozenRate === null ? null : rateToString(enriched.order.frozenRate),
     lines: enriched.order.lines.map((line, index) => {
       const product = enriched.productsById.get(line.productId);
       const lineTotal = enriched.totals.lineTotals[index];
@@ -88,6 +95,13 @@ function toPurchaseOrderDto(enriched: EnrichedPurchaseOrder): PurchaseOrder {
       };
     }),
     totals: toTotalsDto(enriched),
+    vesTotalEquivalent:
+      enriched.vesTotalEquivalent === null
+        ? null
+        : {
+            minorUnits: enriched.vesTotalEquivalent.minorUnits,
+            currency: enriched.vesTotalEquivalent.currency,
+          },
   };
 }
 
@@ -102,8 +116,16 @@ function toPurchaseOrderSummaryDto(enriched: EnrichedPurchaseOrder): PurchaseOrd
     currency: enriched.order.currency,
     documentDate: enriched.order.documentDate,
     status: enriched.order.status,
+    frozenRate: enriched.order.frozenRate === null ? null : rateToString(enriched.order.frozenRate),
     lineCount: enriched.order.lines.length,
     totals: toTotalsDto(enriched),
+    vesTotalEquivalent:
+      enriched.vesTotalEquivalent === null
+        ? null
+        : {
+            minorUnits: enriched.vesTotalEquivalent.minorUnits,
+            currency: enriched.vesTotalEquivalent.currency,
+          },
   };
 }
 
@@ -227,9 +249,40 @@ const deletePurchaseOrderRoute = createRoute({
   },
 });
 
+const issuePurchaseOrderRoute = createRoute({
+  method: "post",
+  path: "/purchase-orders/{id}/issue",
+  tags: ["Purchasing"],
+  middleware: [allowRoles(PURCHASE_ORDER_ROLES.write)] as const,
+  request: { params: PurchaseOrderIdParam },
+  responses: {
+    200: {
+      description: "Purchase order issued and exchange rate frozen.",
+      content: { "application/json": { schema: PurchaseOrder } },
+    },
+    400: {
+      description: "Document date is in the future.",
+      content: { "application/json": { schema: ApiError } },
+    },
+    404: {
+      description: "Purchase order not found.",
+      content: { "application/json": { schema: ApiError } },
+    },
+    409: {
+      description:
+        "Purchase order cannot be issued (`DOCUMENT_NOT_DRAFT`, `EMPTY_DOCUMENT`, or `MISSING_EXCHANGE_RATE`).",
+      content: { "application/json": { schema: ApiError } },
+    },
+    ...unauthorizedResponse,
+    ...forbiddenResponse,
+  },
+});
+
 export function createPurchaseOrderRoutes(
+  db: Db,
   repository: PurchaseOrderRepository,
   lookups: PurchasingLookups,
+  exchangeRates: IssuePurchaseOrderExchangeRates,
   today: () => CalendarDate,
 ): OpenAPIHono {
   const routes = new OpenAPIHono(openApiOptions);
@@ -292,6 +345,31 @@ export function createPurchaseOrderRoutes(
       return c.json(errorBody(result.error), DELETE_PURCHASE_ORDER_ERROR_STATUS[result.error]);
     }
     return c.body(null, 204);
+  });
+
+  routes.openapi(issuePurchaseOrderRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const result = await issuePurchaseOrderUseCase(
+      { db, repository, lookups, exchangeRates },
+      id,
+      today(),
+    );
+    if (!result.ok) {
+      if (result.error === "VALIDATION_ERROR") {
+        return c.json(
+          errorBody(result.error, { issues: result.issues }),
+          ISSUE_PURCHASE_ORDER_ERROR_STATUS[result.error],
+        );
+      }
+      if (result.error === "MISSING_EXCHANGE_RATE") {
+        return c.json(
+          errorBody(result.error, { date: result.date }),
+          ISSUE_PURCHASE_ORDER_ERROR_STATUS[result.error],
+        );
+      }
+      return c.json(errorBody(result.error), ISSUE_PURCHASE_ORDER_ERROR_STATUS[result.error]);
+    }
+    return c.json(toPurchaseOrderDto(result.value), 200);
   });
 
   return routes;

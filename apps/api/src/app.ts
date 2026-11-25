@@ -38,6 +38,7 @@ export function createApp({ db, auth, today }: { db: Db; auth: Auth; today?: () 
     db,
     partners,
     catalog,
+    exchangeRates,
     ...(today === undefined ? {} : { today }),
   });
 

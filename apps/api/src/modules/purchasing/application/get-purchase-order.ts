@@ -1,9 +1,10 @@
 import { err, ok, type Result } from "@cuadre/shared-kernel";
-import { calculatePurchaseOrderTotals, isUuid } from "../domain/purchase-order.ts";
-import type {
-  EnrichedPurchaseOrder,
-  PurchaseOrderRepository,
-  PurchasingLookups,
+import { isUuid } from "../domain/purchase-order.ts";
+import {
+  type EnrichedPurchaseOrder,
+  enrichPurchaseOrder,
+  type PurchaseOrderRepository,
+  type PurchasingLookups,
 } from "./purchase-order-repository.ts";
 
 export type GetPurchaseOrderResult = Result<EnrichedPurchaseOrder, "NOT_FOUND">;
@@ -28,10 +29,5 @@ export async function getPurchaseOrderUseCase(
     );
   }
 
-  return ok({
-    order,
-    supplier,
-    productsById,
-    totals: calculatePurchaseOrderTotals(order, productsById),
-  });
+  return ok(enrichPurchaseOrder(order, supplier, productsById));
 }

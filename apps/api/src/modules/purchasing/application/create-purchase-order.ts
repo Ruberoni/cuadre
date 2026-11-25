@@ -1,15 +1,15 @@
 import type { CalendarDate } from "@cuadre/shared-kernel";
 import {
-  calculatePurchaseOrderTotals,
   type DraftPurchaseOrderInput,
   isUuid,
   type PurchaseOrderValidationFailure,
   validateDraftPurchaseOrder,
 } from "../domain/purchase-order.ts";
-import type {
-  EnrichedPurchaseOrder,
-  PurchaseOrderRepository,
-  PurchasingLookups,
+import {
+  type EnrichedPurchaseOrder,
+  enrichPurchaseOrder,
+  type PurchaseOrderRepository,
+  type PurchasingLookups,
 } from "./purchase-order-repository.ts";
 
 export type CreatePurchaseOrderResult =
@@ -44,11 +44,6 @@ export async function createPurchaseOrderUseCase(
 
   return {
     ok: true,
-    value: {
-      order: stored,
-      supplier,
-      productsById,
-      totals: calculatePurchaseOrderTotals(stored, productsById),
-    },
+    value: enrichPurchaseOrder(stored, supplier, productsById),
   };
 }

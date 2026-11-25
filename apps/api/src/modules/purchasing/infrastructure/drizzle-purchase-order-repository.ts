@@ -3,17 +3,19 @@ import {
   err,
   money,
   ok,
-  parseCalendarDate,
   parseQuantity,
   quantityToString,
+  type Rate,
+  rateToString,
 } from "@cuadre/shared-kernel";
 import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
-import type { Db } from "../../../db/client.ts";
+import type { Db, DbTransaction } from "../../../db/client.ts";
 import type { PurchaseOrderRepository } from "../application/purchase-order-repository.ts";
-import type {
-  StoredPurchaseOrder,
-  StoredPurchaseOrderLine,
-  ValidatedDraftPurchaseOrder,
+import {
+  reconstitutePurchaseOrder,
+  type StoredPurchaseOrder,
+  type StoredPurchaseOrderLine,
+  type ValidatedDraftPurchaseOrder,
 } from "../domain/purchase-order.ts";
 import { purchaseOrderLinesTable, purchaseOrdersTable } from "./purchase-orders.table.ts";
 
@@ -36,18 +38,19 @@ function toStoredLine(row: LineRow, currency: Currency): StoredPurchaseOrderLine
 }
 
 function toStoredOrder(row: OrderRow, lines: readonly LineRow[]): StoredPurchaseOrder {
-  const documentDate = parseCalendarDate(row.documentDate);
-  if (!documentDate.ok) {
-    throw new Error(`Purchase order ${row.id} has an invalid documentDate in the database`);
-  }
-  return {
+  const reconstituted = reconstitutePurchaseOrder({
     id: row.id,
     supplierId: row.supplierId,
     currency: row.currency,
-    documentDate: documentDate.value,
+    documentDate: row.documentDate,
     status: row.status,
+    frozenRate: row.frozenRate,
     lines: lines.map((line) => toStoredLine(line, row.currency)),
-  };
+  });
+  if (!reconstituted.ok) {
+    throw new Error(`Purchase order ${row.id} in the database breaks domain rules`);
+  }
+  return reconstituted.value;
 }
 
 export function createDrizzlePurchaseOrderRepository(db: Db): PurchaseOrderRepository {
@@ -148,6 +151,47 @@ export function createDrizzlePurchaseOrderRepository(db: Db): PurchaseOrderRepos
         if (deleted === undefined) return err("DOCUMENT_NOT_DRAFT");
         return ok(true);
       });
+    },
+
+    async lockForIssue(id: string, tx: DbTransaction) {
+      const [header] = await tx
+        .select()
+        .from(purchaseOrdersTable)
+        .where(eq(purchaseOrdersTable.id, id))
+        .for("update")
+        .limit(1);
+      if (header === undefined) return null;
+
+      const lines = await tx
+        .select()
+        .from(purchaseOrderLinesTable)
+        .where(eq(purchaseOrderLinesTable.purchaseOrderId, header.id))
+        .orderBy(asc(purchaseOrderLinesTable.position));
+
+      return toStoredOrder(header, lines);
+    },
+
+    async markIssued(id: string, frozenRate: Rate, tx: DbTransaction) {
+      const [header] = await tx
+        .update(purchaseOrdersTable)
+        .set({
+          status: "ISSUED",
+          frozenRate: rateToString(frozenRate),
+          updatedAt: new Date(),
+        })
+        .where(and(eq(purchaseOrdersTable.id, id), eq(purchaseOrdersTable.status, "DRAFT")))
+        .returning();
+      if (header === undefined) {
+        throw new Error(`Purchase order ${id} could not be marked ISSUED (not found or not DRAFT)`);
+      }
+
+      const lines = await tx
+        .select()
+        .from(purchaseOrderLinesTable)
+        .where(eq(purchaseOrderLinesTable.purchaseOrderId, header.id))
+        .orderBy(asc(purchaseOrderLinesTable.position));
+
+      return toStoredOrder(header, lines);
     },
 
     async findById(id: string) {
