@@ -9,6 +9,11 @@ export {
   todayCaracas,
 } from "./calendar-date.ts";
 export {
+  computeVesEquivalent,
+  type IssuePreconditionFailure,
+  validateDocumentIssuePreconditions,
+} from "./document-issue.ts";
+export {
   computeDocumentTotals,
   type DocumentTotals,
   type DocumentTotalsError,
