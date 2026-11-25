@@ -52,6 +52,7 @@ import {
 import { defaultPurchaseOrdersSearch } from "@/features/purchasing/search";
 import {
   formatAmount,
+  formatBcvRate,
   formatDate,
   formatMoney,
   formatQuantity,
@@ -89,14 +90,18 @@ export function PurchaseOrderEditor({
   initialOrder,
   isSaving,
   isDeleting,
+  isIssuing,
   onSave,
   onDelete,
+  onIssue,
 }: {
   initialOrder?: PurchaseOrder;
   isSaving: boolean;
   isDeleting?: boolean;
+  isIssuing?: boolean;
   onSave: (body: SavePurchaseOrderRequest) => Promise<ApiResult<PurchaseOrder>>;
   onDelete?: () => Promise<ApiResult<undefined>>;
+  onIssue?: () => Promise<ApiResult<PurchaseOrder>>;
 }) {
   const role = useSignedInUser().role;
   const canWrite = PURCHASE_ORDER_ROLES.write.includes(role);
@@ -130,7 +135,25 @@ export function PurchaseOrderEditor({
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | undefined>(undefined);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [issueDialogOpen, setIssueDialogOpen] = useState(false);
   const alertRef = useRef<HTMLDivElement>(null);
+
+  const isDirty = useMemo(() => {
+    if (initialOrder === undefined) return false;
+    if (supplierId !== initialOrder.supplier.id) return true;
+    if (currency !== initialOrder.currency) return true;
+    if (documentDate !== formatDate(initialOrder.documentDate)) return true;
+    if (lines.length !== initialOrder.lines.length) return true;
+    return lines.some((line, index) => {
+      const orig = initialOrder.lines[index];
+      if (orig === undefined) return true;
+      return (
+        line.productId !== orig.productId ||
+        line.quantity !== formatQuantity(orig.quantity) ||
+        line.unitCost !== formatAmount(orig.unitCost.minorUnits)
+      );
+    });
+  }, [initialOrder, supplierId, currency, documentDate, lines]);
 
   useEffect(() => {
     if (formError !== undefined) alertRef.current?.focus();
@@ -196,7 +219,7 @@ export function PurchaseOrderEditor({
     );
   }
 
-  if (!canWrite && initialOrder !== undefined) {
+  if (initialOrder !== undefined && (initialOrder.status === "ISSUED" || !canWrite)) {
     return <ReadOnlyPurchaseOrder order={initialOrder} />;
   }
 
@@ -348,6 +371,44 @@ export function PurchaseOrderEditor({
     setFormError(purchaseOrdersMessages.errors.deleteFailed);
   }
 
+  async function handleConfirmIssue() {
+    if (onIssue === undefined) return;
+    setFormError(undefined);
+    setFieldErrors({});
+    const result = await onIssue();
+    setIssueDialogOpen(false);
+    if (result.ok) {
+      announce(purchaseOrdersMessages.issued);
+      return;
+    }
+    const failure = result.error;
+    if (failure.code === "UNAUTHORIZED") return;
+    if (failure.code === "VALIDATION_ERROR" && failure.issues !== undefined) {
+      const serverErrors: FieldErrors = {};
+      for (const issue of failure.issues) {
+        const msg = purchaseOrderFieldMessage(issue.field, issue.code);
+        if (msg !== undefined) serverErrors[issue.field] = msg;
+      }
+      if (Object.keys(serverErrors).length > 0) {
+        setFieldErrors(serverErrors);
+        return;
+      }
+    }
+    if (failure.code === "FORBIDDEN") {
+      setFormError(purchaseOrdersMessages.errors.FORBIDDEN_WRITE);
+      return;
+    }
+    if (failure.code === "INTERNAL_ERROR" || failure.code === "NETWORK_ERROR") {
+      setFormError(purchaseOrdersMessages.errors.issueFailed);
+      return;
+    }
+    setFormError(
+      errorMessages[failure.code]({
+        ...(failure.date === undefined ? {} : { date: failure.date }),
+      }),
+    );
+  }
+
   const m = purchaseOrdersMessages.form;
 
   return (
@@ -358,7 +419,9 @@ export function PurchaseOrderEditor({
     >
       {initialOrder === undefined ? null : (
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">{documentStatusLabels[initialOrder.status]}</Badge>
+          <Badge variant={initialOrder.status === "ISSUED" ? "success" : "secondary"}>
+            {documentStatusLabels[initialOrder.status]}
+          </Badge>
         </div>
       )}
 
@@ -552,29 +615,69 @@ export function PurchaseOrderEditor({
         </Alert>
       )}
 
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex gap-2">
-          <Button type="submit" loading={isSaving}>
-            {isSaving ? m.submitting : m.submit}
-          </Button>
-          <Button asChild variant="outline">
-            <Link to="/ordenes-de-compra" search={defaultPurchaseOrdersSearch}>
-              {m.cancel}
-            </Link>
-          </Button>
-        </div>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex gap-2">
+            <Button
+              type="submit"
+              variant={onIssue !== undefined && !isDirty ? "outline" : "default"}
+              loading={isSaving}
+              disabled={isDeleting || isIssuing}
+            >
+              {isSaving ? m.submitting : m.submit}
+            </Button>
+            {onIssue === undefined ? null : (
+              <Button
+                type="button"
+                variant={!isDirty ? "default" : "outline"}
+                loading={isIssuing ?? false}
+                disabled={isDirty || isSaving || isDeleting}
+                aria-describedby={isDirty ? "po-issue-dirty-hint" : undefined}
+                onClick={() => setIssueDialogOpen(true)}
+              >
+                {isIssuing ? m.issuing : m.issue}
+              </Button>
+            )}
+            <Button asChild variant="outline">
+              <Link to="/ordenes-de-compra" search={defaultPurchaseOrdersSearch}>
+                {m.cancel}
+              </Link>
+            </Button>
+          </div>
 
-        {onDelete === undefined ? null : (
-          <Button
-            type="button"
-            variant="destructive"
-            loading={isDeleting ?? false}
-            onClick={() => setDeleteDialogOpen(true)}
-          >
-            {isDeleting ? m.deleting : m.delete}
-          </Button>
-        )}
+          {onDelete === undefined ? null : (
+            <Button
+              type="button"
+              variant="destructive"
+              loading={isDeleting ?? false}
+              disabled={isSaving || isIssuing}
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              {isDeleting ? m.deleting : m.delete}
+            </Button>
+          )}
+        </div>
+        {onIssue !== undefined && isDirty ? (
+          <p id="po-issue-dirty-hint" className="text-caption text-muted-foreground">
+            {m.issueDirtyHint}
+          </p>
+        ) : null}
       </div>
+
+      <AlertDialog open={issueDialogOpen} onOpenChange={setIssueDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{m.issueDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{m.issueDialog.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{m.issueDialog.cancel}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void handleConfirmIssue()}>
+              {m.issueDialog.confirm}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
@@ -599,7 +702,9 @@ function ReadOnlyPurchaseOrder({ order }: { order: PurchaseOrder }) {
   return (
     <div className="flex max-w-[calc(var(--viewport-min)-var(--sidebar-width)-var(--space-6)*2)] flex-col gap-6">
       <div className="flex items-center gap-2">
-        <Badge variant="secondary">{documentStatusLabels[order.status]}</Badge>
+        <Badge variant={order.status === "ISSUED" ? "success" : "secondary"}>
+          {documentStatusLabels[order.status]}
+        </Badge>
       </div>
 
       <dl className="grid max-w-3xl grid-cols-3 gap-4 rounded-md border border-border p-4">
@@ -670,6 +775,8 @@ function ReadOnlyPurchaseOrder({ order }: { order: PurchaseOrder }) {
         ivaGeneral={order.totals.ivaByRate.general.minorUnits}
         ivaReduced={order.totals.ivaByRate.reduced.minorUnits}
         total={order.totals.total.minorUnits}
+        frozenRate={order.status === "ISSUED" && order.currency === "USD" ? order.frozenRate : null}
+        vesTotalEquivalent={order.vesTotalEquivalent}
       />
 
       <div>
@@ -689,16 +796,20 @@ function TotalsCard({
   ivaGeneral,
   ivaReduced,
   total,
+  frozenRate,
+  vesTotalEquivalent,
 }: {
   currency: Currency;
   subtotal: number;
   ivaGeneral: number;
   ivaReduced: number;
   total: number;
+  frozenRate?: string | null;
+  vesTotalEquivalent?: PurchaseOrder["vesTotalEquivalent"];
 }) {
   const t = purchaseOrdersMessages.form.totals;
   return (
-    <div className="ml-auto w-80 rounded-md border border-border p-4">
+    <div className="ml-auto w-96 rounded-md border border-border p-4">
       <dl className="flex flex-col gap-2 text-body">
         <div className="flex justify-between">
           <dt className="text-muted-foreground">{t.subtotal}</dt>
@@ -720,6 +831,23 @@ function TotalsCard({
           <dt>{t.total}</dt>
           <dd className="tabular-nums">{formatMoney(total, currency)}</dd>
         </div>
+        {frozenRate !== undefined &&
+        frozenRate !== null &&
+        vesTotalEquivalent !== undefined &&
+        vesTotalEquivalent !== null ? (
+          <>
+            <div className="flex justify-between border-t border-border pt-2 text-muted-foreground">
+              <dt>{t.frozenRate}</dt>
+              <dd className="tabular-nums">{formatBcvRate(frozenRate)}</dd>
+            </div>
+            <div className="flex justify-between font-medium">
+              <dt>{t.vesEquivalent}</dt>
+              <dd className="tabular-nums">
+                {formatMoney(vesTotalEquivalent.minorUnits, vesTotalEquivalent.currency)}
+              </dd>
+            </div>
+          </>
+        ) : null}
       </dl>
     </div>
   );

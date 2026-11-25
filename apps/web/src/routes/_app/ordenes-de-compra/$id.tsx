@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ApiFailureError } from "@/api/client";
 import {
   useDeletePurchaseOrder,
+  useIssuePurchaseOrder,
   usePurchaseOrder,
   useUpdatePurchaseOrder,
 } from "@/api/purchase-orders";
@@ -26,6 +27,7 @@ function PurchaseOrderDetailPage() {
   const order = usePurchaseOrder(id, canRead);
   const updateOrder = useUpdatePurchaseOrder(id);
   const deleteOrder = useDeletePurchaseOrder();
+  const issueOrder = useIssuePurchaseOrder(id);
 
   if (!canRead) {
     return (
@@ -75,8 +77,10 @@ function PurchaseOrderDetailPage() {
       initialOrder={order.data}
       isSaving={updateOrder.isPending}
       isDeleting={deleteOrder.isPending}
+      isIssuing={issueOrder.isPending}
       onSave={(body) => updateOrder.mutateAsync(body)}
       onDelete={() => deleteOrder.mutateAsync(id)}
+      onIssue={() => issueOrder.mutateAsync()}
     />
   );
 }
