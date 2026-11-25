@@ -1,0 +1,2 @@
+ALTER TABLE "purchasing"."purchase_orders" ADD COLUMN "frozen_rate" numeric(20, 8);--> statement-breakpoint
+ALTER TABLE "purchasing"."purchase_orders" ADD CONSTRAINT "purchase_orders_frozen_rate_matches_status" CHECK (("purchasing"."purchase_orders"."status" = 'DRAFT' and "purchasing"."purchase_orders"."frozen_rate" is null) or ("purchasing"."purchase_orders"."status" = 'ISSUED' and "purchasing"."purchase_orders"."frozen_rate" is not null and "purchasing"."purchase_orders"."frozen_rate" > 0));
