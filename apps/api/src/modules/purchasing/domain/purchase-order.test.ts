@@ -1,9 +1,13 @@
-import { parseCalendarDate } from "@cuadre/shared-kernel";
+import { money, parseCalendarDate, parseQuantity, parseRate } from "@cuadre/shared-kernel";
 import { describe, expect, it } from "vitest";
 import {
   calculatePurchaseOrderTotals,
+  calculatePurchaseOrderVesEquivalent,
   type PurchaseOrderProductRef,
+  reconstitutePurchaseOrder,
+  type StoredPurchaseOrder,
   validateDraftPurchaseOrder,
+  validateIssuePurchaseOrder,
 } from "./purchase-order.ts";
 
 const TODAY = mustDate("2026-11-24");
@@ -191,5 +195,117 @@ describe("validateDraftPurchaseOrder", () => {
         { field: "lines.0.unitCost", code: "CURRENCY_MISMATCH" },
       ],
     });
+  });
+});
+
+function makeStoredOrder(overrides: Partial<StoredPurchaseOrder> = {}): StoredPurchaseOrder {
+  const qty = parseQuantity("100", { allowDecimals: false });
+  const cost = money(110, "USD");
+  if (!qty.ok || !cost.ok) throw new Error("Test fixture failed");
+  return {
+    id: "33333333-3333-4333-8333-333333333333",
+    supplierId: SUPPLIER_ID,
+    currency: "USD",
+    documentDate: TODAY,
+    status: "DRAFT",
+    frozenRate: null,
+    lines: [
+      {
+        id: "44444444-4444-4444-8444-444444444444",
+        position: 0,
+        productId: HARINA_ID,
+        quantity: qty.value,
+        unitCost: cost.value,
+      },
+    ],
+    ...overrides,
+  };
+}
+
+describe("validateIssuePurchaseOrder", () => {
+  it("accepts a DRAFT order with lines and documentDate <= today", () => {
+    const order = makeStoredOrder();
+    expect(validateIssuePurchaseOrder(order, TODAY)).toEqual({ ok: true, value: order });
+  });
+
+  it("rejects an empty DRAFT with EMPTY_DOCUMENT", () => {
+    const order = makeStoredOrder({ lines: [] });
+    expect(validateIssuePurchaseOrder(order, TODAY)).toEqual({
+      ok: false,
+      error: "EMPTY_DOCUMENT",
+    });
+  });
+
+  it("rejects a DRAFT with documentDate > today with VALIDATION_ERROR DOCUMENT_DATE_IN_FUTURE", () => {
+    const order = makeStoredOrder({ documentDate: mustDate("2026-11-25") });
+    expect(validateIssuePurchaseOrder(order, TODAY)).toEqual({
+      ok: false,
+      error: "VALIDATION_ERROR",
+      issues: [{ field: "documentDate", code: "DOCUMENT_DATE_IN_FUTURE" }],
+    });
+  });
+
+  it("rejects a non-DRAFT order with DOCUMENT_NOT_DRAFT", () => {
+    const rate = parseRate("36.51230000");
+    if (!rate.ok) throw new Error("rate failed");
+    const order = makeStoredOrder({ status: "ISSUED", frozenRate: rate.value });
+    expect(validateIssuePurchaseOrder(order, TODAY)).toEqual({
+      ok: false,
+      error: "DOCUMENT_NOT_DRAFT",
+    });
+  });
+});
+
+describe("reconstitutePurchaseOrder & calculatePurchaseOrderVesEquivalent", () => {
+  it("enforces DRAFT => frozenRate === null and ISSUED => frozenRate !== null", () => {
+    expect(
+      reconstitutePurchaseOrder({
+        id: "33333333-3333-4333-8333-333333333333",
+        supplierId: SUPPLIER_ID,
+        currency: "USD",
+        documentDate: "2026-11-24",
+        status: "DRAFT",
+        frozenRate: "36.51230000",
+        lines: [],
+      }),
+    ).toEqual({ ok: false, error: "INVALID_STORED_PURCHASE_ORDER" });
+
+    expect(
+      reconstitutePurchaseOrder({
+        id: "33333333-3333-4333-8333-333333333333",
+        supplierId: SUPPLIER_ID,
+        currency: "USD",
+        documentDate: "2026-11-24",
+        status: "ISSUED",
+        frozenRate: null,
+        lines: [],
+      }),
+    ).toEqual({ ok: false, error: "INVALID_STORED_PURCHASE_ORDER" });
+
+    const validIssued = reconstitutePurchaseOrder({
+      id: "33333333-3333-4333-8333-333333333333",
+      supplierId: SUPPLIER_ID,
+      currency: "USD",
+      documentDate: "2026-11-17",
+      status: "ISSUED",
+      frozenRate: "36.51230000",
+      lines: [],
+    });
+    expect(validIssued.ok).toBe(true);
+  });
+
+  it("computes VES equivalent for issued USD orders and null for drafts or VES orders", () => {
+    const rate = parseRate("36.51230000");
+    const totalUsd = money(22600, "USD");
+    const totalVes = money(12345, "VES");
+    if (!rate.ok || !totalUsd.ok || !totalVes.ok) throw new Error("fixture failed");
+
+    expect(calculatePurchaseOrderVesEquivalent({ frozenRate: null }, totalUsd.value)).toBeNull();
+    expect(
+      calculatePurchaseOrderVesEquivalent({ frozenRate: rate.value }, totalVes.value),
+    ).toBeNull();
+    expect(
+      calculatePurchaseOrderVesEquivalent({ frozenRate: rate.value }, totalUsd.value)?.minorUnits,
+    ).toBe(825178);
   });
 });
