@@ -1,6 +1,6 @@
 import type { PartnerRole } from "@cuadre/contracts";
 import { err } from "@cuadre/shared-kernel";
-import { and, asc, count, desc, eq, ilike, or, type SQL, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, or, type SQL, sql } from "drizzle-orm";
 import type { Db } from "../../../db/client.ts";
 import { postgresError, UNIQUE_VIOLATION } from "../../../db/postgres-error.ts";
 import type { PartnerListParams, PartnerRepository } from "../application/partner-repository.ts";
@@ -137,6 +137,25 @@ export function createDrizzlePartnerRepository(db: Db): PartnerRepository {
         db.select({ total: count() }).from(partnersTable).where(where),
       ]);
       return { items: rows.map(toPartner), total: totals[0]?.total ?? 0 };
+    },
+
+    async findSupplierById(id, tx = db) {
+      const [row] = await tx
+        .select()
+        .from(partnersTable)
+        .where(and(eq(partnersTable.id, id), eq(partnersTable.isSupplier, true)))
+        .limit(1);
+      return row === undefined ? null : toPartner(row);
+    },
+
+    async findSuppliersByIds(ids, tx = db) {
+      const uniqueIds = [...new Set(ids)];
+      if (uniqueIds.length === 0) return new Map();
+      const rows = await tx
+        .select()
+        .from(partnersTable)
+        .where(and(inArray(partnersTable.id, uniqueIds), eq(partnersTable.isSupplier, true)));
+      return new Map(rows.map((row) => [row.id, toPartner(row)]));
     },
   };
 }

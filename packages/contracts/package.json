@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@cuadre/shared-kernel": "workspace:*",
     "zod": "4.6.7"
   }
 }

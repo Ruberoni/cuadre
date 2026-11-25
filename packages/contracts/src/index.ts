@@ -19,6 +19,7 @@ export {
   TAX_RATE_PERCENT,
   TAX_RATES,
   type TaxRate,
+  UNIT_ALLOWS_DECIMALS,
   UNITS_OF_MEASURE,
   type UnitOfMeasure,
 } from "./catalog/products.ts";
@@ -40,7 +41,7 @@ export {
   ListExchangeRatesResponse,
   RecordExchangeRateRequest,
 } from "./exchange-rates/exchange-rates.ts";
-export { MoneyDto } from "./money.ts";
+export { CurrencySchema, MoneyDto } from "./money.ts";
 export {
   CreateCustomerRequest,
   CUSTOMER_FIELDS,
@@ -88,3 +89,21 @@ export {
   type SupplierIssueCode,
   type SupplierSortField,
 } from "./partners/suppliers.ts";
+export {
+  DOCUMENT_STATUSES,
+  type DocumentStatus,
+  ListPurchaseOrdersQuery,
+  ListPurchaseOrdersResponse,
+  PURCHASE_ORDER_ISSUE_CODES,
+  PURCHASE_ORDER_ROLES,
+  PURCHASE_ORDERS_PAGE_SIZE,
+  PurchaseOrder,
+  PurchaseOrderIdParam,
+  type PurchaseOrderIssueCode,
+  PurchaseOrderLine,
+  PurchaseOrderLineInput,
+  PurchaseOrderSummary,
+  PurchaseOrderSupplier,
+  PurchaseOrderTotals,
+  SavePurchaseOrderRequest,
+} from "./purchasing/purchase-orders.ts";

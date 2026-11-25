@@ -1,4 +1,5 @@
 import type { PartnerRole, PartnerSortField } from "@cuadre/contracts";
+import type { DbExecutor } from "../../../db/client.ts";
 import type { NewPartner, Partner } from "../domain/partner.ts";
 
 export type PartnerListParams = {
@@ -26,4 +27,6 @@ export type PartnerRepository = {
     options: { readonly confirmExistingPartner: boolean },
   ): Promise<SavePartnerResult>;
   listByRole(role: PartnerRole, params: PartnerListParams): Promise<PartnerListPage>;
+  findSupplierById(id: string, tx?: DbExecutor): Promise<Partner | null>;
+  findSuppliersByIds(ids: readonly string[], tx?: DbExecutor): Promise<Map<string, Partner>>;
 };

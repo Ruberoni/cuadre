@@ -1,3 +1,4 @@
+import { TAX_RATE_PERCENT, TAX_RATES, type TaxRate } from "@cuadre/shared-kernel";
 import { z } from "zod";
 import { ROLES, type Role } from "../auth/session.ts";
 import { MoneyDto } from "../money.ts";
@@ -22,10 +23,17 @@ export const PRODUCT_ROLES: Readonly<Record<"read" | "write", readonly Role[]>> 
 export const UNITS_OF_MEASURE = ["UNIT", "BOX", "BULK", "KILOGRAM", "LITER"] as const;
 export type UnitOfMeasure = (typeof UNITS_OF_MEASURE)[number];
 
-/** IVA rates (TaxRate): general 16 %, reduced 8 %, exempt. */
-export const TAX_RATES = ["GENERAL", "REDUCED", "EXEMPT"] as const;
-export type TaxRate = (typeof TAX_RATES)[number];
-export const TAX_RATE_PERCENT: Record<TaxRate, number> = { GENERAL: 16, REDUCED: 8, EXEMPT: 0 };
+/** Whole numbers for Unidad, Caja and Bulto; up to 3 decimals for Kilogramo and Litro (PLAN, ADR-005). */
+export const UNIT_ALLOWS_DECIMALS: Readonly<Record<UnitOfMeasure, boolean>> = {
+  UNIT: false,
+  BOX: false,
+  BULK: false,
+  KILOGRAM: true,
+  LITER: true,
+};
+
+/** IVA rates (TaxRate): general 16 %, reduced 8 %, exempt. Single source of truth in `@cuadre/shared-kernel`. */
+export { TAX_RATE_PERCENT, TAX_RATES, type TaxRate };
 
 export const PRODUCT_FIELDS = ["sku", "name", "unitOfMeasure", "salePrice", "taxRate"] as const;
 export type ProductField = (typeof PRODUCT_FIELDS)[number];

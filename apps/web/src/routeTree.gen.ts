@@ -13,6 +13,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppClientesIndexRouteImport } from './routes/_app/clientes/index'
+import { Route as AppOrdenesDeCompraIndexRouteImport } from './routes/_app/ordenes-de-compra/index'
+import { Route as AppOrdenesDeCompraIdRouteImport } from './routes/_app/ordenes-de-compra/$id'
+import { Route as AppOrdenesDeCompraNuevaRouteImport } from './routes/_app/ordenes-de-compra/nueva'
 import { Route as AppProductosIndexRouteImport } from './routes/_app/productos/index'
 import { Route as AppProductosNuevoRouteImport } from './routes/_app/productos/nuevo'
 import { Route as AppProveedoresIndexRouteImport } from './routes/_app/proveedores/index'
@@ -35,6 +38,21 @@ const LoginRoute = LoginRouteImport.update({
 const AppClientesIndexRoute = AppClientesIndexRouteImport.update({
   id: '/clientes/',
   path: '/clientes/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOrdenesDeCompraIndexRoute = AppOrdenesDeCompraIndexRouteImport.update({
+  id: '/ordenes-de-compra/',
+  path: '/ordenes-de-compra/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOrdenesDeCompraIdRoute = AppOrdenesDeCompraIdRouteImport.update({
+  id: '/ordenes-de-compra/$id',
+  path: '/ordenes-de-compra/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOrdenesDeCompraNuevaRoute = AppOrdenesDeCompraNuevaRouteImport.update({
+  id: '/ordenes-de-compra/nueva',
+  path: '/ordenes-de-compra/nueva',
   getParentRoute: () => AppRoute,
 } as any)
 const AppProductosIndexRoute = AppProductosIndexRouteImport.update({
@@ -61,8 +79,11 @@ const AppTasasBcvIndexRoute = AppTasasBcvIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/ordenes-de-compra/$id': typeof AppOrdenesDeCompraIdRoute
+  '/ordenes-de-compra/nueva': typeof AppOrdenesDeCompraNuevaRoute
   '/productos/nuevo': typeof AppProductosNuevoRoute
   '/clientes/': typeof AppClientesIndexRoute
+  '/ordenes-de-compra/': typeof AppOrdenesDeCompraIndexRoute
   '/productos/': typeof AppProductosIndexRoute
   '/proveedores/': typeof AppProveedoresIndexRoute
   '/tasas-bcv/': typeof AppTasasBcvIndexRoute
@@ -70,8 +91,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/ordenes-de-compra/$id': typeof AppOrdenesDeCompraIdRoute
+  '/ordenes-de-compra/nueva': typeof AppOrdenesDeCompraNuevaRoute
   '/productos/nuevo': typeof AppProductosNuevoRoute
   '/clientes': typeof AppClientesIndexRoute
+  '/ordenes-de-compra': typeof AppOrdenesDeCompraIndexRoute
   '/productos': typeof AppProductosIndexRoute
   '/proveedores': typeof AppProveedoresIndexRoute
   '/tasas-bcv': typeof AppTasasBcvIndexRoute
@@ -81,8 +105,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/_app/ordenes-de-compra/$id': typeof AppOrdenesDeCompraIdRoute
+  '/_app/ordenes-de-compra/nueva': typeof AppOrdenesDeCompraNuevaRoute
   '/_app/productos/nuevo': typeof AppProductosNuevoRoute
   '/_app/clientes/': typeof AppClientesIndexRoute
+  '/_app/ordenes-de-compra/': typeof AppOrdenesDeCompraIndexRoute
   '/_app/productos/': typeof AppProductosIndexRoute
   '/_app/proveedores/': typeof AppProveedoresIndexRoute
   '/_app/tasas-bcv/': typeof AppTasasBcvIndexRoute
@@ -92,8 +119,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/ordenes-de-compra/$id'
+    | '/ordenes-de-compra/nueva'
     | '/productos/nuevo'
     | '/clientes/'
+    | '/ordenes-de-compra/'
     | '/productos/'
     | '/proveedores/'
     | '/tasas-bcv/'
@@ -101,8 +131,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/ordenes-de-compra/$id'
+    | '/ordenes-de-compra/nueva'
     | '/productos/nuevo'
     | '/clientes'
+    | '/ordenes-de-compra'
     | '/productos'
     | '/proveedores'
     | '/tasas-bcv'
@@ -111,8 +144,11 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/login'
+    | '/_app/ordenes-de-compra/$id'
+    | '/_app/ordenes-de-compra/nueva'
     | '/_app/productos/nuevo'
     | '/_app/clientes/'
+    | '/_app/ordenes-de-compra/'
     | '/_app/productos/'
     | '/_app/proveedores/'
     | '/_app/tasas-bcv/'
@@ -154,6 +190,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppClientesIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/ordenes-de-compra/': {
+      id: '/_app/ordenes-de-compra/'
+      path: '/ordenes-de-compra'
+      fullPath: '/ordenes-de-compra/'
+      preLoaderRoute: typeof AppOrdenesDeCompraIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ordenes-de-compra/$id': {
+      id: '/_app/ordenes-de-compra/$id'
+      path: '/ordenes-de-compra/$id'
+      fullPath: '/ordenes-de-compra/$id'
+      preLoaderRoute: typeof AppOrdenesDeCompraIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ordenes-de-compra/nueva': {
+      id: '/_app/ordenes-de-compra/nueva'
+      path: '/ordenes-de-compra/nueva'
+      fullPath: '/ordenes-de-compra/nueva'
+      preLoaderRoute: typeof AppOrdenesDeCompraNuevaRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/productos/': {
       id: '/_app/productos/'
       path: '/productos'
@@ -186,16 +243,22 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppOrdenesDeCompraIdRoute: typeof AppOrdenesDeCompraIdRoute
+  AppOrdenesDeCompraNuevaRoute: typeof AppOrdenesDeCompraNuevaRoute
   AppProductosNuevoRoute: typeof AppProductosNuevoRoute
   AppClientesIndexRoute: typeof AppClientesIndexRoute
+  AppOrdenesDeCompraIndexRoute: typeof AppOrdenesDeCompraIndexRoute
   AppProductosIndexRoute: typeof AppProductosIndexRoute
   AppProveedoresIndexRoute: typeof AppProveedoresIndexRoute
   AppTasasBcvIndexRoute: typeof AppTasasBcvIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppOrdenesDeCompraIdRoute: AppOrdenesDeCompraIdRoute,
+  AppOrdenesDeCompraNuevaRoute: AppOrdenesDeCompraNuevaRoute,
   AppProductosNuevoRoute: AppProductosNuevoRoute,
   AppClientesIndexRoute: AppClientesIndexRoute,
+  AppOrdenesDeCompraIndexRoute: AppOrdenesDeCompraIndexRoute,
   AppProductosIndexRoute: AppProductosIndexRoute,
   AppProveedoresIndexRoute: AppProveedoresIndexRoute,
   AppTasasBcvIndexRoute: AppTasasBcvIndexRoute,

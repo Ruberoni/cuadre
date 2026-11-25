@@ -8,6 +8,7 @@ import { openApiOptions, useErrorHandlers } from "./http/api-error.ts";
 import { createCatalogModule } from "./modules/catalog/index.ts";
 import { createExchangeRatesModule } from "./modules/exchange-rates/index.ts";
 import { createPartnersModule } from "./modules/partners/index.ts";
+import { createPurchasingModule } from "./modules/purchasing/index.ts";
 
 export function createApp({ db, auth, today }: { db: Db; auth: Auth; today?: () => string }) {
   const app = new OpenAPIHono(openApiOptions);
@@ -27,12 +28,23 @@ export function createApp({ db, auth, today }: { db: Db; auth: Auth; today?: () 
   // endpoint must declare its roles with `allowRoles`: one that does not answers 403 to everyone.
   app.use("/api/*", requireSession(auth), requireRoleDeclaration());
 
-  app.route("/api", createCatalogModule({ db }).routes);
-  app.route(
-    "/api",
-    createExchangeRatesModule({ db, ...(today === undefined ? {} : { today }) }).routes,
-  );
-  app.route("/api", createPartnersModule({ db }).routes);
+  const catalog = createCatalogModule({ db });
+  const partners = createPartnersModule({ db });
+  const exchangeRates = createExchangeRatesModule({
+    db,
+    ...(today === undefined ? {} : { today }),
+  });
+  const purchasing = createPurchasingModule({
+    db,
+    partners,
+    catalog,
+    ...(today === undefined ? {} : { today }),
+  });
+
+  app.route("/api", catalog.routes);
+  app.route("/api", exchangeRates.routes);
+  app.route("/api", partners.routes);
+  app.route("/api", purchasing.routes);
 
   app.doc("/openapi.json", {
     openapi: "3.1.0",

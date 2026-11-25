@@ -1,6 +1,7 @@
 // Money value object (ADR-005): integer minor units + currency. All arithmetic and rounding of
 // money goes through here. Both currencies have 2-decimal minor units (cents, céntimos).
 import type { Brand } from "./brand.ts";
+import { QUANTITY_SCALE, type Quantity } from "./quantity.ts";
 import { RATE_SCALE, type Rate } from "./rate.ts";
 import { err, ok, type Result } from "./result.ts";
 import { divideRoundHalfAwayFromZero } from "./rounding.ts";
@@ -61,4 +62,16 @@ export function applyPercentage(
   if (!Number.isSafeInteger(percent) || percent < 0) return err("INVALID_PERCENTAGE");
   const portion = divideRoundHalfAwayFromZero(BigInt(amount.minorUnits) * BigInt(percent), 100n);
   return fromBigInt(portion, amount.currency);
+}
+
+/** Multiplies a unit `Money` amount by an exact `Quantity` (thousandths), rounding half away from zero. */
+export function multiplyMoneyByQuantity(
+  unitAmount: Money,
+  quantity: Quantity,
+): Result<Money, "AMOUNT_OUT_OF_RANGE"> {
+  const product = divideRoundHalfAwayFromZero(
+    BigInt(unitAmount.minorUnits) * quantity.scaled,
+    QUANTITY_SCALE,
+  );
+  return fromBigInt(product, unitAmount.currency);
 }

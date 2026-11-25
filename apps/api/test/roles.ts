@@ -19,7 +19,7 @@ export async function signInAll(db: Db, testApp: TestApp): Promise<Sessions> {
   return sessions as Sessions;
 }
 
-type Call = { method: "GET" | "POST" | "PATCH"; path: string; body?: unknown };
+type Call = { method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"; path: string; body?: unknown };
 
 /**
  * "This route allows exactly these roles", one line per route (PLAN → Roles, REVIEW item 6): each

@@ -264,10 +264,10 @@ test.describe("app shell", () => {
   } as const;
 
   const expectedNavByRole: Record<keyof typeof roleNames, readonly string[]> = {
-    admin: ["Productos", "Tasas BCV", "Proveedores", "Clientes"],
+    admin: ["Productos", "Tasas BCV", "Proveedores", "Órdenes de compra", "Clientes"],
     sales: ["Productos", "Tasas BCV", "Clientes"],
-    purchasing: ["Productos", "Tasas BCV", "Proveedores"],
-    warehouse: ["Productos", "Tasas BCV"],
+    purchasing: ["Productos", "Tasas BCV", "Proveedores", "Órdenes de compra"],
+    warehouse: ["Productos", "Tasas BCV", "Órdenes de compra"],
   };
 
   for (const [role, roleName] of Object.entries(roleNames)) {
@@ -289,17 +289,18 @@ test.describe("app shell", () => {
     });
   }
 
-  test("the sidebar offers Productos, Tasas BCV, Proveedores, and Clientes for admin", async ({
+  test("the sidebar offers Productos, Tasas BCV, Proveedores, Órdenes de compra, and Clientes for admin", async ({
     page,
   }) => {
     await page.goto("/productos");
 
     const nav = page.getByRole("navigation", { name: "Principal" });
-    await expect(nav.getByRole("link")).toHaveCount(4);
+    await expect(nav.getByRole("link")).toHaveCount(5);
     await expect(nav.getByRole("link")).toHaveText([
       "Productos",
       "Tasas BCV",
       "Proveedores",
+      "Órdenes de compra",
       "Clientes",
     ]);
     await expect(nav.getByRole("link", { name: "Productos" })).toHaveAttribute(
