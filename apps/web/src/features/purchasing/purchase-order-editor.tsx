@@ -1,4 +1,5 @@
 import {
+  type FieldIssue,
   type Product,
   PURCHASE_ORDER_ROLES,
   type PurchaseOrder,
@@ -108,9 +109,10 @@ export function PurchaseOrderEditor({
   const navigate = useNavigate();
   const announce = useStatusAnnouncer();
 
-  // Read-only roles (warehouse) must NOT query `/api/suppliers` (403) or `/api/products`.
-  const suppliersQuery = useSuppliers({ sort: "name", order: "asc", page: 1 }, canWrite);
-  const productsQuery = useProducts({ sort: "sku", order: "asc", page: 1 }, canWrite);
+  // Read-only views (warehouse role or issued POs) must NOT query `/api/suppliers` or `/api/products`.
+  const canEdit = canWrite && initialOrder?.status !== "ISSUED";
+  const suppliersQuery = useSuppliers({ sort: "name", order: "asc", page: 1 }, canEdit);
+  const productsQuery = useProducts({ sort: "sku", order: "asc", page: 1 }, canEdit);
 
   const suppliers = suppliersQuery.data?.items ?? [];
   const products = productsQuery.data?.items ?? [];
@@ -245,6 +247,24 @@ export function PurchaseOrderEditor({
     setLines((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   }
 
+  function applyValidationIssues(issues: readonly FieldIssue[]): boolean {
+    const serverErrors: FieldErrors = {};
+    let linesError: string | undefined;
+    for (const issue of issues) {
+      const msg = purchaseOrderFieldMessage(issue.field, issue.code);
+      if (msg === undefined) continue;
+      if (issue.field === "lines") {
+        linesError = msg;
+      } else {
+        serverErrors[issue.field] = msg;
+      }
+    }
+    if (Object.keys(serverErrors).length === 0 && linesError === undefined) return false;
+    setFieldErrors(serverErrors);
+    if (linesError !== undefined) setFormError(linesError);
+    return true;
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setFormError(undefined);
@@ -331,23 +351,12 @@ export function PurchaseOrderEditor({
 
     const failure = result.error;
     if (failure.code === "UNAUTHORIZED") return;
-    if (failure.code === "VALIDATION_ERROR" && failure.issues !== undefined) {
-      const serverErrors: FieldErrors = {};
-      let linesError: string | undefined;
-      for (const issue of failure.issues) {
-        const msg = purchaseOrderFieldMessage(issue.field, issue.code);
-        if (msg === undefined) continue;
-        if (issue.field === "lines") {
-          linesError = msg;
-        } else {
-          serverErrors[issue.field] = msg;
-        }
-      }
-      if (Object.keys(serverErrors).length > 0 || linesError !== undefined) {
-        setFieldErrors(serverErrors);
-        if (linesError !== undefined) setFormError(linesError);
-        return;
-      }
+    if (
+      failure.code === "VALIDATION_ERROR" &&
+      failure.issues !== undefined &&
+      applyValidationIssues(failure.issues)
+    ) {
+      return;
     }
     if (failure.code === "FORBIDDEN") {
       setFormError(purchaseOrdersMessages.errors.FORBIDDEN_WRITE);
@@ -390,23 +399,12 @@ export function PurchaseOrderEditor({
     }
     const failure = result.error;
     if (failure.code === "UNAUTHORIZED") return;
-    if (failure.code === "VALIDATION_ERROR" && failure.issues !== undefined) {
-      const serverErrors: FieldErrors = {};
-      let linesError: string | undefined;
-      for (const issue of failure.issues) {
-        const msg = purchaseOrderFieldMessage(issue.field, issue.code);
-        if (msg === undefined) continue;
-        if (issue.field === "lines") {
-          linesError = msg;
-        } else {
-          serverErrors[issue.field] = msg;
-        }
-      }
-      if (Object.keys(serverErrors).length > 0 || linesError !== undefined) {
-        setFieldErrors(serverErrors);
-        if (linesError !== undefined) setFormError(linesError);
-        return;
-      }
+    if (
+      failure.code === "VALIDATION_ERROR" &&
+      failure.issues !== undefined &&
+      applyValidationIssues(failure.issues)
+    ) {
+      return;
     }
     if (failure.code === "FORBIDDEN") {
       setFormError(purchaseOrdersMessages.errors.FORBIDDEN_WRITE);

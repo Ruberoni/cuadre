@@ -1,3 +1,4 @@
+import { parseCalendarDate } from "@cuadre/shared-kernel";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { resetDatabase } from "../../../../test/reset-database.ts";
@@ -878,11 +879,14 @@ describe("purchasing API (issue purchase order)", () => {
       findProductsByIds: (ids, tx) => catalog.findProductsByIds(ids, tx),
     };
 
+    const parsedToday = parseCalendarDate(TODAY);
+    if (!parsedToday.ok) throw new Error(`Invalid test date: ${TODAY}`);
+
     await expect(
       issuePurchaseOrderUseCase(
         { db, repository: failingRepo, lookups: dummyLookups, exchangeRates },
         draft.id,
-        TODAY as never,
+        parsedToday.value,
       ),
     ).rejects.toThrow("simulated persistence failure");
 
