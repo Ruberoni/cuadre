@@ -291,15 +291,16 @@ test.describe("Órdenes de compra (emitir)", () => {
 
     await expect(page.getByRole("status")).toHaveText("Orden de compra emitida.");
     await expect(page).toHaveURL(detailUrl);
-    await expect(page.getByText("Emitido", { exact: true })).toBeVisible();
-    await expect(page.getByText("Tasa BCV (congelada)")).toBeVisible();
-    await expect(page.getByText("Bs. 36,51230000")).toBeVisible();
-    await expect(page.getByText("Equivalente en Bs.")).toBeVisible();
-    await expect(page.getByText("Bs. 8.251,78")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Guardar borrador" })).toBeHidden();
-    await expect(page.getByRole("button", { name: "Eliminar borrador" })).toBeHidden();
-    await expect(page.getByRole("button", { name: "Emitir" })).toBeHidden();
-    await expect(page.getByRole("link", { name: "Volver" })).toBeVisible();
+    const main = page.getByRole("main");
+    await expect(main.getByText("Emitido", { exact: true })).toBeVisible();
+    await expect(main.getByText("Tasa BCV (congelada)")).toBeVisible();
+    await expect(main.getByText("Bs. 36,51230000")).toBeVisible();
+    await expect(main.getByText("Equivalente en Bs.")).toBeVisible();
+    await expect(main.getByText("Bs. 8.251,78")).toBeVisible();
+    await expect(main.getByRole("button", { name: "Guardar borrador" })).toBeHidden();
+    await expect(main.getByRole("button", { name: "Eliminar borrador" })).toBeHidden();
+    await expect(main.getByRole("button", { name: "Emitir" })).toBeHidden();
+    await expect(main.getByRole("link", { name: "Volver" })).toBeVisible();
 
     // List also displays Emitido badge
     await page.getByRole("link", { name: "Volver" }).click();
