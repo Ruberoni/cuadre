@@ -93,8 +93,10 @@ export const PurchaseOrder = z.object({
   currency: CurrencySchema,
   documentDate: z.string(),
   status: z.enum(DOCUMENT_STATUSES),
+  frozenRate: z.string().nullable(),
   lines: z.array(PurchaseOrderLine),
   totals: PurchaseOrderTotals,
+  vesTotalEquivalent: MoneyDto.nullable(),
 });
 export type PurchaseOrder = z.infer<typeof PurchaseOrder>;
 
@@ -104,8 +106,10 @@ export const PurchaseOrderSummary = z.object({
   currency: CurrencySchema,
   documentDate: z.string(),
   status: z.enum(DOCUMENT_STATUSES),
+  frozenRate: z.string().nullable(),
   lineCount: z.number().int().min(0),
   totals: PurchaseOrderTotals,
+  vesTotalEquivalent: MoneyDto.nullable(),
 });
 export type PurchaseOrderSummary = z.infer<typeof PurchaseOrderSummary>;
 
