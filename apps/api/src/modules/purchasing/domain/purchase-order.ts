@@ -277,6 +277,17 @@ export function validateIssuePurchaseOrder(
   return ok(order);
 }
 
+export function validatePurchaseOrderVesEquivalent(
+  total: Money,
+  frozenRate: Rate,
+): { readonly ok: true; readonly value: Money | null } | PurchaseOrderValidationFailure {
+  const result = computeVesEquivalent(total, frozenRate);
+  if (!result.ok) {
+    return invalid([{ field: "lines", code: result.error }]);
+  }
+  return result;
+}
+
 export function calculatePurchaseOrderVesEquivalent(
   order: Pick<StoredPurchaseOrder, "frozenRate">,
   total: Money,

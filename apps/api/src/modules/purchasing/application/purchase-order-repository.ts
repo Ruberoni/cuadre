@@ -1,5 +1,5 @@
 import type { DocumentTotals, Money, Rate, Result } from "@cuadre/shared-kernel";
-import type { DbTransaction } from "../../../db/client.ts";
+import type { DbExecutor, DbTransaction } from "../../../db/client.ts";
 import {
   calculatePurchaseOrderTotals,
   calculatePurchaseOrderVesEquivalent,
@@ -54,5 +54,8 @@ export type PurchaseOrderRepository = {
 export type PurchasingLookups = {
   findSupplierById(id: string): Promise<PurchaseOrderSupplierRef | null>;
   findSuppliersByIds(ids: readonly string[]): Promise<Map<string, PurchaseOrderSupplierRef>>;
-  findProductsByIds(ids: readonly string[]): Promise<Map<string, PurchaseOrderProductRef>>;
+  findProductsByIds(
+    ids: readonly string[],
+    tx?: DbExecutor,
+  ): Promise<Map<string, PurchaseOrderProductRef>>;
 };

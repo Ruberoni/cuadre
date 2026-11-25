@@ -10,9 +10,13 @@ import {
 import type { Db, DbTransaction } from "../../../db/client.ts";
 import { issueDocument } from "../../../shared/issue-document.ts";
 import {
+  calculatePurchaseOrderTotals,
   isUuid,
+  type PurchaseOrderProductRef,
+  type PurchaseOrderValidationFailure,
   type StoredPurchaseOrder,
   validateIssuePurchaseOrder,
+  validatePurchaseOrderVesEquivalent,
 } from "../domain/purchase-order.ts";
 import {
   type EnrichedPurchaseOrder,
@@ -54,9 +58,12 @@ export async function issuePurchaseOrderUseCase(
 
   const issued = await issueDocument<
     StoredPurchaseOrder,
-    StoredPurchaseOrder,
+    {
+      readonly order: StoredPurchaseOrder;
+      readonly productsById: ReadonlyMap<string, PurchaseOrderProductRef>;
+    },
     { readonly ok: false; readonly error: "NOT_FOUND" } | IssuePreconditionFailure,
-    never
+    PurchaseOrderValidationFailure
   >({
     db: deps.db,
     today,
@@ -69,22 +76,27 @@ export async function issuePurchaseOrderUseCase(
       return ok(valid.value);
     },
     persistIssued: async (order, frozenRate, tx) => {
+      const productsById = await deps.lookups.findProductsByIds(
+        order.lines.map((line) => line.productId),
+        tx,
+      );
+      const totals = calculatePurchaseOrderTotals(order, productsById);
+      const vesValidation = validatePurchaseOrderVesEquivalent(totals.total, frozenRate);
+      if (!vesValidation.ok) return vesValidation;
+
       const updated = await deps.repository.markIssued(order.id, frozenRate, tx);
-      return ok(updated);
+      return ok({ order: updated, productsById });
     },
   });
 
   if (!issued.ok) return issued;
 
-  const [supplier, productsById] = await Promise.all([
-    deps.lookups.findSupplierById(issued.value.supplierId),
-    deps.lookups.findProductsByIds(issued.value.lines.map((line) => line.productId)),
-  ]);
+  const supplier = await deps.lookups.findSupplierById(issued.value.order.supplierId);
   if (supplier === null) {
     throw new Error(
-      `Supplier ${issued.value.supplierId} referenced by purchase order ${issued.value.id} not found`,
+      `Supplier ${issued.value.order.supplierId} referenced by purchase order ${issued.value.order.id} not found`,
     );
   }
 
-  return ok(enrichPurchaseOrder(issued.value, supplier, productsById));
+  return ok(enrichPurchaseOrder(issued.value.order, supplier, issued.value.productsById));
 }

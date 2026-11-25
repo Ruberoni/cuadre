@@ -27,7 +27,7 @@ export function createPurchasingModule({
   const lookups: PurchasingLookups = {
     findSupplierById: (id) => partners.findSupplierById(id),
     findSuppliersByIds: (ids) => partners.findSuppliersByIds(ids),
-    findProductsByIds: (ids) => catalog.findProductsByIds(ids),
+    findProductsByIds: (ids, tx) => catalog.findProductsByIds(ids, tx),
   };
 
   const currentToday = (): CalendarDate => {

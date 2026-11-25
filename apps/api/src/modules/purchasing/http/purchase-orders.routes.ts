@@ -261,7 +261,7 @@ const issuePurchaseOrderRoute = createRoute({
       content: { "application/json": { schema: PurchaseOrder } },
     },
     400: {
-      description: "Document date is in the future.",
+      description: "Document date is in the future or VES equivalent is out of range.",
       content: { "application/json": { schema: ApiError } },
     },
     404: {

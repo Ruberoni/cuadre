@@ -8,6 +8,7 @@ import {
   type StoredPurchaseOrder,
   validateDraftPurchaseOrder,
   validateIssuePurchaseOrder,
+  validatePurchaseOrderVesEquivalent,
 } from "./purchase-order.ts";
 
 const TODAY = mustDate("2026-11-24");
@@ -307,5 +308,30 @@ describe("reconstitutePurchaseOrder & calculatePurchaseOrderVesEquivalent", () =
     expect(
       calculatePurchaseOrderVesEquivalent({ frozenRate: rate.value }, totalUsd.value)?.minorUnits,
     ).toBe(825178);
+  });
+
+  it("validates VES equivalent before issue and rejects AMOUNT_OUT_OF_RANGE when total * rate exceeds MAX_MINOR_UNITS", () => {
+    const validRate = parseRate("36.51230000");
+    const highRate = parseRate("2000.00000000");
+    const smallUsd = money(22600, "USD");
+    const largeUsd = money(1_000_000_000_000, "USD");
+    const largeVes = money(1_000_000_000_000, "VES");
+    if (!validRate.ok || !highRate.ok || !smallUsd.ok || !largeUsd.ok || !largeVes.ok) {
+      throw new Error("fixture failed");
+    }
+
+    expect(validatePurchaseOrderVesEquivalent(smallUsd.value, validRate.value)).toEqual({
+      ok: true,
+      value: { minorUnits: 825178, currency: "VES" },
+    });
+    expect(validatePurchaseOrderVesEquivalent(largeVes.value, highRate.value)).toEqual({
+      ok: true,
+      value: null,
+    });
+    expect(validatePurchaseOrderVesEquivalent(largeUsd.value, highRate.value)).toEqual({
+      ok: false,
+      error: "VALIDATION_ERROR",
+      issues: [{ field: "lines", code: "AMOUNT_OUT_OF_RANGE" }],
+    });
   });
 });

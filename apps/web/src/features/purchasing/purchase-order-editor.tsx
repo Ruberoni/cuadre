@@ -333,12 +333,19 @@ export function PurchaseOrderEditor({
     if (failure.code === "UNAUTHORIZED") return;
     if (failure.code === "VALIDATION_ERROR" && failure.issues !== undefined) {
       const serverErrors: FieldErrors = {};
+      let linesError: string | undefined;
       for (const issue of failure.issues) {
         const msg = purchaseOrderFieldMessage(issue.field, issue.code);
-        if (msg !== undefined) serverErrors[issue.field] = msg;
+        if (msg === undefined) continue;
+        if (issue.field === "lines") {
+          linesError = msg;
+        } else {
+          serverErrors[issue.field] = msg;
+        }
       }
-      if (Object.keys(serverErrors).length > 0) {
+      if (Object.keys(serverErrors).length > 0 || linesError !== undefined) {
         setFieldErrors(serverErrors);
+        if (linesError !== undefined) setFormError(linesError);
         return;
       }
     }
@@ -385,12 +392,19 @@ export function PurchaseOrderEditor({
     if (failure.code === "UNAUTHORIZED") return;
     if (failure.code === "VALIDATION_ERROR" && failure.issues !== undefined) {
       const serverErrors: FieldErrors = {};
+      let linesError: string | undefined;
       for (const issue of failure.issues) {
         const msg = purchaseOrderFieldMessage(issue.field, issue.code);
-        if (msg !== undefined) serverErrors[issue.field] = msg;
+        if (msg === undefined) continue;
+        if (issue.field === "lines") {
+          linesError = msg;
+        } else {
+          serverErrors[issue.field] = msg;
+        }
       }
-      if (Object.keys(serverErrors).length > 0) {
+      if (Object.keys(serverErrors).length > 0 || linesError !== undefined) {
         setFieldErrors(serverErrors);
+        if (linesError !== undefined) setFormError(linesError);
         return;
       }
     }

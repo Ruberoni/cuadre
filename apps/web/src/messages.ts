@@ -449,7 +449,7 @@ export const documentStatusLabels: Record<DocumentStatus, string> = {
 const QUANTITY_NOT_A_NUMBER = "Escribir solo números, con coma para los decimales.";
 
 export const purchaseOrderFieldMessages: Record<
-  "supplierId" | "currency" | "documentDate" | "productId" | "quantity" | "unitCost",
+  "supplierId" | "currency" | "documentDate" | "lines" | "productId" | "quantity" | "unitCost",
   Partial<Record<PurchaseOrderIssueCode, string>>
 > = {
   supplierId: {
@@ -466,6 +466,11 @@ export const purchaseOrderFieldMessages: Record<
     INVALID_DATE: DATE_FORMAT_INVALID,
     INVALID: DATE_FORMAT_INVALID,
     DOCUMENT_DATE_IN_FUTURE: "La fecha no puede ser futura.",
+  },
+  lines: {
+    OUT_OF_RANGE: "El total de la orden supera el monto máximo permitido.",
+    AMOUNT_OUT_OF_RANGE:
+      "El equivalente en bolívares a la tasa BCV supera el monto máximo permitido.",
   },
   productId: {
     REQUIRED: "Falta el producto.",

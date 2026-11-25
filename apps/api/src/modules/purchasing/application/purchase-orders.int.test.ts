@@ -5,6 +5,7 @@ import { expectAllowedRoles, signInAll } from "../../../../test/roles.ts";
 import { createTestApp, signIn } from "../../../../test/sign-in.ts";
 import { testDatabaseUrl } from "../../../../test/test-database.ts";
 import { createDb } from "../../../db/client.ts";
+import { createCatalogModule } from "../../catalog/index.ts";
 import { createExchangeRatesModule } from "../../exchange-rates/index.ts";
 import { createDrizzlePurchaseOrderRepository } from "../infrastructure/drizzle-purchase-order-repository.ts";
 import { purchaseOrdersTable } from "../infrastructure/purchase-orders.table.ts";
@@ -869,11 +870,12 @@ describe("purchasing API (issue purchase order)", () => {
         throw new Error("simulated persistence failure");
       },
     };
+    const catalog = createCatalogModule({ db });
     const exchangeRates = createExchangeRatesModule({ db, today: () => TODAY });
     const dummyLookups: PurchasingLookups = {
       findSupplierById: async () => null,
       findSuppliersByIds: async () => new Map(),
-      findProductsByIds: async () => new Map(),
+      findProductsByIds: (ids, tx) => catalog.findProductsByIds(ids, tx),
     };
 
     await expect(
@@ -890,5 +892,83 @@ describe("purchasing API (issue purchase order)", () => {
     const poAfter = await realRepo.findById(draft.id);
     expect(poAfter?.status).toBe("DRAFT");
     expect(poAfter?.frozenRate).toBeNull();
+  });
+
+  it("rejects issuing a valid USD draft whose VES equivalent exceeds MAX_MINOR_UNITS without freezing the rate or breaking reads", async () => {
+    const testApp = createTestApp(db, { today: () => TODAY });
+    const admin = await signIn(db, testApp, "admin");
+    const purchasing = await signIn(db, testApp, "purchasing");
+    const supplier = await createSupplier(testApp, admin);
+    const product = await createProduct(testApp, admin, {
+      sku: "HAR-PAN-1K",
+      name: "Harina",
+      unitOfMeasure: "BULK",
+      salePrice: { minorUnits: 145, currency: "USD" },
+      taxRate: "EXEMPT",
+    });
+    await recordExchangeRate(testApp, admin, "2026-11-17", "2000.00000000");
+
+    // 100 * 10_000_000_000 = 1_000_000_000_000 minor units (valid USD total <= MAX_MINOR_UNITS = 10^15)
+    // Against 2000.00000000 Bs/USD -> 2 * 10^15 VES minor units > MAX_MINOR_UNITS
+    const createRes = await testApp.app.request("/api/purchase-orders", {
+      method: "POST",
+      headers: { ...purchasing, "content-type": "application/json" },
+      body: JSON.stringify({
+        supplierId: supplier.id,
+        currency: "USD",
+        documentDate: "2026-11-17",
+        lines: [
+          {
+            productId: product.id,
+            quantity: "100",
+            unitCost: { minorUnits: 10_000_000_000, currency: "USD" },
+          },
+        ],
+      }),
+    });
+    expect(createRes.status).toBe(201);
+    const draft = (await createRes.json()) as {
+      id: string;
+      totals: { total: { minorUnits: number; currency: string } };
+    };
+    expect(draft.totals.total).toEqual({ minorUnits: 1_000_000_000_000, currency: "USD" });
+
+    const issueRes = await testApp.app.request(`/api/purchase-orders/${draft.id}/issue`, {
+      method: "POST",
+      headers: purchasing,
+    });
+    expect(issueRes.status).toBe(400);
+    expect(await issueRes.json()).toEqual({
+      code: "VALIDATION_ERROR",
+      issues: [{ field: "lines", code: "AMOUNT_OUT_OF_RANGE" }],
+    });
+
+    // BCV rate stays unfrozen
+    const exchangeRates = createExchangeRatesModule({ db, today: () => TODAY });
+    const rateAfter = await exchangeRates.lookupForDate("2026-11-17");
+    expect(rateAfter.ok && rateAfter.value.frozen).toBe(false);
+
+    // Order stays DRAFT and both GET endpoints remain healthy (200)
+    const getRes = await testApp.app.request(`/api/purchase-orders/${draft.id}`, {
+      headers: purchasing,
+    });
+    expect(getRes.status).toBe(200);
+    expect(await getRes.json()).toMatchObject({
+      id: draft.id,
+      status: "DRAFT",
+      frozenRate: null,
+      vesTotalEquivalent: null,
+    });
+
+    const listRes = await testApp.app.request("/api/purchase-orders", { headers: purchasing });
+    expect(listRes.status).toBe(200);
+    const listBody = (await listRes.json()) as {
+      items: { id: string; status: string; frozenRate: string | null }[];
+    };
+    expect(listBody.items[0]).toMatchObject({
+      id: draft.id,
+      status: "DRAFT",
+      frozenRate: null,
+    });
   });
 });
