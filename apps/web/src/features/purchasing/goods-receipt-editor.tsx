@@ -645,8 +645,8 @@ export function GoodsReceiptEditor({
                 <TableRow className="hover:bg-muted">
                   <TableHead>{m.product}</TableHead>
                   <TableHead className="w-28 text-right">{m.orderedQuantity}</TableHead>
-                  <TableHead className="w-36 text-right">{m.quantity}</TableHead>
-                  <TableHead className="w-44 text-right">{m.unitCost}</TableHead>
+                  <TableHead className="min-w-28 w-32 text-right">{m.quantity}</TableHead>
+                  <TableHead className="min-w-44 w-44 text-right">{m.unitCost}</TableHead>
                   <TableHead className="w-24">{m.iva}</TableHead>
                   <TableHead className="w-36 text-right">{m.lineSubtotal}</TableHead>
                   <TableHead className="w-12">
@@ -848,7 +848,8 @@ function ReadOnlyGoodsReceipt({ receipt }: { receipt: GoodsReceipt }) {
         <div>
           <dt className="text-caption text-muted-foreground">{m.supplier}</dt>
           <dd className="text-body font-medium">
-            {receipt.supplier.name} ({receipt.supplier.rif})
+            {receipt.supplier.name} (
+            <span className="whitespace-nowrap">{receipt.supplier.rif}</span>)
           </dd>
         </div>
         <div>
