@@ -12,6 +12,7 @@ Closes #
 - [ ] Integration tests against Postgres
 - [ ] `pnpm verify` (app booted, smoke E2E)
 - [ ] E2E for this slice's acceptance criteria added or updated (UI changes)
+- [ ] Live UI inspection on changed screens (1280 px, focus order, error states, console; UI changes)
 - [ ] Property tests for invariants touched (domain changes)
 - [ ] Review with `REVIEW.md` (`pr-reviewer`, or the maintainer); triggered items: <!-- e.g. 1, 3, 6 -->
 

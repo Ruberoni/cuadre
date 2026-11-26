@@ -52,7 +52,7 @@ Apply this workflow to the target GitHub issue number `<n>` provided by the main
 Run, and fix until green (three rounds, then escalate by commenting on the issue and stopping):
 
 - Always: `pnpm typecheck`, `pnpm lint`, `pnpm test:unit`, `pnpm test:integration` (`docker compose up -d` first), then the `verify` skill (`pnpm verify`).
-- If the diff touches `apps/web`: also `pnpm test:e2e`, and the "Inspecting the running app beyond the smoke test" section of the `verify` skill on each changed screen (focus order, error states, console).
+- If the diff touches `apps/web`: also run `pnpm test:e2e`, read the `verify` skill, and complete its "Inspecting the running app beyond the smoke test" section via the `browser` subagent on every changed screen (1280 px layout, focus order, error states, console) before Phase 4. Record the inspected screens in the PR's **Evidence / notes** (or leave the live UI inspection checkbox unticked with the reason).
 
 Anything not run is declared in the PR with its reason, never silently skipped. Where the Playwright browser download is unreachable on Windows PowerShell, use `$env:PLAYWRIGHT_CHANNEL = "msedge"; pnpm verify` (or `pnpm test:e2e`).
 
