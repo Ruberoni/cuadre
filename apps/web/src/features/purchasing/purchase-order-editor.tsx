@@ -1,5 +1,6 @@
 import {
   type FieldIssue,
+  GOODS_RECEIPT_ROLES,
   type Product,
   PURCHASE_ORDER_ROLES,
   type PurchaseOrder,
@@ -51,9 +52,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { defaultPurchaseOrdersSearch } from "@/features/purchasing/search";
+import { TotalsCard } from "@/features/purchasing/totals-card";
 import {
   formatAmount,
-  formatBcvRate,
   formatDate,
   formatMoney,
   formatQuantity,
@@ -64,6 +65,7 @@ import {
 import {
   documentStatusLabels,
   errorMessages,
+  goodsReceiptsMessages,
   priceParseMessages,
   purchaseOrderFieldMessage,
   purchaseOrderFieldMessages,
@@ -710,6 +712,8 @@ export function PurchaseOrderEditor({
 }
 
 function ReadOnlyPurchaseOrder({ order }: { order: PurchaseOrder }) {
+  const role = useSignedInUser().role;
+  const canReceive = GOODS_RECEIPT_ROLES.write.includes(role);
   const m = purchaseOrdersMessages.form;
   return (
     <div className="flex max-w-[calc(var(--viewport-min)-var(--sidebar-width)-var(--space-6)*2)] flex-col gap-6">
@@ -717,6 +721,9 @@ function ReadOnlyPurchaseOrder({ order }: { order: PurchaseOrder }) {
         <Badge variant={order.status === "ISSUED" ? "success" : "secondary"}>
           {documentStatusLabels[order.status]}
         </Badge>
+        {order.goodsReceipt?.status === "ISSUED" ? (
+          <Badge variant="secondary">{goodsReceiptsMessages.receivedBadge}</Badge>
+        ) : null}
       </div>
 
       <dl className="grid max-w-3xl grid-cols-3 gap-4 rounded-md border border-border p-4">
@@ -791,76 +798,27 @@ function ReadOnlyPurchaseOrder({ order }: { order: PurchaseOrder }) {
         vesTotalEquivalent={order.vesTotalEquivalent}
       />
 
-      <div>
+      <div className="flex items-center gap-2">
+        {order.status === "ISSUED" && order.goodsReceipt !== null ? (
+          <Button asChild variant="outline">
+            <Link to="/recepciones-de-mercancia/$id" params={{ id: order.goodsReceipt.id }}>
+              {goodsReceiptsMessages.viewReceiptAction}
+            </Link>
+          </Button>
+        ) : null}
+        {order.status === "ISSUED" && order.goodsReceipt === null && canReceive ? (
+          <Button asChild>
+            <Link to="/recepciones-de-mercancia/nueva" search={{ orden: order.id }}>
+              {goodsReceiptsMessages.receiveOrderAction}
+            </Link>
+          </Button>
+        ) : null}
         <Button asChild variant="outline">
           <Link to="/ordenes-de-compra" search={defaultPurchaseOrdersSearch}>
             {m.back}
           </Link>
         </Button>
       </div>
-    </div>
-  );
-}
-
-function TotalsCard({
-  currency,
-  subtotal,
-  ivaGeneral,
-  ivaReduced,
-  total,
-  frozenRate,
-  vesTotalEquivalent,
-}: {
-  currency: Currency;
-  subtotal: number;
-  ivaGeneral: number;
-  ivaReduced: number;
-  total: number;
-  frozenRate?: string | null;
-  vesTotalEquivalent?: PurchaseOrder["vesTotalEquivalent"];
-}) {
-  const t = purchaseOrdersMessages.form.totals;
-  return (
-    <div className="ml-auto w-96 rounded-md border border-border p-4">
-      <dl className="flex flex-col gap-2 text-body">
-        <div className="flex justify-between">
-          <dt className="text-muted-foreground">{t.subtotal}</dt>
-          <dd className="tabular-nums">{formatMoney(subtotal, currency)}</dd>
-        </div>
-        {ivaGeneral > 0 ? (
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">{t.ivaGeneral}</dt>
-            <dd className="tabular-nums">{formatMoney(ivaGeneral, currency)}</dd>
-          </div>
-        ) : null}
-        {ivaReduced > 0 ? (
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">{t.ivaReduced}</dt>
-            <dd className="tabular-nums">{formatMoney(ivaReduced, currency)}</dd>
-          </div>
-        ) : null}
-        <div className="flex justify-between border-t border-border pt-2 font-semibold">
-          <dt>{t.total}</dt>
-          <dd className="tabular-nums">{formatMoney(total, currency)}</dd>
-        </div>
-        {frozenRate !== undefined &&
-        frozenRate !== null &&
-        vesTotalEquivalent !== undefined &&
-        vesTotalEquivalent !== null ? (
-          <>
-            <div className="flex justify-between border-t border-border pt-2 text-muted-foreground">
-              <dt>{t.frozenRate}</dt>
-              <dd className="tabular-nums">{formatBcvRate(frozenRate)}</dd>
-            </div>
-            <div className="flex justify-between font-medium">
-              <dt>{t.vesEquivalent}</dt>
-              <dd className="tabular-nums">
-                {formatMoney(vesTotalEquivalent.minorUnits, vesTotalEquivalent.currency)}
-              </dd>
-            </div>
-          </>
-        ) : null}
-      </dl>
     </div>
   );
 }

@@ -19,6 +19,9 @@ import { Route as AppOrdenesDeCompraNuevaRouteImport } from './routes/_app/orden
 import { Route as AppProductosIndexRouteImport } from './routes/_app/productos/index'
 import { Route as AppProductosNuevoRouteImport } from './routes/_app/productos/nuevo'
 import { Route as AppProveedoresIndexRouteImport } from './routes/_app/proveedores/index'
+import { Route as AppRecepcionesDeMercanciaIndexRouteImport } from './routes/_app/recepciones-de-mercancia/index'
+import { Route as AppRecepcionesDeMercanciaIdRouteImport } from './routes/_app/recepciones-de-mercancia/$id'
+import { Route as AppRecepcionesDeMercanciaNuevaRouteImport } from './routes/_app/recepciones-de-mercancia/nueva'
 import { Route as AppTasasBcvIndexRouteImport } from './routes/_app/tasas-bcv/index'
 
 const IndexRoute = IndexRouteImport.update({
@@ -70,6 +73,24 @@ const AppProveedoresIndexRoute = AppProveedoresIndexRouteImport.update({
   path: '/proveedores/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppRecepcionesDeMercanciaIndexRoute =
+  AppRecepcionesDeMercanciaIndexRouteImport.update({
+    id: '/recepciones-de-mercancia/',
+    path: '/recepciones-de-mercancia/',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppRecepcionesDeMercanciaIdRoute =
+  AppRecepcionesDeMercanciaIdRouteImport.update({
+    id: '/recepciones-de-mercancia/$id',
+    path: '/recepciones-de-mercancia/$id',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppRecepcionesDeMercanciaNuevaRoute =
+  AppRecepcionesDeMercanciaNuevaRouteImport.update({
+    id: '/recepciones-de-mercancia/nueva',
+    path: '/recepciones-de-mercancia/nueva',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppTasasBcvIndexRoute = AppTasasBcvIndexRouteImport.update({
   id: '/tasas-bcv/',
   path: '/tasas-bcv/',
@@ -82,10 +103,13 @@ export interface FileRoutesByFullPath {
   '/ordenes-de-compra/$id': typeof AppOrdenesDeCompraIdRoute
   '/ordenes-de-compra/nueva': typeof AppOrdenesDeCompraNuevaRoute
   '/productos/nuevo': typeof AppProductosNuevoRoute
+  '/recepciones-de-mercancia/$id': typeof AppRecepcionesDeMercanciaIdRoute
+  '/recepciones-de-mercancia/nueva': typeof AppRecepcionesDeMercanciaNuevaRoute
   '/clientes/': typeof AppClientesIndexRoute
   '/ordenes-de-compra/': typeof AppOrdenesDeCompraIndexRoute
   '/productos/': typeof AppProductosIndexRoute
   '/proveedores/': typeof AppProveedoresIndexRoute
+  '/recepciones-de-mercancia/': typeof AppRecepcionesDeMercanciaIndexRoute
   '/tasas-bcv/': typeof AppTasasBcvIndexRoute
 }
 export interface FileRoutesByTo {
@@ -94,10 +118,13 @@ export interface FileRoutesByTo {
   '/ordenes-de-compra/$id': typeof AppOrdenesDeCompraIdRoute
   '/ordenes-de-compra/nueva': typeof AppOrdenesDeCompraNuevaRoute
   '/productos/nuevo': typeof AppProductosNuevoRoute
+  '/recepciones-de-mercancia/$id': typeof AppRecepcionesDeMercanciaIdRoute
+  '/recepciones-de-mercancia/nueva': typeof AppRecepcionesDeMercanciaNuevaRoute
   '/clientes': typeof AppClientesIndexRoute
   '/ordenes-de-compra': typeof AppOrdenesDeCompraIndexRoute
   '/productos': typeof AppProductosIndexRoute
   '/proveedores': typeof AppProveedoresIndexRoute
+  '/recepciones-de-mercancia': typeof AppRecepcionesDeMercanciaIndexRoute
   '/tasas-bcv': typeof AppTasasBcvIndexRoute
 }
 export interface FileRoutesById {
@@ -108,10 +135,13 @@ export interface FileRoutesById {
   '/_app/ordenes-de-compra/$id': typeof AppOrdenesDeCompraIdRoute
   '/_app/ordenes-de-compra/nueva': typeof AppOrdenesDeCompraNuevaRoute
   '/_app/productos/nuevo': typeof AppProductosNuevoRoute
+  '/_app/recepciones-de-mercancia/$id': typeof AppRecepcionesDeMercanciaIdRoute
+  '/_app/recepciones-de-mercancia/nueva': typeof AppRecepcionesDeMercanciaNuevaRoute
   '/_app/clientes/': typeof AppClientesIndexRoute
   '/_app/ordenes-de-compra/': typeof AppOrdenesDeCompraIndexRoute
   '/_app/productos/': typeof AppProductosIndexRoute
   '/_app/proveedores/': typeof AppProveedoresIndexRoute
+  '/_app/recepciones-de-mercancia/': typeof AppRecepcionesDeMercanciaIndexRoute
   '/_app/tasas-bcv/': typeof AppTasasBcvIndexRoute
 }
 export interface FileRouteTypes {
@@ -122,10 +152,13 @@ export interface FileRouteTypes {
     | '/ordenes-de-compra/$id'
     | '/ordenes-de-compra/nueva'
     | '/productos/nuevo'
+    | '/recepciones-de-mercancia/$id'
+    | '/recepciones-de-mercancia/nueva'
     | '/clientes/'
     | '/ordenes-de-compra/'
     | '/productos/'
     | '/proveedores/'
+    | '/recepciones-de-mercancia/'
     | '/tasas-bcv/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -134,10 +167,13 @@ export interface FileRouteTypes {
     | '/ordenes-de-compra/$id'
     | '/ordenes-de-compra/nueva'
     | '/productos/nuevo'
+    | '/recepciones-de-mercancia/$id'
+    | '/recepciones-de-mercancia/nueva'
     | '/clientes'
     | '/ordenes-de-compra'
     | '/productos'
     | '/proveedores'
+    | '/recepciones-de-mercancia'
     | '/tasas-bcv'
   id:
     | '__root__'
@@ -147,10 +183,13 @@ export interface FileRouteTypes {
     | '/_app/ordenes-de-compra/$id'
     | '/_app/ordenes-de-compra/nueva'
     | '/_app/productos/nuevo'
+    | '/_app/recepciones-de-mercancia/$id'
+    | '/_app/recepciones-de-mercancia/nueva'
     | '/_app/clientes/'
     | '/_app/ordenes-de-compra/'
     | '/_app/productos/'
     | '/_app/proveedores/'
+    | '/_app/recepciones-de-mercancia/'
     | '/_app/tasas-bcv/'
   fileRoutesById: FileRoutesById
 }
@@ -232,6 +271,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProveedoresIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/recepciones-de-mercancia/': {
+      id: '/_app/recepciones-de-mercancia/'
+      path: '/recepciones-de-mercancia'
+      fullPath: '/recepciones-de-mercancia/'
+      preLoaderRoute: typeof AppRecepcionesDeMercanciaIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/recepciones-de-mercancia/$id': {
+      id: '/_app/recepciones-de-mercancia/$id'
+      path: '/recepciones-de-mercancia/$id'
+      fullPath: '/recepciones-de-mercancia/$id'
+      preLoaderRoute: typeof AppRecepcionesDeMercanciaIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/recepciones-de-mercancia/nueva': {
+      id: '/_app/recepciones-de-mercancia/nueva'
+      path: '/recepciones-de-mercancia/nueva'
+      fullPath: '/recepciones-de-mercancia/nueva'
+      preLoaderRoute: typeof AppRecepcionesDeMercanciaNuevaRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/tasas-bcv/': {
       id: '/_app/tasas-bcv/'
       path: '/tasas-bcv'
@@ -246,10 +306,13 @@ interface AppRouteChildren {
   AppOrdenesDeCompraIdRoute: typeof AppOrdenesDeCompraIdRoute
   AppOrdenesDeCompraNuevaRoute: typeof AppOrdenesDeCompraNuevaRoute
   AppProductosNuevoRoute: typeof AppProductosNuevoRoute
+  AppRecepcionesDeMercanciaIdRoute: typeof AppRecepcionesDeMercanciaIdRoute
+  AppRecepcionesDeMercanciaNuevaRoute: typeof AppRecepcionesDeMercanciaNuevaRoute
   AppClientesIndexRoute: typeof AppClientesIndexRoute
   AppOrdenesDeCompraIndexRoute: typeof AppOrdenesDeCompraIndexRoute
   AppProductosIndexRoute: typeof AppProductosIndexRoute
   AppProveedoresIndexRoute: typeof AppProveedoresIndexRoute
+  AppRecepcionesDeMercanciaIndexRoute: typeof AppRecepcionesDeMercanciaIndexRoute
   AppTasasBcvIndexRoute: typeof AppTasasBcvIndexRoute
 }
 
@@ -257,10 +320,13 @@ const AppRouteChildren: AppRouteChildren = {
   AppOrdenesDeCompraIdRoute: AppOrdenesDeCompraIdRoute,
   AppOrdenesDeCompraNuevaRoute: AppOrdenesDeCompraNuevaRoute,
   AppProductosNuevoRoute: AppProductosNuevoRoute,
+  AppRecepcionesDeMercanciaIdRoute: AppRecepcionesDeMercanciaIdRoute,
+  AppRecepcionesDeMercanciaNuevaRoute: AppRecepcionesDeMercanciaNuevaRoute,
   AppClientesIndexRoute: AppClientesIndexRoute,
   AppOrdenesDeCompraIndexRoute: AppOrdenesDeCompraIndexRoute,
   AppProductosIndexRoute: AppProductosIndexRoute,
   AppProveedoresIndexRoute: AppProveedoresIndexRoute,
+  AppRecepcionesDeMercanciaIndexRoute: AppRecepcionesDeMercanciaIndexRoute,
   AppTasasBcvIndexRoute: AppTasasBcvIndexRoute,
 }
 

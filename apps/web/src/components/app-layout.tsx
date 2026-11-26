@@ -1,6 +1,7 @@
 import {
   CUSTOMER_ROLES,
   EXCHANGE_RATE_ROLES,
+  GOODS_RECEIPT_ROLES,
   PRODUCT_ROLES,
   PURCHASE_ORDER_ROLES,
   type Role,
@@ -27,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { defaultExchangeRatesSearch } from "@/features/exchange-rates/search";
 import { defaultPartnersSearch } from "@/features/partners/search";
 import { defaultProductsSearch } from "@/features/products/search";
+import { defaultGoodsReceiptsSearch } from "@/features/purchasing/goods-receipts-search";
 import { defaultPurchaseOrdersSearch } from "@/features/purchasing/search";
 import { formatBcvRate, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -73,7 +75,13 @@ export function useStatusAnnouncer(): (
   return context.announce;
 }
 
-type NavRoute = "/productos" | "/tasas-bcv" | "/proveedores" | "/ordenes-de-compra" | "/clientes";
+type NavRoute =
+  | "/productos"
+  | "/tasas-bcv"
+  | "/proveedores"
+  | "/ordenes-de-compra"
+  | "/recepciones-de-mercancia"
+  | "/clientes";
 
 // Grouped sidebar items for screens that exist, each with the roles that see it (PLAN → Roles).
 const NAV_GROUPS: readonly NavGroup<NavRoute>[] = [
@@ -95,6 +103,11 @@ const NAV_GROUPS: readonly NavGroup<NavRoute>[] = [
         label: shellMessages.purchaseOrders,
         roles: PURCHASE_ORDER_ROLES.read,
       },
+      {
+        to: "/recepciones-de-mercancia",
+        label: shellMessages.goodsReceipts,
+        roles: GOODS_RECEIPT_ROLES.read,
+      },
     ],
   },
   {
@@ -115,6 +128,8 @@ function defaultSearchFor(to: NavRoute) {
       return defaultPartnersSearch;
     case "/ordenes-de-compra":
       return defaultPurchaseOrdersSearch;
+    case "/recepciones-de-mercancia":
+      return defaultGoodsReceiptsSearch;
   }
 }
 
