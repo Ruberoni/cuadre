@@ -43,6 +43,13 @@
       "when": 1795643991896,
       "tag": "0005_thick_namor",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795696975231,
+      "tag": "0006_rich_vector",
+      "breakpoints": true
     }
   ]
 }
