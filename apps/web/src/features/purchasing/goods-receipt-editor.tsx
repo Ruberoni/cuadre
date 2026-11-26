@@ -504,6 +504,10 @@ export function GoodsReceiptEditor({
 
   const m = goodsReceiptsMessages.form;
   const eligibleOrders = eligibleOrdersQuery.data?.items ?? [];
+  const orderOptions =
+    selectedOrder !== undefined && !eligibleOrders.some((o) => o.id === selectedOrder.id)
+      ? [selectedOrder, ...eligibleOrders]
+      : eligibleOrders;
 
   return (
     <form
@@ -532,12 +536,12 @@ export function GoodsReceiptEditor({
                   <SelectValue placeholder={m.purchaseOrderPlaceholder} />
                 </SelectTrigger>
                 <SelectContent>
-                  {eligibleOrders.length === 0 ? (
+                  {orderOptions.length === 0 ? (
                     <div className="px-3 py-2 text-caption text-muted-foreground">
                       {goodsReceiptsMessages.noEligibleOrders}
                     </div>
                   ) : (
-                    eligibleOrders.map((po) => (
+                    orderOptions.map((po) => (
                       <SelectItem key={po.id} value={po.id}>
                         {m.purchaseOrderOption(
                           formatDate(po.documentDate),
