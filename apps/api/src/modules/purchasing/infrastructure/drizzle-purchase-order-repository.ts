@@ -8,7 +8,7 @@ import {
   type Rate,
   rateToString,
 } from "@cuadre/shared-kernel";
-import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, notExists, sql } from "drizzle-orm";
 import type { Db, DbTransaction } from "../../../db/client.ts";
 import type { PurchaseOrderRepository } from "../application/purchase-order-repository.ts";
 import {
@@ -17,6 +17,7 @@ import {
   type StoredPurchaseOrderLine,
   type ValidatedDraftPurchaseOrder,
 } from "../domain/purchase-order.ts";
+import { goodsReceiptsTable } from "./goods-receipts.table.ts";
 import { purchaseOrderLinesTable, purchaseOrdersTable } from "./purchase-orders.table.ts";
 
 type OrderRow = typeof purchaseOrdersTable.$inferSelect;
@@ -212,14 +213,27 @@ export function createDrizzlePurchaseOrderRepository(db: Db): PurchaseOrderRepos
     },
 
     async list(params) {
+      // "Unreceived": issued and with no goods receipt yet, i.e. still receivable (#17).
+      const where = params.unreceivedOnly
+        ? and(
+            eq(purchaseOrdersTable.status, "ISSUED"),
+            notExists(
+              db
+                .select({ one: sql`1` })
+                .from(goodsReceiptsTable)
+                .where(eq(goodsReceiptsTable.purchaseOrderId, purchaseOrdersTable.id)),
+            ),
+          )
+        : undefined;
       const [headers, totals] = await Promise.all([
         db
           .select()
           .from(purchaseOrdersTable)
+          .where(where)
           .orderBy(desc(purchaseOrdersTable.documentDate), desc(purchaseOrdersTable.createdAt))
           .limit(params.pageSize)
           .offset((params.page - 1) * params.pageSize),
-        db.select({ total: count() }).from(purchaseOrdersTable),
+        db.select({ total: count() }).from(purchaseOrdersTable).where(where),
       ]);
 
       if (headers.length === 0) {
@@ -244,6 +258,19 @@ export function createDrizzlePurchaseOrderRepository(db: Db): PurchaseOrderRepos
         items: headers.map((header) => toStoredOrder(header, linesByOrderId.get(header.id) ?? [])),
         total: totals[0]?.total ?? 0,
       };
+    },
+
+    async findGoodsReceiptRefs(orderIds) {
+      if (orderIds.length === 0) return new Map();
+      const rows = await db
+        .select({
+          purchaseOrderId: goodsReceiptsTable.purchaseOrderId,
+          id: goodsReceiptsTable.id,
+          status: goodsReceiptsTable.status,
+        })
+        .from(goodsReceiptsTable)
+        .where(inArray(goodsReceiptsTable.purchaseOrderId, [...orderIds]));
+      return new Map(rows.map((row) => [row.purchaseOrderId, { id: row.id, status: row.status }]));
     },
 
     async count() {

@@ -1,3 +1,4 @@
+import type { DocumentStatus } from "@cuadre/contracts";
 import type { DocumentTotals, Money, Rate, Result } from "@cuadre/shared-kernel";
 import type { DbExecutor, DbTransaction } from "../../../db/client.ts";
 import {
@@ -12,6 +13,14 @@ import {
 export type PurchaseOrderListParams = {
   readonly page: number;
   readonly pageSize: number;
+  /** Only issued orders with no goods receipt yet (the ones that can still be received). */
+  readonly unreceivedOnly: boolean;
+};
+
+/** The goods receipt of an order, when it has one. */
+export type PurchaseOrderGoodsReceiptRef = {
+  readonly id: string;
+  readonly status: DocumentStatus;
 };
 
 export type EnrichedPurchaseOrder = {
@@ -20,12 +29,14 @@ export type EnrichedPurchaseOrder = {
   readonly productsById: ReadonlyMap<string, PurchaseOrderProductRef>;
   readonly totals: DocumentTotals;
   readonly vesTotalEquivalent: Money | null;
+  readonly goodsReceipt: PurchaseOrderGoodsReceiptRef | null;
 };
 
 export function enrichPurchaseOrder(
   order: StoredPurchaseOrder,
   supplier: PurchaseOrderSupplierRef,
   productsById: ReadonlyMap<string, PurchaseOrderProductRef>,
+  goodsReceipt: PurchaseOrderGoodsReceiptRef | null = null,
 ): EnrichedPurchaseOrder {
   const totals = calculatePurchaseOrderTotals(order, productsById);
   return {
@@ -34,6 +45,7 @@ export function enrichPurchaseOrder(
     productsById,
     totals,
     vesTotalEquivalent: calculatePurchaseOrderVesEquivalent(order, totals.total),
+    goodsReceipt,
   };
 }
 
@@ -48,6 +60,9 @@ export type PurchaseOrderRepository = {
   markIssued(id: string, frozenRate: Rate, tx: DbTransaction): Promise<StoredPurchaseOrder>;
   findById(id: string): Promise<StoredPurchaseOrder | null>;
   list(params: PurchaseOrderListParams): Promise<{ items: StoredPurchaseOrder[]; total: number }>;
+  findGoodsReceiptRefs(
+    orderIds: readonly string[],
+  ): Promise<Map<string, PurchaseOrderGoodsReceiptRef>>;
   count(): Promise<number>;
 };
 

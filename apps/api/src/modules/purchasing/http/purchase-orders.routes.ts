@@ -33,6 +33,7 @@ import type {
   PurchasingLookups,
 } from "../application/purchase-order-repository.ts";
 import { updatePurchaseOrderUseCase } from "../application/update-purchase-order.ts";
+import { toDocumentTotalsDto } from "./document-totals-dto.ts";
 import {
   CREATE_PURCHASE_ORDER_ERROR_STATUS,
   DELETE_PURCHASE_ORDER_ERROR_STATUS,
@@ -42,26 +43,7 @@ import {
 } from "./error-status.ts";
 
 function toTotalsDto(enriched: EnrichedPurchaseOrder): PurchaseOrderTotals {
-  const { totals } = enriched;
-  return {
-    subtotal: { minorUnits: totals.subtotal.minorUnits, currency: totals.subtotal.currency },
-    ivaByRate: {
-      general: {
-        minorUnits: totals.ivaByRate.general.minorUnits,
-        currency: totals.ivaByRate.general.currency,
-      },
-      reduced: {
-        minorUnits: totals.ivaByRate.reduced.minorUnits,
-        currency: totals.ivaByRate.reduced.currency,
-      },
-      exempt: {
-        minorUnits: totals.ivaByRate.exempt.minorUnits,
-        currency: totals.ivaByRate.exempt.currency,
-      },
-    },
-    ivaTotal: { minorUnits: totals.ivaTotal.minorUnits, currency: totals.ivaTotal.currency },
-    total: { minorUnits: totals.total.minorUnits, currency: totals.total.currency },
-  };
+  return toDocumentTotalsDto(enriched.totals);
 }
 
 function toPurchaseOrderDto(enriched: EnrichedPurchaseOrder): PurchaseOrder {
@@ -102,6 +84,7 @@ function toPurchaseOrderDto(enriched: EnrichedPurchaseOrder): PurchaseOrder {
             minorUnits: enriched.vesTotalEquivalent.minorUnits,
             currency: enriched.vesTotalEquivalent.currency,
           },
+    goodsReceipt: enriched.goodsReceipt,
   };
 }
 
@@ -126,6 +109,7 @@ function toPurchaseOrderSummaryDto(enriched: EnrichedPurchaseOrder): PurchaseOrd
             minorUnits: enriched.vesTotalEquivalent.minorUnits,
             currency: enriched.vesTotalEquivalent.currency,
           },
+    goodsReceipt: enriched.goodsReceipt,
   };
 }
 
@@ -289,7 +273,10 @@ export function createPurchaseOrderRoutes(
 
   routes.openapi(listPurchaseOrdersRoute, async (c) => {
     const query = c.req.valid("query");
-    const result = await listPurchaseOrdersUseCase(repository, lookups, { page: query.page });
+    const result = await listPurchaseOrdersUseCase(repository, lookups, {
+      page: query.page,
+      unreceived: query.unreceived,
+    });
     return c.json(
       {
         items: result.items.map(toPurchaseOrderSummaryDto),
