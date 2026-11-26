@@ -74,7 +74,7 @@ describe("goods-receipts HTTP routes", () => {
         controlNumber: "C-001",
         lines: [
           {
-            purchaseOrderLineId: po.lines[0]!.id,
+            purchaseOrderLineId: po.lines[0]?.id,
             quantity: "80",
             unitCost: { minorUnits: 110, currency: "USD" },
           },
@@ -209,7 +209,7 @@ describe("goods-receipts HTTP routes", () => {
         controlNumber: "C-001",
         lines: [
           {
-            purchaseOrderLineId: po.lines[0]!.id,
+            purchaseOrderLineId: po.lines[0]?.id,
             quantity: "80",
             unitCost: { minorUnits: 110, currency: "USD" },
           },
@@ -235,7 +235,7 @@ describe("goods-receipts HTTP routes", () => {
         controlNumber: "",
         lines: [
           {
-            purchaseOrderLineId: po.lines[0]!.id,
+            purchaseOrderLineId: po.lines[0]?.id,
             quantity: "120",
             unitCost: { minorUnits: 110, currency: "USD" },
           },

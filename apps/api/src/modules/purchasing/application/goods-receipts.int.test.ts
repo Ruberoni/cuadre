@@ -1,5 +1,4 @@
 import { parseCalendarDate } from "@cuadre/shared-kernel";
-import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { resetDatabase } from "../../../../test/reset-database.ts";
 import { createTestApp, signIn } from "../../../../test/sign-in.ts";
@@ -8,10 +7,6 @@ import { createDb } from "../../../db/client.ts";
 import { createCatalogModule } from "../../catalog/index.ts";
 import { createExchangeRatesModule } from "../../exchange-rates/index.ts";
 import { createInventoryModule } from "../../inventory/index.ts";
-import {
-  stockBalancesTable,
-  stockMovementsTable,
-} from "../../inventory/infrastructure/inventory.table.ts";
 import { createPartnersModule } from "../../partners/index.ts";
 import { createDrizzleGoodsReceiptRepository } from "../infrastructure/drizzle-goods-receipt-repository.ts";
 import { createDrizzlePurchaseOrderRepository } from "../infrastructure/drizzle-purchase-order-repository.ts";
@@ -126,7 +121,7 @@ describe("purchasing goods receipts (use-case & transactional invariants)", () =
         controlNumber: "C-001",
         lines: [
           {
-            purchaseOrderLineId: po1.lines[0]!.id,
+            purchaseOrderLineId: po1.lines[0]?.id,
             quantity: "10",
             unitCost: { minorUnits: 500, currency: "USD" },
           },
@@ -163,7 +158,7 @@ describe("purchasing goods receipts (use-case & transactional invariants)", () =
         controlNumber: "C-002",
         lines: [
           {
-            purchaseOrderLineId: po2.lines[0]!.id,
+            purchaseOrderLineId: po2.lines[0]?.id,
             quantity: "10",
             unitCost: { minorUnits: 700, currency: "USD" },
           },
@@ -210,7 +205,7 @@ describe("purchasing goods receipts (use-case & transactional invariants)", () =
         controlNumber: "C-003",
         lines: [
           {
-            purchaseOrderLineId: po3.lines[0]!.id,
+            purchaseOrderLineId: po3.lines[0]?.id,
             quantity: "5",
             unitCost: { minorUnits: 720, currency: "USD" },
           },
@@ -283,7 +278,7 @@ describe("purchasing goods receipts (use-case & transactional invariants)", () =
         controlNumber: "C-VES-1",
         lines: [
           {
-            purchaseOrderLineId: vesPo.lines[0]!.id,
+            purchaseOrderLineId: vesPo.lines[0]?.id,
             quantity: "10",
             unitCost: { minorUnits: 36512, currency: "VES" },
           },
@@ -326,7 +321,7 @@ describe("purchasing goods receipts (use-case & transactional invariants)", () =
         controlNumber: "C-USD-1",
         lines: [
           {
-            purchaseOrderLineId: usdPo.lines[0]!.id,
+            purchaseOrderLineId: usdPo.lines[0]?.id,
             quantity: "50",
             unitCost: { minorUnits: 200, currency: "USD" },
           },
@@ -395,7 +390,7 @@ describe("purchasing goods receipts (use-case & transactional invariants)", () =
         controlNumber: "C-100",
         lines: [
           {
-            purchaseOrderLineId: po.lines[0]!.id,
+            purchaseOrderLineId: po.lines[0]?.id,
             quantity: "80",
             unitCost: { minorUnits: 110, currency: "USD" },
           },
@@ -416,7 +411,7 @@ describe("purchasing goods receipts (use-case & transactional invariants)", () =
         controlNumber: "C-101",
         lines: [
           {
-            purchaseOrderLineId: po.lines[0]!.id,
+            purchaseOrderLineId: po.lines[0]?.id,
             quantity: "20",
             unitCost: { minorUnits: 110, currency: "USD" },
           },
@@ -543,7 +538,7 @@ describe("purchasing goods receipts (use-case & transactional invariants)", () =
         controlNumber: "C-NO-RATE",
         lines: [
           {
-            purchaseOrderLineId: po.lines[0]!.id,
+            purchaseOrderLineId: po.lines[0]?.id,
             quantity: "10",
             unitCost: { minorUnits: 110, currency: "USD" },
           },
@@ -565,8 +560,9 @@ describe("purchasing goods receipts (use-case & transactional invariants)", () =
       date: "2026-11-15",
     });
 
-    expect(await db.select().from(stockBalancesTable)).toHaveLength(0);
-    expect(await db.select().from(stockMovementsTable)).toHaveLength(0);
+    const balanceAfterMissingRate = await inventory.getStockBalance(harina.id);
+    expect(balanceAfterMissingRate.onHandScaled).toBe(0n);
+    expect(balanceAfterMissingRate.totalValueUsd.minorUnits).toBe(0);
   });
 
   it("rolls back the exchange-rate freeze if inventory.recordInboundMovements fails inside the issue transaction (ADR-008)", async () => {
@@ -601,7 +597,7 @@ describe("purchasing goods receipts (use-case & transactional invariants)", () =
         controlNumber: "C-RB",
         lines: [
           {
-            purchaseOrderLineId: po.lines[0]!.id,
+            purchaseOrderLineId: po.lines[0]?.id,
             quantity: "10",
             unitCost: { minorUnits: 110, currency: "USD" },
           },

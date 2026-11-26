@@ -159,7 +159,7 @@ test.describe("Recepciones de mercancía", () => {
         controlNumber: "C-001",
         lines: [
           {
-            purchaseOrderLineId: po.lines[0]!.id,
+            purchaseOrderLineId: po.lines[0]?.id,
             quantity: "50",
             unitCost: { minorUnits: 700, currency: "USD" },
           },
