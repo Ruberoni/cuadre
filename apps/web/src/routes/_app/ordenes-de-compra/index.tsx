@@ -72,7 +72,11 @@ function PurchaseOrdersListPage() {
       {
         id: "status",
         header: purchaseOrdersMessages.columns.status,
-        cell: (order) => <Badge variant="secondary">{documentStatusLabels[order.status]}</Badge>,
+        cell: (order) => (
+          <Badge variant={order.status === "ISSUED" ? "success" : "secondary"}>
+            {documentStatusLabels[order.status]}
+          </Badge>
+        ),
       },
       {
         id: "total",

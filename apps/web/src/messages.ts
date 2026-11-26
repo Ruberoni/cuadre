@@ -54,6 +54,7 @@ export const errorMessages: Record<
   RATE_ALREADY_FROZEN: () =>
     "Esta tasa ya fue usada en un documento emitido y no se puede corregir.",
   MISSING_EXCHANGE_RATE: () => "No hay una tasa BCV registrada para esa fecha.",
+  EMPTY_DOCUMENT: () => "La orden debe tener al menos una línea para poder emitirla.",
   DOCUMENT_NOT_DRAFT: () => "Esta orden de compra ya fue emitida y no se puede editar ni eliminar.",
   NOT_FOUND: () => "No se encontró lo que se buscaba.",
   // Products handoff (#7): default screen is Productos; module-specific alerts override below.
@@ -448,7 +449,7 @@ export const documentStatusLabels: Record<DocumentStatus, string> = {
 const QUANTITY_NOT_A_NUMBER = "Escribir solo números, con coma para los decimales.";
 
 export const purchaseOrderFieldMessages: Record<
-  "supplierId" | "currency" | "documentDate" | "productId" | "quantity" | "unitCost",
+  "supplierId" | "currency" | "documentDate" | "lines" | "productId" | "quantity" | "unitCost",
   Partial<Record<PurchaseOrderIssueCode, string>>
 > = {
   supplierId: {
@@ -465,6 +466,11 @@ export const purchaseOrderFieldMessages: Record<
     INVALID_DATE: DATE_FORMAT_INVALID,
     INVALID: DATE_FORMAT_INVALID,
     DOCUMENT_DATE_IN_FUTURE: "La fecha no puede ser futura.",
+  },
+  lines: {
+    OUT_OF_RANGE: "El total de la orden supera el monto máximo permitido.",
+    AMOUNT_OUT_OF_RANGE:
+      "El equivalente en bolívares a la tasa BCV supera el monto máximo permitido.",
   },
   productId: {
     REQUIRED: "Falta el producto.",
@@ -515,6 +521,7 @@ export const purchaseOrdersMessages = {
   nextPage: "Página siguiente",
   saved: "Borrador guardado.",
   deleted: "Borrador eliminado.",
+  issued: "Orden de compra emitida.",
   empty: {
     title: "Aún no hay órdenes de compra",
     description:
@@ -552,13 +559,25 @@ export const purchaseOrdersMessages = {
       ivaGeneral: `IVA 16${NBSP}%`,
       ivaReduced: `IVA 8${NBSP}%`,
       total: "Total",
+      frozenRate: "Tasa BCV (congelada)",
+      vesEquivalent: "Equivalente en Bs.",
     },
     submit: "Guardar borrador",
     submitting: "Guardando…",
+    issue: "Emitir",
+    issuing: "Emitiendo…",
+    issueDirtyHint: "Guardar borrador antes de emitir.",
     delete: "Eliminar borrador",
     deleting: "Eliminando…",
     cancel: "Cancelar",
     back: "Volver",
+    issueDialog: {
+      title: "¿Emitir orden de compra?",
+      description:
+        "Al emitirla se congelará la tasa BCV para la fecha del documento y la orden no podrá editarse ni eliminarse. Esta acción no se puede deshacer.",
+      confirm: "Emitir",
+      cancel: "Cancelar",
+    },
     deleteDialog: {
       title: "¿Eliminar este borrador?",
       description: "Esta acción elimina el borrador de la orden de compra y no se puede deshacer.",
@@ -571,5 +590,6 @@ export const purchaseOrdersMessages = {
     FORBIDDEN_WRITE: "Solo un administrador o compras puede gestionar órdenes de compra.",
     saveFailed: "No se pudo guardar el borrador. Revisar la conexión e intentar de nuevo.",
     deleteFailed: "No se pudo eliminar el borrador. Revisar la conexión e intentar de nuevo.",
+    issueFailed: "No se pudo emitir la orden de compra. Revisar la conexión e intentar de nuevo.",
   },
 } as const;

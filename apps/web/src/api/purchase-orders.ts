@@ -73,3 +73,19 @@ export function useDeletePurchaseOrder() {
     },
   });
 }
+
+export function useIssuePurchaseOrder(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiRequest(`/purchase-orders/${encodeURIComponent(id)}/issue`, PurchaseOrder, {
+        method: "POST",
+      }),
+    onSuccess: (result) => {
+      if (result.ok) {
+        queryClient.setQueryData([...PURCHASE_ORDERS_KEY, "detail", id], result.value);
+        void queryClient.invalidateQueries({ queryKey: PURCHASE_ORDERS_KEY });
+      }
+    },
+  });
+}

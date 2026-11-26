@@ -31,12 +31,18 @@ export const purchaseOrdersTable = purchasingSchema.table(
     currency: text("currency").$type<Currency>().notNull(),
     documentDate: date("document_date", { mode: "string" }).notNull(),
     status: text("status").$type<DocumentStatus>().notNull().default("DRAFT"),
+    /** Exact BCV rate frozen at issue time (ADR-005); null while Draft. */
+    frozenRate: numeric("frozen_rate", { precision: 20, scale: 8 }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     check("purchase_orders_currency", sql`${table.currency} in (${inList(CURRENCIES)})`),
     check("purchase_orders_status", sql`${table.status} in (${inList(DOCUMENT_STATUSES)})`),
+    check(
+      "purchase_orders_frozen_rate_matches_status",
+      sql`(${table.status} = 'DRAFT' and ${table.frozenRate} is null) or (${table.status} = 'ISSUED' and ${table.frozenRate} is not null and ${table.frozenRate} > 0)`,
+    ),
   ],
 );
 

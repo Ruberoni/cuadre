@@ -29,7 +29,12 @@ export async function runSeed(
     const catalog = createCatalogModule({ db });
     const exchangeRatesModule = createExchangeRatesModule({ db });
     const partnersModule = createPartnersModule({ db });
-    const purchasing = createPurchasingModule({ db, partners: partnersModule, catalog });
+    const purchasing = createPurchasingModule({
+      db,
+      partners: partnersModule,
+      catalog,
+      exchangeRates: exchangeRatesModule,
+    });
 
     const products = usersOnly ? 0 : await catalog.seed();
     const exchangeRates = usersOnly ? 0 : await exchangeRatesModule.seed();

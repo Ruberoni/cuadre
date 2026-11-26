@@ -1,3 +1,4 @@
+import { parseCalendarDate } from "@cuadre/shared-kernel";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { resetDatabase } from "../../../../test/reset-database.ts";
@@ -5,7 +6,12 @@ import { expectAllowedRoles, signInAll } from "../../../../test/roles.ts";
 import { createTestApp, signIn } from "../../../../test/sign-in.ts";
 import { testDatabaseUrl } from "../../../../test/test-database.ts";
 import { createDb } from "../../../db/client.ts";
+import { createCatalogModule } from "../../catalog/index.ts";
+import { createExchangeRatesModule } from "../../exchange-rates/index.ts";
+import { createDrizzlePurchaseOrderRepository } from "../infrastructure/drizzle-purchase-order-repository.ts";
 import { purchaseOrdersTable } from "../infrastructure/purchase-orders.table.ts";
+import { issuePurchaseOrderUseCase } from "./issue-purchase-order.ts";
+import type { PurchasingLookups } from "./purchase-order-repository.ts";
 
 const { db, close } = createDb(testDatabaseUrl());
 const TODAY = "2026-11-24";
@@ -48,6 +54,20 @@ async function createProduct(
   });
   expect(response.status).toBe(201);
   return (await response.json()) as { id: string; sku: string };
+}
+
+async function recordExchangeRate(
+  testApp: ReturnType<typeof createTestApp>,
+  headers: Record<string, string>,
+  date: string,
+  rate: string,
+) {
+  const response = await testApp.app.request("/api/exchange-rates", {
+    method: "POST",
+    headers: { ...headers, "content-type": "application/json" },
+    body: JSON.stringify({ date, rate }),
+  });
+  expect(response.status).toBe(201);
 }
 
 describe("purchasing API (draft purchase orders)", () => {
@@ -325,7 +345,7 @@ describe("purchasing API (draft purchase orders)", () => {
     // Simulate an issued order in the DB to verify defensive guard.
     await db
       .update(purchaseOrdersTable)
-      .set({ status: "ISSUED" })
+      .set({ status: "ISSUED", frozenRate: "36.51230000" })
       .where(eq(purchaseOrdersTable.id, created.id));
 
     const editRes = await testApp.app.request(`/api/purchase-orders/${created.id}`, {
@@ -410,5 +430,549 @@ describe("purchasing API (draft purchase orders)", () => {
       ["admin", "purchasing"],
       404,
     );
+    await expectAllowedRoles(
+      testApp,
+      sessions,
+      { method: "POST", path: `/api/purchase-orders/${missingId}/issue` },
+      ["admin", "purchasing"],
+      404,
+    );
+  });
+});
+
+describe("purchasing API (issue purchase order)", () => {
+  it("issues a USD draft, freezes the rate, and computes VES equivalent in get and list (AC #1, #3, #4)", async () => {
+    const testApp = createTestApp(db, { today: () => TODAY });
+    const admin = await signIn(db, testApp, "admin");
+    const purchasing = await signIn(db, testApp, "purchasing");
+
+    const supplier = await createSupplier(testApp, admin);
+    const harina = await createProduct(testApp, admin, {
+      sku: "HAR-PAN-1K",
+      name: "Harina de maíz precocida 1 kg",
+      unitOfMeasure: "BULK",
+      salePrice: { minorUnits: 145, currency: "USD" },
+      taxRate: "EXEMPT",
+    });
+    const aceite = await createProduct(testApp, admin, {
+      sku: "ACE-GIR-1L",
+      name: "Aceite de girasol 1 L",
+      unitOfMeasure: "UNIT",
+      salePrice: { minorUnits: 320, currency: "USD" },
+      taxRate: "GENERAL",
+    });
+
+    await recordExchangeRate(testApp, admin, "2026-11-17", "36.5123");
+
+    const createRes = await testApp.app.request("/api/purchase-orders", {
+      method: "POST",
+      headers: { ...purchasing, "content-type": "application/json" },
+      body: JSON.stringify({
+        supplierId: supplier.id,
+        currency: "USD",
+        documentDate: "2026-11-17",
+        lines: [
+          { productId: harina.id, quantity: "100", unitCost: { minorUnits: 110, currency: "USD" } },
+          { productId: aceite.id, quantity: "50", unitCost: { minorUnits: 200, currency: "USD" } },
+        ],
+      }),
+    });
+    expect(createRes.status).toBe(201);
+    const draft = (await createRes.json()) as {
+      id: string;
+      frozenRate: string | null;
+      vesTotalEquivalent: unknown;
+    };
+    expect(draft.frozenRate).toBeNull();
+    expect(draft.vesTotalEquivalent).toBeNull();
+
+    // AC #1: Issue the order
+    const issueRes = await testApp.app.request(`/api/purchase-orders/${draft.id}/issue`, {
+      method: "POST",
+      headers: purchasing,
+    });
+    expect(issueRes.status).toBe(200);
+    const issued = (await issueRes.json()) as {
+      status: string;
+      frozenRate: string | null;
+      totals: { total: { minorUnits: number; currency: string } };
+      vesTotalEquivalent: { minorUnits: number; currency: string } | null;
+    };
+    expect(issued.status).toBe("ISSUED");
+    expect(issued.frozenRate).toBe("36.51230000");
+    expect(issued.totals.total).toEqual({ minorUnits: 22600, currency: "USD" });
+    expect(issued.vesTotalEquivalent).toEqual({ minorUnits: 825178, currency: "VES" });
+
+    // Rate is frozen
+    const patchRateRes = await testApp.app.request("/api/exchange-rates/2026-11-17", {
+      method: "PATCH",
+      headers: { ...admin, "content-type": "application/json" },
+      body: JSON.stringify({ rate: "36.9" }),
+    });
+    expect(patchRateRes.status).toBe(409);
+    expect(await patchRateRes.json()).toEqual({
+      code: "RATE_ALREADY_FROZEN",
+      date: "2026-11-17",
+    });
+
+    // AC #3: Recording a later rate does not alter the issued order's frozen rate
+    await recordExchangeRate(testApp, admin, "2026-11-20", "37.25");
+
+    const getRes = await testApp.app.request(`/api/purchase-orders/${draft.id}`, {
+      headers: purchasing,
+    });
+    expect(getRes.status).toBe(200);
+    const fetched = (await getRes.json()) as typeof issued;
+    expect(fetched.status).toBe("ISSUED");
+    expect(fetched.frozenRate).toBe("36.51230000");
+    expect(fetched.vesTotalEquivalent).toEqual({ minorUnits: 825178, currency: "VES" });
+
+    const listRes = await testApp.app.request("/api/purchase-orders", { headers: purchasing });
+    expect(listRes.status).toBe(200);
+    const list = (await listRes.json()) as {
+      items: {
+        id: string;
+        status: string;
+        frozenRate: string | null;
+        vesTotalEquivalent: { minorUnits: number; currency: string } | null;
+      }[];
+    };
+    expect(list.items[0]).toMatchObject({
+      id: draft.id,
+      status: "ISSUED",
+      frozenRate: "36.51230000",
+      vesTotalEquivalent: { minorUnits: 825178, currency: "VES" },
+    });
+
+    // AC #4: Edit, delete, and re-issue all return 409 DOCUMENT_NOT_DRAFT
+    const putRes = await testApp.app.request(`/api/purchase-orders/${draft.id}`, {
+      method: "PUT",
+      headers: { ...purchasing, "content-type": "application/json" },
+      body: JSON.stringify({
+        supplierId: supplier.id,
+        currency: "USD",
+        documentDate: "2026-11-17",
+        lines: [],
+      }),
+    });
+    expect(putRes.status).toBe(409);
+    expect(await putRes.json()).toEqual({ code: "DOCUMENT_NOT_DRAFT" });
+
+    const delRes = await testApp.app.request(`/api/purchase-orders/${draft.id}`, {
+      method: "DELETE",
+      headers: purchasing,
+    });
+    expect(delRes.status).toBe(409);
+    expect(await delRes.json()).toEqual({ code: "DOCUMENT_NOT_DRAFT" });
+
+    const reissueRes = await testApp.app.request(`/api/purchase-orders/${draft.id}/issue`, {
+      method: "POST",
+      headers: purchasing,
+    });
+    expect(reissueRes.status).toBe(409);
+    expect(await reissueRes.json()).toEqual({ code: "DOCUMENT_NOT_DRAFT" });
+  });
+
+  it("checks exchange rate date boundaries on issue (AC #2: missing, strictly later fails, strictly earlier succeeds)", async () => {
+    const testApp = createTestApp(db, { today: () => TODAY });
+    const admin = await signIn(db, testApp, "admin");
+    const supplier = await createSupplier(testApp, admin);
+    const product = await createProduct(testApp, admin, {
+      sku: "HAR-PAN-1K",
+      name: "Harina",
+      unitOfMeasure: "BULK",
+      salePrice: { minorUnits: 145, currency: "USD" },
+      taxRate: "EXEMPT",
+    });
+
+    const createRes = await testApp.app.request("/api/purchase-orders", {
+      method: "POST",
+      headers: { ...admin, "content-type": "application/json" },
+      body: JSON.stringify({
+        supplierId: supplier.id,
+        currency: "USD",
+        documentDate: "2026-11-17",
+        lines: [
+          { productId: product.id, quantity: "10", unitCost: { minorUnits: 100, currency: "USD" } },
+        ],
+      }),
+    });
+    const draft = (await createRes.json()) as { id: string };
+
+    // No rates at all -> 409 MISSING_EXCHANGE_RATE
+    const missing1 = await testApp.app.request(`/api/purchase-orders/${draft.id}/issue`, {
+      method: "POST",
+      headers: admin,
+    });
+    expect(missing1.status).toBe(409);
+    expect(await missing1.json()).toEqual({ code: "MISSING_EXCHANGE_RATE", date: "2026-11-17" });
+
+    // Strictly later rate only -> still 409 MISSING_EXCHANGE_RATE
+    await recordExchangeRate(testApp, admin, "2026-11-18", "36.6");
+    const missing2 = await testApp.app.request(`/api/purchase-orders/${draft.id}/issue`, {
+      method: "POST",
+      headers: admin,
+    });
+    expect(missing2.status).toBe(409);
+    expect(await missing2.json()).toEqual({ code: "MISSING_EXCHANGE_RATE", date: "2026-11-17" });
+
+    // Order stays DRAFT
+    const stillDraft = (await (
+      await testApp.app.request(`/api/purchase-orders/${draft.id}`, { headers: admin })
+    ).json()) as { status: string; frozenRate: string | null };
+    expect(stillDraft.status).toBe("DRAFT");
+    expect(stillDraft.frozenRate).toBeNull();
+
+    // Strictly earlier rate -> succeeds and freezes 2026-11-14 (leaving 2026-11-18 unfrozen)
+    await recordExchangeRate(testApp, admin, "2026-11-14", "36.4");
+    const okRes = await testApp.app.request(`/api/purchase-orders/${draft.id}/issue`, {
+      method: "POST",
+      headers: admin,
+    });
+    expect(okRes.status).toBe(200);
+    const issued = (await okRes.json()) as { status: string; frozenRate: string };
+    expect(issued.status).toBe("ISSUED");
+    expect(issued.frozenRate).toBe("36.40000000");
+
+    const laterPatch = await testApp.app.request("/api/exchange-rates/2026-11-18", {
+      method: "PATCH",
+      headers: { ...admin, "content-type": "application/json" },
+      body: JSON.stringify({ rate: "36.65" }),
+    });
+    expect(laterPatch.status).toBe(200);
+  });
+
+  it("rejects issuing a 0-line draft with 409 EMPTY_DOCUMENT and a future-dated draft with 400 VALIDATION_ERROR (AC #5)", async () => {
+    let today = "2026-11-25";
+    const testApp = createTestApp(db, { today: () => today });
+    const admin = await signIn(db, testApp, "admin");
+    const supplier = await createSupplier(testApp, admin);
+    const product = await createProduct(testApp, admin, {
+      sku: "HAR-PAN-1K",
+      name: "Harina",
+      unitOfMeasure: "BULK",
+      salePrice: { minorUnits: 145, currency: "USD" },
+      taxRate: "EXEMPT",
+    });
+    await recordExchangeRate(testApp, admin, "2026-11-24", "36.5");
+
+    // 0-line draft -> 409 EMPTY_DOCUMENT
+    const emptyDraft = (await (
+      await testApp.app.request("/api/purchase-orders", {
+        method: "POST",
+        headers: { ...admin, "content-type": "application/json" },
+        body: JSON.stringify({
+          supplierId: supplier.id,
+          currency: "USD",
+          documentDate: "2026-11-24",
+          lines: [],
+        }),
+      })
+    ).json()) as { id: string };
+
+    const emptyIssueRes = await testApp.app.request(`/api/purchase-orders/${emptyDraft.id}/issue`, {
+      method: "POST",
+      headers: admin,
+    });
+    expect(emptyIssueRes.status).toBe(409);
+    expect(await emptyIssueRes.json()).toEqual({ code: "EMPTY_DOCUMENT" });
+
+    // Draft created on 2026-11-25 then issued when clock is 2026-11-24 -> 400 DOCUMENT_DATE_IN_FUTURE
+    const futureDraft = (await (
+      await testApp.app.request("/api/purchase-orders", {
+        method: "POST",
+        headers: { ...admin, "content-type": "application/json" },
+        body: JSON.stringify({
+          supplierId: supplier.id,
+          currency: "USD",
+          documentDate: "2026-11-25",
+          lines: [
+            {
+              productId: product.id,
+              quantity: "5",
+              unitCost: { minorUnits: 100, currency: "USD" },
+            },
+          ],
+        }),
+      })
+    ).json()) as { id: string };
+
+    today = "2026-11-24";
+    const futureIssueRes = await testApp.app.request(
+      `/api/purchase-orders/${futureDraft.id}/issue`,
+      { method: "POST", headers: admin },
+    );
+    expect(futureIssueRes.status).toBe(400);
+    expect(await futureIssueRes.json()).toEqual({
+      code: "VALIDATION_ERROR",
+      issues: [{ field: "documentDate", code: "DOCUMENT_DATE_IN_FUTURE" }],
+    });
+  });
+
+  it("allows only one of two concurrent issue requests to succeed (AC #6)", async () => {
+    const testApp = createTestApp(db, { today: () => TODAY });
+    const admin = await signIn(db, testApp, "admin");
+    const purchasing = await signIn(db, testApp, "purchasing");
+    const supplier = await createSupplier(testApp, admin);
+    const product = await createProduct(testApp, admin, {
+      sku: "HAR-PAN-1K",
+      name: "Harina",
+      unitOfMeasure: "BULK",
+      salePrice: { minorUnits: 145, currency: "USD" },
+      taxRate: "EXEMPT",
+    });
+    await recordExchangeRate(testApp, admin, TODAY, "36.5123");
+
+    const draft = (await (
+      await testApp.app.request("/api/purchase-orders", {
+        method: "POST",
+        headers: { ...purchasing, "content-type": "application/json" },
+        body: JSON.stringify({
+          supplierId: supplier.id,
+          currency: "USD",
+          documentDate: TODAY,
+          lines: [
+            {
+              productId: product.id,
+              quantity: "10",
+              unitCost: { minorUnits: 100, currency: "USD" },
+            },
+          ],
+        }),
+      })
+    ).json()) as { id: string };
+
+    const [resA, resB] = await Promise.all([
+      testApp.app.request(`/api/purchase-orders/${draft.id}/issue`, {
+        method: "POST",
+        headers: purchasing,
+      }),
+      testApp.app.request(`/api/purchase-orders/${draft.id}/issue`, {
+        method: "POST",
+        headers: admin,
+      }),
+    ]);
+
+    const sorted = [resA, resB].sort((a, b) => a.status - b.status);
+    expect(sorted[0]?.status).toBe(200);
+    expect(sorted[1]?.status).toBe(409);
+    expect(await sorted[1]?.json()).toEqual({ code: "DOCUMENT_NOT_DRAFT" });
+  });
+
+  it("freezes the rate for VES orders with vesTotalEquivalent: null, and lets both admin and purchasing issue", async () => {
+    const testApp = createTestApp(db, { today: () => TODAY });
+    const admin = await signIn(db, testApp, "admin");
+    const purchasing = await signIn(db, testApp, "purchasing");
+    const supplier = await createSupplier(testApp, admin);
+    const product = await createProduct(testApp, admin, {
+      sku: "HAR-PAN-1K",
+      name: "Harina",
+      unitOfMeasure: "BULK",
+      salePrice: { minorUnits: 145, currency: "USD" },
+      taxRate: "EXEMPT",
+    });
+    await recordExchangeRate(testApp, admin, TODAY, "36.5123");
+
+    const vesDraft = (await (
+      await testApp.app.request("/api/purchase-orders", {
+        method: "POST",
+        headers: { ...admin, "content-type": "application/json" },
+        body: JSON.stringify({
+          supplierId: supplier.id,
+          currency: "VES",
+          documentDate: TODAY,
+          lines: [
+            {
+              productId: product.id,
+              quantity: "10",
+              unitCost: { minorUnits: 5000, currency: "VES" },
+            },
+          ],
+        }),
+      })
+    ).json()) as { id: string };
+
+    const vesIssueRes = await testApp.app.request(`/api/purchase-orders/${vesDraft.id}/issue`, {
+      method: "POST",
+      headers: admin,
+    });
+    expect(vesIssueRes.status).toBe(200);
+    const vesIssued = (await vesIssueRes.json()) as {
+      status: string;
+      frozenRate: string | null;
+      vesTotalEquivalent: unknown;
+    };
+    expect(vesIssued.status).toBe("ISSUED");
+    expect(vesIssued.frozenRate).toBe("36.51230000");
+    expect(vesIssued.vesTotalEquivalent).toBeNull();
+
+    const usdDraft = (await (
+      await testApp.app.request("/api/purchase-orders", {
+        method: "POST",
+        headers: { ...purchasing, "content-type": "application/json" },
+        body: JSON.stringify({
+          supplierId: supplier.id,
+          currency: "USD",
+          documentDate: TODAY,
+          lines: [
+            {
+              productId: product.id,
+              quantity: "10",
+              unitCost: { minorUnits: 100, currency: "USD" },
+            },
+          ],
+        }),
+      })
+    ).json()) as { id: string };
+
+    const usdIssueRes = await testApp.app.request(`/api/purchase-orders/${usdDraft.id}/issue`, {
+      method: "POST",
+      headers: purchasing,
+    });
+    expect(usdIssueRes.status).toBe(200);
+  });
+
+  it("rolls back exchange-rate freeze when persisting the issued order fails (ADR-008)", async () => {
+    const testApp = createTestApp(db, { today: () => TODAY });
+    const admin = await signIn(db, testApp, "admin");
+    const supplier = await createSupplier(testApp, admin);
+    const product = await createProduct(testApp, admin, {
+      sku: "HAR-PAN-1K",
+      name: "Harina",
+      unitOfMeasure: "BULK",
+      salePrice: { minorUnits: 145, currency: "USD" },
+      taxRate: "EXEMPT",
+    });
+    await recordExchangeRate(testApp, admin, "2026-11-17", "36.5123");
+
+    const draft = (await (
+      await testApp.app.request("/api/purchase-orders", {
+        method: "POST",
+        headers: { ...admin, "content-type": "application/json" },
+        body: JSON.stringify({
+          supplierId: supplier.id,
+          currency: "USD",
+          documentDate: "2026-11-17",
+          lines: [
+            {
+              productId: product.id,
+              quantity: "10",
+              unitCost: { minorUnits: 100, currency: "USD" },
+            },
+          ],
+        }),
+      })
+    ).json()) as { id: string };
+
+    const realRepo = createDrizzlePurchaseOrderRepository(db);
+    const failingRepo = {
+      ...realRepo,
+      markIssued: async () => {
+        throw new Error("simulated persistence failure");
+      },
+    };
+    const catalog = createCatalogModule({ db });
+    const exchangeRates = createExchangeRatesModule({ db, today: () => TODAY });
+    const dummyLookups: PurchasingLookups = {
+      findSupplierById: async () => null,
+      findSuppliersByIds: async () => new Map(),
+      findProductsByIds: (ids, tx) => catalog.findProductsByIds(ids, tx),
+    };
+
+    const parsedToday = parseCalendarDate(TODAY);
+    if (!parsedToday.ok) throw new Error(`Invalid test date: ${TODAY}`);
+
+    await expect(
+      issuePurchaseOrderUseCase(
+        { db, repository: failingRepo, lookups: dummyLookups, exchangeRates },
+        draft.id,
+        parsedToday.value,
+      ),
+    ).rejects.toThrow("simulated persistence failure");
+
+    const rateAfter = await exchangeRates.lookupForDate("2026-11-17");
+    expect(rateAfter.ok && rateAfter.value.frozen).toBe(false);
+
+    const poAfter = await realRepo.findById(draft.id);
+    expect(poAfter?.status).toBe("DRAFT");
+    expect(poAfter?.frozenRate).toBeNull();
+  });
+
+  it("rejects issuing a valid USD draft whose VES equivalent exceeds MAX_MINOR_UNITS without freezing the rate or breaking reads", async () => {
+    const testApp = createTestApp(db, { today: () => TODAY });
+    const admin = await signIn(db, testApp, "admin");
+    const purchasing = await signIn(db, testApp, "purchasing");
+    const supplier = await createSupplier(testApp, admin);
+    const product = await createProduct(testApp, admin, {
+      sku: "HAR-PAN-1K",
+      name: "Harina",
+      unitOfMeasure: "BULK",
+      salePrice: { minorUnits: 145, currency: "USD" },
+      taxRate: "EXEMPT",
+    });
+    await recordExchangeRate(testApp, admin, "2026-11-17", "2000.00000000");
+
+    // 100 * 10_000_000_000 = 1_000_000_000_000 minor units (valid USD total <= MAX_MINOR_UNITS = 10^15)
+    // Against 2000.00000000 Bs/USD -> 2 * 10^15 VES minor units > MAX_MINOR_UNITS
+    const createRes = await testApp.app.request("/api/purchase-orders", {
+      method: "POST",
+      headers: { ...purchasing, "content-type": "application/json" },
+      body: JSON.stringify({
+        supplierId: supplier.id,
+        currency: "USD",
+        documentDate: "2026-11-17",
+        lines: [
+          {
+            productId: product.id,
+            quantity: "100",
+            unitCost: { minorUnits: 10_000_000_000, currency: "USD" },
+          },
+        ],
+      }),
+    });
+    expect(createRes.status).toBe(201);
+    const draft = (await createRes.json()) as {
+      id: string;
+      totals: { total: { minorUnits: number; currency: string } };
+    };
+    expect(draft.totals.total).toEqual({ minorUnits: 1_000_000_000_000, currency: "USD" });
+
+    const issueRes = await testApp.app.request(`/api/purchase-orders/${draft.id}/issue`, {
+      method: "POST",
+      headers: purchasing,
+    });
+    expect(issueRes.status).toBe(400);
+    expect(await issueRes.json()).toEqual({
+      code: "VALIDATION_ERROR",
+      issues: [{ field: "lines", code: "AMOUNT_OUT_OF_RANGE" }],
+    });
+
+    // BCV rate stays unfrozen
+    const exchangeRates = createExchangeRatesModule({ db, today: () => TODAY });
+    const rateAfter = await exchangeRates.lookupForDate("2026-11-17");
+    expect(rateAfter.ok && rateAfter.value.frozen).toBe(false);
+
+    // Order stays DRAFT and both GET endpoints remain healthy (200)
+    const getRes = await testApp.app.request(`/api/purchase-orders/${draft.id}`, {
+      headers: purchasing,
+    });
+    expect(getRes.status).toBe(200);
+    expect(await getRes.json()).toMatchObject({
+      id: draft.id,
+      status: "DRAFT",
+      frozenRate: null,
+      vesTotalEquivalent: null,
+    });
+
+    const listRes = await testApp.app.request("/api/purchase-orders", { headers: purchasing });
+    expect(listRes.status).toBe(200);
+    const listBody = (await listRes.json()) as {
+      items: { id: string; status: string; frozenRate: string | null }[];
+    };
+    expect(listBody.items[0]).toMatchObject({
+      id: draft.id,
+      status: "DRAFT",
+      frozenRate: null,
+    });
   });
 });

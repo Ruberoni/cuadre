@@ -1,5 +1,10 @@
 import { addDays, type CalendarDate } from "@cuadre/shared-kernel";
+import type { Db } from "../../../db/client.ts";
 import { createPurchaseOrderUseCase } from "../application/create-purchase-order.ts";
+import {
+  type IssuePurchaseOrderExchangeRates,
+  issuePurchaseOrderUseCase,
+} from "../application/issue-purchase-order.ts";
 import type {
   PurchaseOrderRepository,
   PurchasingLookups,
@@ -11,12 +16,14 @@ export type SeedPurchasingSources = {
 };
 
 /**
- * Seeds 2 realistic demo draft purchase orders through the real use case.
- * Idempotent: skips if any purchase orders already exist.
+ * Seeds 2 realistic demo draft purchase orders and 1 issued purchase order (with frozen BCV rate)
+ * through the real use cases. Idempotent: skips if any purchase orders already exist.
  */
 export async function seedPurchaseOrders(
+  db: Db,
   repository: PurchaseOrderRepository,
   lookups: PurchasingLookups,
+  exchangeRates: IssuePurchaseOrderExchangeRates,
   sources: SeedPurchasingSources,
   today: CalendarDate,
 ): Promise<number> {
@@ -79,6 +86,42 @@ export async function seedPurchaseOrders(
     }
     created += 1;
   }
+
+  // Seed 1 issued USD purchase order dated 2 days ago so its rate freezes without locking today's rate.
+  const issuedDraft = await createPurchaseOrderUseCase(
+    repository,
+    lookups,
+    {
+      supplierId: andinaId,
+      currency: "USD",
+      documentDate: addDays(today, -2),
+      lines: [
+        {
+          productId: harinaId,
+          quantity: "80",
+          unitCost: { minorUnits: 110, currency: "USD" },
+        },
+        {
+          productId: atunId,
+          quantity: "25",
+          unitCost: { minorUnits: 200, currency: "USD" },
+        },
+      ],
+    },
+    today,
+  );
+  if (!issuedDraft.ok) {
+    throw new Error(`Demo issued purchase order failed validation: ${JSON.stringify(issuedDraft)}`);
+  }
+  const issued = await issuePurchaseOrderUseCase(
+    { db, repository, lookups, exchangeRates },
+    issuedDraft.value.order.id,
+    today,
+  );
+  if (!issued.ok) {
+    throw new Error(`Demo purchase order failed issue: ${JSON.stringify(issued)}`);
+  }
+  created += 1;
 
   return created;
 }

@@ -3,6 +3,7 @@
 import { type CalendarDate, parseCalendarDate, todayCaracas } from "@cuadre/shared-kernel";
 import type { Db } from "../../db/client.ts";
 import type { CatalogModule } from "../catalog/index.ts";
+import type { ExchangeRatesModule } from "../exchange-rates/index.ts";
 import type { PartnersModule } from "../partners/index.ts";
 import type { PurchasingLookups } from "./application/purchase-order-repository.ts";
 import { createPurchaseOrderRoutes } from "./http/purchase-orders.routes.ts";
@@ -13,18 +14,20 @@ export function createPurchasingModule({
   db,
   partners,
   catalog,
+  exchangeRates,
   today = todayCaracas,
 }: {
   db: Db;
   partners: Pick<PartnersModule, "findSupplierById" | "findSuppliersByIds" | "listAllSuppliers">;
   catalog: Pick<CatalogModule, "findProductsByIds" | "listAllProducts">;
+  exchangeRates: Pick<ExchangeRatesModule, "lookupAndFreezeForDate">;
   today?: () => string;
 }) {
   const repository = createDrizzlePurchaseOrderRepository(db);
   const lookups: PurchasingLookups = {
     findSupplierById: (id) => partners.findSupplierById(id),
     findSuppliersByIds: (ids) => partners.findSuppliersByIds(ids),
-    findProductsByIds: (ids) => catalog.findProductsByIds(ids),
+    findProductsByIds: (ids, tx) => catalog.findProductsByIds(ids, tx),
   };
 
   const currentToday = (): CalendarDate => {
@@ -35,12 +38,14 @@ export function createPurchasingModule({
 
   return {
     /** Mounted by the app under `/api`. */
-    routes: createPurchaseOrderRoutes(repository, lookups, currentToday),
-    /** Loads the fictitious demo draft purchase orders; safe to run again. */
+    routes: createPurchaseOrderRoutes(db, repository, lookups, exchangeRates, currentToday),
+    /** Loads the fictitious demo purchase orders (2 drafts + 1 issued); safe to run again. */
     seed: () =>
       seedPurchaseOrders(
+        db,
         repository,
         lookups,
+        exchangeRates,
         {
           listSuppliers: () => partners.listAllSuppliers(),
           listProducts: () => catalog.listAllProducts(),

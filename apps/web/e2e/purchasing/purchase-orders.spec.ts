@@ -6,7 +6,7 @@ const WEB_ORIGIN = `http://127.0.0.1:${process.env.E2E_WEB_PORT ?? 4173}`;
 
 async function seedPurchasingFixtures(page: Parameters<typeof signIn>[0]) {
   await withE2eDatabase(async (sql) => {
-    await sql`truncate table purchasing.purchase_orders, partners.partners, catalog.products restart identity cascade`;
+    await sql`truncate table purchasing.purchase_orders, exchange_rates.rates, partners.partners, catalog.products restart identity cascade`;
   });
 
   await signInRequest(page.request, "", ADMIN);
@@ -209,6 +209,7 @@ test.describe("Órdenes de compra (borradores)", () => {
     await expect(page.getByRole("link", { name: "Volver" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Guardar borrador" })).toBeHidden();
     await expect(page.getByRole("button", { name: "Eliminar borrador" })).toBeHidden();
+    await expect(page.getByRole("button", { name: "Emitir" })).toBeHidden();
     expect(consoleErrors).toEqual([]);
 
     // Sales user does not see nav link and gets forbidden alert on direct URL
@@ -219,5 +220,152 @@ test.describe("Órdenes de compra (borradores)", () => {
     await expect(page.getByRole("alert")).toContainText(
       "Solo un administrador, compras o almacén puede ver órdenes de compra.",
     );
+  });
+});
+
+test.describe("Órdenes de compra (emitir)", () => {
+  test("purchasing user confirms issue of USD draft, sees frozen rate and VES equivalent in read-only Emitido view (AC #1, #4)", async ({
+    page,
+  }) => {
+    await seedPurchasingFixtures(page);
+
+    // Seed BCV rate 36,51230000 for 2026-11-17
+    await signInRequest(page.request, "", ADMIN);
+    const rateRes = await page.request.post("/api/exchange-rates", {
+      headers: { origin: WEB_ORIGIN },
+      data: { date: "2026-11-17", rate: "36.5123" },
+    });
+    expect(rateRes.status()).toBe(201);
+    await page.context().clearCookies();
+
+    await signIn(page, SEED_USERS.purchasing);
+    await page.goto("/ordenes-de-compra/nueva");
+
+    await page.getByRole("combobox", { name: "Proveedor" }).click();
+    await page.getByRole("option", { name: /Distribuidora Andina, C\.A\./ }).click();
+    await page.getByLabel("Fecha").fill("17/11/2026");
+
+    await page.getByRole("button", { name: "Agregar línea" }).click();
+    await page.getByRole("combobox", { name: "Producto 1" }).click();
+    await page.getByRole("option", { name: /HAR-PAN-1K/ }).click();
+    await page.getByLabel("Cantidad 1").fill("100");
+    await page.getByLabel("Costo unitario 1").fill("1,10");
+
+    await page.getByRole("button", { name: "Agregar línea" }).click();
+    await page.getByRole("combobox", { name: "Producto 2" }).click();
+    await page.getByRole("option", { name: /ATU-LAT-170/ }).click();
+    await page.getByLabel("Cantidad 2").fill("50");
+    await page.getByLabel("Costo unitario 2").fill("2,00");
+
+    await page.getByRole("button", { name: "Guardar borrador" }).click();
+    await expect(page.getByRole("status")).toHaveText("Borrador guardado.");
+
+    const draftRow = page
+      .getByRole("row", { name: /17\/11\/2026.*Distribuidora Andina, C\.A\..*226,00/ })
+      .first();
+    await draftRow.getByRole("link").first().click();
+    await expect(page).toHaveURL(/\/ordenes-de-compra\/[0-9a-f-]+/);
+    const detailUrl = page.url();
+
+    // Dirty form disables Emitir with hint, reverting re-enables Emitir
+    await page.getByLabel("Cantidad 1").fill("101");
+    await expect(page.getByRole("button", { name: "Emitir" })).toBeDisabled();
+    await expect(page.getByText("Guardar borrador antes de emitir.")).toBeVisible();
+    await page.getByLabel("Cantidad 1").fill("100");
+    await expect(page.getByRole("button", { name: "Emitir" })).toBeEnabled();
+
+    // Cancel confirmation dialog -> stays Borrador
+    await page.getByRole("button", { name: "Emitir" }).click();
+    const dialog = page.getByRole("alertdialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText("¿Emitir orden de compra?");
+    await expect(dialog).toContainText("Esta acción no se puede deshacer.");
+    await dialog.getByRole("button", { name: "Cancelar" }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByText("Borrador", { exact: true })).toBeVisible();
+
+    // Confirm issue -> stays on detail page in read-only Emitido view with frozen rate & VES equivalent
+    await page.getByRole("button", { name: "Emitir" }).click();
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Emitir", exact: true }).click();
+
+    await expect(page.getByRole("status")).toHaveText("Orden de compra emitida.");
+    await expect(page).toHaveURL(detailUrl);
+    const main = page.getByRole("main");
+    await expect(main.getByText("Emitido", { exact: true })).toBeVisible();
+    await expect(main.getByText("Tasa BCV (congelada)")).toBeVisible();
+    await expect(main.getByText("Bs. 36,51230000")).toBeVisible();
+    await expect(main.getByText("Equivalente en Bs.")).toBeVisible();
+    await expect(main.getByText("Bs. 8.251,78")).toBeVisible();
+    await expect(main.getByRole("button", { name: "Guardar borrador" })).toBeHidden();
+    await expect(main.getByRole("button", { name: "Eliminar borrador" })).toBeHidden();
+    await expect(main.getByRole("button", { name: "Emitir" })).toBeHidden();
+    await expect(main.getByRole("link", { name: "Volver" })).toBeVisible();
+
+    // List also displays Emitido badge
+    await page.getByRole("link", { name: "Volver" }).click();
+    await expect(
+      page.getByRole("row", { name: /17\/11\/2026.*Emitido.*226,00/ }).first(),
+    ).toBeVisible();
+  });
+
+  test("shows EMPTY_DOCUMENT and MISSING_EXCHANGE_RATE messages and keeps order Borrador (AC #2, #5)", async ({
+    page,
+  }) => {
+    await seedPurchasingFixtures(page);
+    await signIn(page, SEED_USERS.purchasing);
+    await page.goto("/ordenes-de-compra/nueva");
+
+    await page.getByRole("combobox", { name: "Proveedor" }).click();
+    await page.getByRole("option", { name: /Distribuidora Andina, C\.A\./ }).click();
+    await page.getByLabel("Fecha").fill("17/11/2026");
+
+    // Save 0-line draft
+    await page.getByRole("button", { name: "Guardar borrador" }).click();
+    await expect(page.getByRole("status")).toHaveText("Borrador guardado.");
+
+    await page
+      .getByRole("row", { name: /17\/11\/2026.*Distribuidora Andina, C\.A\./ })
+      .first()
+      .getByRole("link")
+      .first()
+      .click();
+
+    // Emitir is enabled on 0-line draft -> surfaces EMPTY_DOCUMENT
+    await page.getByRole("button", { name: "Emitir" }).click();
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Emitir", exact: true })
+      .click();
+    await expect(page.getByRole("alert")).toContainText(
+      "La orden debe tener al menos una línea para poder emitirla.",
+    );
+    await expect(page.getByText("Borrador", { exact: true })).toBeVisible();
+
+    // Add a line, save draft, reopen, and try issuing with no BCV rate -> MISSING_EXCHANGE_RATE
+    await page.getByRole("button", { name: "Agregar línea" }).click();
+    await page.getByRole("combobox", { name: "Producto 1" }).click();
+    await page.getByRole("option", { name: /HAR-PAN-1K/ }).click();
+    await page.getByLabel("Cantidad 1").fill("10");
+    await page.getByLabel("Costo unitario 1").fill("1,00");
+    await page.getByRole("button", { name: "Guardar borrador" }).click();
+    await expect(page.getByRole("status")).toHaveText("Borrador guardado.");
+
+    await page
+      .getByRole("row", { name: /17\/11\/2026.*Distribuidora Andina, C\.A\./ })
+      .first()
+      .getByRole("link")
+      .first()
+      .click();
+
+    await page.getByRole("button", { name: "Emitir" }).click();
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Emitir", exact: true })
+      .click();
+    await expect(page.getByRole("alert")).toContainText(
+      "No hay una tasa BCV registrada para esa fecha.",
+    );
+    await expect(page.getByText("Borrador", { exact: true })).toBeVisible();
   });
 });

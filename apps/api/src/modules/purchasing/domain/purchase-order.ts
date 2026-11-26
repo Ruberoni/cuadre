@@ -9,17 +9,24 @@ import {
   type Currency,
   compareCalendarDates,
   computeDocumentTotals,
+  computeVesEquivalent,
   type DocumentTotals,
+  err,
   type FieldIssue,
+  type IssuePreconditionFailure,
   invalid,
   type Money,
   money,
   ok,
   parseCalendarDate,
   parseQuantity,
+  parseRate,
   type Quantity,
+  type Rate,
+  type Result,
   type TaxRate,
   type ValidationFailure,
+  validateDocumentIssuePreconditions,
 } from "@cuadre/shared-kernel";
 
 export type PurchaseOrderProductRef = {
@@ -78,6 +85,7 @@ export type StoredPurchaseOrder = {
   readonly currency: Currency;
   readonly documentDate: CalendarDate;
   readonly status: DocumentStatus;
+  readonly frozenRate: Rate | null;
   readonly lines: readonly StoredPurchaseOrderLine[];
 };
 
@@ -214,6 +222,80 @@ export function calculatePurchaseOrderTotals(
   );
   if (!result.ok) {
     throw new Error(`Failed to compute purchase order totals: ${result.error}`);
+  }
+  return result.value;
+}
+
+export function reconstitutePurchaseOrder(input: {
+  readonly id: string;
+  readonly supplierId: string;
+  readonly currency: Currency;
+  readonly documentDate: string;
+  readonly status: DocumentStatus;
+  readonly frozenRate: string | null;
+  readonly lines: readonly StoredPurchaseOrderLine[];
+}): Result<StoredPurchaseOrder, "INVALID_STORED_PURCHASE_ORDER"> {
+  const documentDate = parseCalendarDate(input.documentDate);
+  if (!documentDate.ok) return err("INVALID_STORED_PURCHASE_ORDER");
+
+  let frozenRate: Rate | null = null;
+  if (input.frozenRate !== null) {
+    const parsedRate = parseRate(input.frozenRate);
+    if (!parsedRate.ok) return err("INVALID_STORED_PURCHASE_ORDER");
+    frozenRate = parsedRate.value;
+  }
+
+  if (input.status === "DRAFT" && frozenRate !== null) {
+    return err("INVALID_STORED_PURCHASE_ORDER");
+  }
+  if (input.status === "ISSUED" && frozenRate === null) {
+    return err("INVALID_STORED_PURCHASE_ORDER");
+  }
+
+  return ok({
+    id: input.id,
+    supplierId: input.supplierId,
+    currency: input.currency,
+    documentDate: documentDate.value,
+    status: input.status,
+    frozenRate,
+    lines: input.lines,
+  });
+}
+
+export function validateIssuePurchaseOrder(
+  order: StoredPurchaseOrder,
+  today: CalendarDate,
+): { readonly ok: true; readonly value: StoredPurchaseOrder } | IssuePreconditionFailure {
+  const check = validateDocumentIssuePreconditions({
+    status: order.status,
+    documentDate: order.documentDate,
+    lineCount: order.lines.length,
+    today,
+  });
+  if (!check.ok) return check;
+  return ok(order);
+}
+
+export function validatePurchaseOrderVesEquivalent(
+  total: Money,
+  frozenRate: Rate,
+): { readonly ok: true; readonly value: Money | null } | PurchaseOrderValidationFailure {
+  const result = computeVesEquivalent(total, frozenRate);
+  if (!result.ok) {
+    return invalid([{ field: "lines", code: result.error }]);
+  }
+  return result;
+}
+
+export function calculatePurchaseOrderVesEquivalent(
+  order: Pick<StoredPurchaseOrder, "frozenRate">,
+  total: Money,
+): Money | null {
+  if (order.frozenRate === null) return null;
+  const result = computeVesEquivalent(total, order.frozenRate);
+  if (!result.ok) {
+    throw new Error(`Failed to compute VES equivalent for purchase order: ${result.error}`);
   }
   return result.value;
 }
