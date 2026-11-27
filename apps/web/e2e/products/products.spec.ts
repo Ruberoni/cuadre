@@ -270,6 +270,7 @@ test.describe("app shell", () => {
       "Proveedores",
       "Órdenes de compra",
       "Recepciones de mercancía",
+      "Kardex",
       "Clientes",
     ],
     sales: ["Productos", "Tasas BCV", "Clientes"],
@@ -279,8 +280,15 @@ test.describe("app shell", () => {
       "Proveedores",
       "Órdenes de compra",
       "Recepciones de mercancía",
+      "Kardex",
     ],
-    warehouse: ["Productos", "Tasas BCV", "Órdenes de compra", "Recepciones de mercancía"],
+    warehouse: [
+      "Productos",
+      "Tasas BCV",
+      "Órdenes de compra",
+      "Recepciones de mercancía",
+      "Kardex",
+    ],
   };
 
   for (const [role, roleName] of Object.entries(roleNames)) {
@@ -306,13 +314,14 @@ test.describe("app shell", () => {
     await page.goto("/productos");
 
     const nav = page.getByRole("navigation", { name: "Principal" });
-    await expect(nav.getByRole("link")).toHaveCount(6);
+    await expect(nav.getByRole("link")).toHaveCount(7);
     await expect(nav.getByRole("link")).toHaveText([
       "Productos",
       "Tasas BCV",
       "Proveedores",
       "Órdenes de compra",
       "Recepciones de mercancía",
+      "Kardex",
       "Clientes",
     ]);
     await expect(nav.getByRole("link", { name: "Productos" })).toHaveAttribute(
