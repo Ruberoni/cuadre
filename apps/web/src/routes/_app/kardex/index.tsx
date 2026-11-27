@@ -245,7 +245,7 @@ function KardexPage() {
           description={kardexMessages.emptySelection.description}
         />
       ) : kardex.isError && data === undefined ? (
-        errorCode === "NOT_FOUND" ? (
+        errorCode === "NOT_FOUND" || errorCode === "VALIDATION_ERROR" ? (
           <Alert variant="destructive" role="alert" className="block">
             {kardexMessages.notFound}
           </Alert>

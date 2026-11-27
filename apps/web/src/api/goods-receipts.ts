@@ -8,6 +8,7 @@ import {
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { apiRequest, unwrapOrThrow } from "@/api/client";
+import { KARDEX_QUERY_KEY } from "@/api/kardex";
 
 const GOODS_RECEIPTS_KEY = ["goods-receipts"] as const;
 const PURCHASE_ORDERS_KEY = ["purchase-orders"] as const;
@@ -92,7 +93,7 @@ export function useIssueGoodsReceipt(id: string) {
         void queryClient.invalidateQueries({ queryKey: GOODS_RECEIPTS_KEY });
         void queryClient.invalidateQueries({ queryKey: PURCHASE_ORDERS_KEY });
         void queryClient.invalidateQueries({ queryKey: ["products"] });
-        void queryClient.invalidateQueries({ queryKey: ["kardex"] });
+        void queryClient.invalidateQueries({ queryKey: KARDEX_QUERY_KEY });
       }
     },
   });

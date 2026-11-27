@@ -77,7 +77,7 @@ function buildColumns(canViewKardex: boolean): readonly Column<Product, ProductS
             to="/kardex"
             search={{ producto: product.id, page: 1 }}
             aria-label={`${kardexMessages.viewKardexLabel(product.sku)}: ${formatQuantity(product.onHand)}`}
-            className="inline-flex min-h-(--target-min) items-center font-medium text-primary tabular-nums underline-offset-4 hover:underline"
+            className="inline-flex min-h-(--target-min) min-w-(--target-min) items-center justify-end font-medium text-primary tabular-nums underline-offset-4 hover:underline"
           >
             {formatQuantity(product.onHand)}
           </Link>

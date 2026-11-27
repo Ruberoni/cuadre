@@ -1,5 +1,5 @@
 import { KardexResponse } from "@cuadre/contracts";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { apiRequest, unwrapOrThrow } from "@/api/client";
 
 export const KARDEX_QUERY_KEY = ["kardex"] as const;
@@ -14,7 +14,8 @@ export function useKardex(productId: string | undefined, page: number, enabled =
         await apiRequest(`/kardex/${encodeURIComponent(productId)}?${params}`, KardexResponse),
       );
     },
-    placeholderData: keepPreviousData,
+    placeholderData: (previousData) =>
+      previousData?.product.id === productId ? previousData : undefined,
     enabled: enabled && productId !== undefined && productId !== "",
   });
 }
