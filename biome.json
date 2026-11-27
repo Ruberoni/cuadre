@@ -30,6 +30,9 @@
     "enabled": true,
     "rules": {
       "preset": "recommended",
+      "style": {
+        "noNonNullAssertion": "error"
+      },
       "suspicious": {
         "noExplicitAny": "error"
       }
