@@ -48,5 +48,6 @@ export {
   type RifError,
   type RifLetter,
 } from "./rif.ts";
+export { divideRoundHalfAwayFromZero } from "./rounding.ts";
 export { TAX_RATE_PERCENT, TAX_RATES, type TaxRate } from "./tax-rate.ts";
 export { type FieldIssue, invalid, type ValidationFailure } from "./validation.ts";

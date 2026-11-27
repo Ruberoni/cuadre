@@ -12,6 +12,8 @@ export const API_ERROR_CODES = [
   "MISSING_EXCHANGE_RATE",
   "EMPTY_DOCUMENT",
   "DOCUMENT_NOT_DRAFT",
+  "GOODS_RECEIPT_ALREADY_EXISTS",
+  "PURCHASE_ORDER_NOT_ISSUED",
   "NOT_FOUND",
   /** No valid session (none, expired or signed out). The web goes to Login; never shown. */
   "UNAUTHORIZED",

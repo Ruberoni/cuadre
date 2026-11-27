@@ -89,6 +89,25 @@ export {
   type SupplierIssueCode,
   type SupplierSortField,
 } from "./partners/suppliers.ts";
+export { DocumentTotals } from "./purchasing/document-totals.ts";
+export {
+  CONTROL_NUMBER_MAX_LENGTH,
+  CreateGoodsReceiptRequest,
+  GOODS_RECEIPT_ISSUE_CODES,
+  GOODS_RECEIPT_ROLES,
+  GOODS_RECEIPTS_PAGE_SIZE,
+  GoodsReceipt,
+  GoodsReceiptIdParam,
+  type GoodsReceiptIssueCode,
+  GoodsReceiptLine,
+  GoodsReceiptLineInput,
+  GoodsReceiptSummary,
+  GoodsReceiptTotals,
+  ListGoodsReceiptsQuery,
+  ListGoodsReceiptsResponse,
+  SUPPLIER_INVOICE_NUMBER_MAX_LENGTH,
+  UpdateGoodsReceiptRequest,
+} from "./purchasing/goods-receipts.ts";
 export {
   DOCUMENT_STATUSES,
   type DocumentStatus,
@@ -98,6 +117,7 @@ export {
   PURCHASE_ORDER_ROLES,
   PURCHASE_ORDERS_PAGE_SIZE,
   PurchaseOrder,
+  PurchaseOrderGoodsReceiptRef,
   PurchaseOrderIdParam,
   type PurchaseOrderIssueCode,
   PurchaseOrderLine,

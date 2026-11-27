@@ -19,9 +19,10 @@ export async function getPurchaseOrderUseCase(
   const order = await repository.findById(id);
   if (order === null) return err("NOT_FOUND");
 
-  const [supplier, productsById] = await Promise.all([
+  const [supplier, productsById, receiptRefs] = await Promise.all([
     lookups.findSupplierById(order.supplierId),
     lookups.findProductsByIds(order.lines.map((line) => line.productId)),
+    repository.findGoodsReceiptRefs([order.id]),
   ]);
   if (supplier === null) {
     throw new Error(
@@ -29,5 +30,5 @@ export async function getPurchaseOrderUseCase(
     );
   }
 
-  return ok(enrichPurchaseOrder(order, supplier, productsById));
+  return ok(enrichPurchaseOrder(order, supplier, productsById, receiptRefs.get(order.id) ?? null));
 }

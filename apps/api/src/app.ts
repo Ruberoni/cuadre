@@ -7,6 +7,7 @@ import { healthRoute, isDatabaseUp } from "./health/health.route.ts";
 import { openApiOptions, useErrorHandlers } from "./http/api-error.ts";
 import { createCatalogModule } from "./modules/catalog/index.ts";
 import { createExchangeRatesModule } from "./modules/exchange-rates/index.ts";
+import { createInventoryModule } from "./modules/inventory/index.ts";
 import { createPartnersModule } from "./modules/partners/index.ts";
 import { createPurchasingModule } from "./modules/purchasing/index.ts";
 
@@ -29,6 +30,7 @@ export function createApp({ db, auth, today }: { db: Db; auth: Auth; today?: () 
   app.use("/api/*", requireSession(auth), requireRoleDeclaration());
 
   const catalog = createCatalogModule({ db });
+  const inventory = createInventoryModule({ db });
   const partners = createPartnersModule({ db });
   const exchangeRates = createExchangeRatesModule({
     db,
@@ -39,6 +41,7 @@ export function createApp({ db, auth, today }: { db: Db; auth: Auth; today?: () 
     partners,
     catalog,
     exchangeRates,
+    inventory,
     ...(today === undefined ? {} : { today }),
   });
 

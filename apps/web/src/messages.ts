@@ -5,6 +5,7 @@ import type {
   DocumentStatus,
   ExchangeRateField,
   ExchangeRateIssueCode,
+  GoodsReceiptIssueCode,
   PartnerField,
   PartnerIssueCode,
   ProductField,
@@ -56,6 +57,9 @@ export const errorMessages: Record<
   MISSING_EXCHANGE_RATE: () => "No hay una tasa BCV registrada para esa fecha.",
   EMPTY_DOCUMENT: () => "La orden debe tener al menos una línea para poder emitirla.",
   DOCUMENT_NOT_DRAFT: () => "Esta orden de compra ya fue emitida y no se puede editar ni eliminar.",
+  GOODS_RECEIPT_ALREADY_EXISTS: () =>
+    "Esta orden de compra ya tiene una recepción de mercancía registrada.",
+  PURCHASE_ORDER_NOT_ISSUED: () => "Solo se pueden recibir órdenes de compra emitidas.",
   NOT_FOUND: () => "No se encontró lo que se buscaba.",
   // Products handoff (#7): default screen is Productos; module-specific alerts override below.
   FORBIDDEN: () => "Solo un administrador puede crear o editar productos.",
@@ -176,6 +180,7 @@ export const shellMessages = {
   exchangeRates: "Tasas BCV",
   suppliers: "Proveedores",
   purchaseOrders: "Órdenes de compra",
+  goodsReceipts: "Recepciones de mercancía",
   customers: "Clientes",
   headerRatePrefix: (date: string) => `Tasa BCV ${date}`,
   noRateBadge: "Sin tasa BCV",
@@ -591,5 +596,155 @@ export const purchaseOrdersMessages = {
     saveFailed: "No se pudo guardar el borrador. Revisar la conexión e intentar de nuevo.",
     deleteFailed: "No se pudo eliminar el borrador. Revisar la conexión e intentar de nuevo.",
     issueFailed: "No se pudo emitir la orden de compra. Revisar la conexión e intentar de nuevo.",
+  },
+} as const;
+
+export const goodsReceiptFieldMessages: Record<
+  | "purchaseOrderId"
+  | "documentDate"
+  | "supplierInvoiceNumber"
+  | "controlNumber"
+  | "lines"
+  | "purchaseOrderLineId"
+  | "quantity"
+  | "unitCost",
+  Partial<Record<GoodsReceiptIssueCode, string>>
+> = {
+  purchaseOrderId: {
+    REQUIRED: "Falta la orden de compra.",
+    NOT_FOUND: "La orden de compra seleccionada no existe.",
+    INVALID: "Falta la orden de compra.",
+  },
+  documentDate: purchaseOrderFieldMessages.documentDate,
+  supplierInvoiceNumber: {
+    REQUIRED: "Falta el n.º de factura del proveedor.",
+    TOO_LONG: "Usar como máximo 50 caracteres.",
+    INVALID: "Falta el n.º de factura del proveedor.",
+  },
+  controlNumber: {
+    REQUIRED: "Falta el n.º de control.",
+    TOO_LONG: "Usar como máximo 50 caracteres.",
+    INVALID: "Falta el n.º de control.",
+  },
+  lines: {
+    OUT_OF_RANGE: "El total de la recepción supera el monto máximo permitido.",
+    AMOUNT_OUT_OF_RANGE:
+      "El equivalente en bolívares a la tasa BCV supera el monto máximo permitido.",
+  },
+  purchaseOrderLineId: {
+    REQUIRED: "Falta la línea de la orden.",
+    NOT_FOUND: "La línea no pertenece a la orden de compra.",
+    DUPLICATE_LINE: "Esta línea de la orden ya está en la recepción.",
+    INVALID: "La línea no pertenece a la orden de compra.",
+  },
+  quantity: {
+    ...purchaseOrderFieldMessages.quantity,
+    QUANTITY_EXCEEDS_ORDERED: "La cantidad no puede superar lo pedido en la orden.",
+  },
+  unitCost: {
+    ...purchaseOrderFieldMessages.unitCost,
+    CURRENCY_MISMATCH: "El costo unitario debe estar en la misma moneda de la orden.",
+  },
+};
+
+export function goodsReceiptFieldMessage(field: string, code: string): string | undefined {
+  const leaf = field.includes(".") ? (field.split(".").at(-1) ?? field) : field;
+  const messages: Partial<Record<string, Partial<Record<string, string>>>> =
+    goodsReceiptFieldMessages;
+  return messages[leaf]?.[code];
+}
+
+export const goodsReceiptsMessages = {
+  pageTitle: "Recepciones de mercancía",
+  newPageTitle: "Nueva recepción de mercancía",
+  detailPageTitle: "Recepción de mercancía",
+  newReceipt: "Nueva recepción",
+  receiveOrderAction: "Recibir mercancía",
+  viewReceiptAction: "Ver recepción de mercancía",
+  receivedBadge: "Recibida",
+  tableCaption: "Recepciones de mercancía, ordenadas por fecha más reciente",
+  columns: {
+    documentDate: "Fecha",
+    supplier: "Proveedor",
+    supplierInvoiceNumber: "N.º de factura",
+    currency: "Moneda",
+    status: "Estado",
+    total: "Total",
+  },
+  pager: (from: number, to: number, total: number) => `${from}–${to} de ${total} recepciones`,
+  previousPage: "Página anterior",
+  nextPage: "Página siguiente",
+  saved: "Borrador guardado.",
+  deleted: "Borrador eliminado.",
+  issued: "Recepción de mercancía emitida.",
+  empty: {
+    title: "Aún no hay recepciones de mercancía",
+    description: "Registra la entrada de mercancía de una orden de compra emitida.",
+    readOnlyDescription: "Almacén o un administrador debe registrarlas.",
+  },
+  noEligibleOrders: "No hay órdenes de compra emitidas pendientes por recibir.",
+  loadError:
+    "No se pudo cargar la lista de recepciones de mercancía. Revisar la conexión e intentar de nuevo.",
+  detailLoadError:
+    "No se pudo cargar la recepción de mercancía. Revisar la conexión e intentar de nuevo.",
+  notFound: "No se encontró la recepción de mercancía.",
+  retry: "Reintentar",
+  form: {
+    purchaseOrder: "Orden de compra",
+    purchaseOrderPlaceholder: "Seleccionar orden emitida…",
+    purchaseOrderOption: (date: string, supplier: string, total: string) =>
+      `${date} — ${supplier} (${total})`,
+    supplier: "Proveedor",
+    currency: "Moneda",
+    documentDate: "Fecha",
+    documentDatePlaceholder: "dd/mm/aaaa",
+    documentDateHelp: "Formato dd/mm/aaaa. Hoy o una fecha pasada.",
+    supplierInvoiceNumber: "N.º de factura del proveedor",
+    supplierInvoicePlaceholder: "Ej.: F-00012345",
+    controlNumber: "N.º de control",
+    controlNumberPlaceholder: "Ej.: 00-00012345",
+    linesHeading: "Líneas recibidas",
+    noLines: "Sin líneas. Puedes guardar el borrador así, pero necesitas al menos una para emitir.",
+    product: "Producto",
+    orderedQuantity: "Pedido",
+    quantity: "Recibido",
+    unitCost: "Costo unitario",
+    iva: "IVA",
+    lineSubtotal: "Subtotal",
+    removeLine: "Quitar línea",
+    submit: "Guardar borrador",
+    submitting: "Guardando…",
+    issue: "Emitir",
+    issuing: "Emitiendo…",
+    issueDirtyHint: "Guardar borrador antes de emitir.",
+    delete: "Eliminar borrador",
+    deleting: "Eliminando…",
+    cancel: "Cancelar",
+    back: "Volver",
+    issueDialog: {
+      title: "¿Emitir recepción de mercancía?",
+      description:
+        "Al emitirla se congelará la tasa BCV, aumentará la existencia en almacén y se cerrará la orden de compra. Esta acción no se puede deshacer.",
+      confirm: "Emitir",
+      cancel: "Cancelar",
+    },
+    deleteDialog: {
+      title: "¿Eliminar este borrador?",
+      description:
+        "Esta acción elimina el borrador de la recepción de mercancía y no se puede deshacer.",
+      confirm: "Eliminar",
+      cancel: "Cancelar",
+    },
+  },
+  errors: {
+    FORBIDDEN_READ: "Solo un administrador, compras o almacén puede ver recepciones de mercancía.",
+    FORBIDDEN_WRITE: "Solo un administrador o almacén puede gestionar recepciones de mercancía.",
+    EMPTY_DOCUMENT: "La recepción debe tener al menos una línea para poder emitirla.",
+    DOCUMENT_NOT_DRAFT:
+      "Esta recepción de mercancía ya fue emitida y no se puede editar ni eliminar.",
+    saveFailed: "No se pudo guardar el borrador. Revisar la conexión e intentar de nuevo.",
+    deleteFailed: "No se pudo eliminar el borrador. Revisar la conexión e intentar de nuevo.",
+    issueFailed:
+      "No se pudo emitir la recepción de mercancía. Revisar la conexión e intentar de nuevo.",
   },
 } as const;

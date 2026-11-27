@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Role } from "../auth/session.ts";
 import { TAX_RATES, UNITS_OF_MEASURE } from "../catalog/products.ts";
 import { CurrencySchema, MoneyDto } from "../money.ts";
+import { DocumentTotals } from "./document-totals.ts";
 
 export const PURCHASE_ORDERS_PAGE_SIZE = 25;
 
@@ -76,17 +77,15 @@ export const PurchaseOrderLine = z.object({
 });
 export type PurchaseOrderLine = z.infer<typeof PurchaseOrderLine>;
 
-export const PurchaseOrderTotals = z.object({
-  subtotal: MoneyDto,
-  ivaByRate: z.object({
-    general: MoneyDto,
-    reduced: MoneyDto,
-    exempt: MoneyDto,
-  }),
-  ivaTotal: MoneyDto,
-  total: MoneyDto,
+export const PurchaseOrderTotals = DocumentTotals;
+export type PurchaseOrderTotals = DocumentTotals;
+
+/** The goods receipt of an order, when it has one: an order with an issued receipt is closed. */
+export const PurchaseOrderGoodsReceiptRef = z.object({
+  id: z.uuid(),
+  status: z.enum(DOCUMENT_STATUSES),
 });
-export type PurchaseOrderTotals = z.infer<typeof PurchaseOrderTotals>;
+export type PurchaseOrderGoodsReceiptRef = z.infer<typeof PurchaseOrderGoodsReceiptRef>;
 
 export const PurchaseOrder = z.object({
   id: z.uuid(),
@@ -98,6 +97,7 @@ export const PurchaseOrder = z.object({
   lines: z.array(PurchaseOrderLine),
   totals: PurchaseOrderTotals,
   vesTotalEquivalent: MoneyDto.nullable(),
+  goodsReceipt: PurchaseOrderGoodsReceiptRef.nullable(),
 });
 export type PurchaseOrder = z.infer<typeof PurchaseOrder>;
 
@@ -111,11 +111,17 @@ export const PurchaseOrderSummary = z.object({
   lineCount: z.number().int().min(0),
   totals: PurchaseOrderTotals,
   vesTotalEquivalent: MoneyDto.nullable(),
+  goodsReceipt: PurchaseOrderGoodsReceiptRef.nullable(),
 });
 export type PurchaseOrderSummary = z.infer<typeof PurchaseOrderSummary>;
 
 export const ListPurchaseOrdersQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
+  /** `true`: only issued orders that have no goods receipt yet (the ones that can still be received). */
+  unreceived: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((value) => value === "true"),
 });
 export type ListPurchaseOrdersQuery = z.infer<typeof ListPurchaseOrdersQuery>;
 

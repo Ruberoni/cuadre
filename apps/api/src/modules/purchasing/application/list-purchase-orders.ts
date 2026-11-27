@@ -16,9 +16,13 @@ export type ListPurchaseOrdersResult = {
 export async function listPurchaseOrdersUseCase(
   repository: PurchaseOrderRepository,
   lookups: PurchasingLookups,
-  { page }: { readonly page: number },
+  { page, unreceived }: { readonly page: number; readonly unreceived: boolean },
 ): Promise<ListPurchaseOrdersResult> {
-  const { items, total } = await repository.list({ page, pageSize: PURCHASE_ORDERS_PAGE_SIZE });
+  const { items, total } = await repository.list({
+    page,
+    pageSize: PURCHASE_ORDERS_PAGE_SIZE,
+    unreceivedOnly: unreceived,
+  });
   if (items.length === 0) {
     return { items: [], total, page, pageSize: PURCHASE_ORDERS_PAGE_SIZE };
   }
@@ -26,9 +30,10 @@ export async function listPurchaseOrdersUseCase(
   const supplierIds = items.map((order) => order.supplierId);
   const productIds = items.flatMap((order) => order.lines.map((line) => line.productId));
 
-  const [suppliersById, productsById] = await Promise.all([
+  const [suppliersById, productsById, receiptRefs] = await Promise.all([
     lookups.findSuppliersByIds(supplierIds),
     lookups.findProductsByIds(productIds),
+    repository.findGoodsReceiptRefs(items.map((order) => order.id)),
   ]);
 
   const enriched: EnrichedPurchaseOrder[] = items.map((order) => {
@@ -38,7 +43,7 @@ export async function listPurchaseOrdersUseCase(
         `Supplier ${order.supplierId} referenced by purchase order ${order.id} not found`,
       );
     }
-    return enrichPurchaseOrder(order, supplier, productsById);
+    return enrichPurchaseOrder(order, supplier, productsById, receiptRefs.get(order.id) ?? null);
   });
 
   return {

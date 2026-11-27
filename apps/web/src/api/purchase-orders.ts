@@ -10,8 +10,9 @@ import { apiRequest, unwrapOrThrow } from "@/api/client";
 
 const PURCHASE_ORDERS_KEY = ["purchase-orders"] as const;
 
-export function usePurchaseOrders(query: ListPurchaseOrdersQuery, enabled = true) {
-  const params = new URLSearchParams({ page: String(query.page) });
+export function usePurchaseOrders(query: Partial<ListPurchaseOrdersQuery>, enabled = true) {
+  const params = new URLSearchParams({ page: String(query.page ?? 1) });
+  if (query.unreceived) params.set("unreceived", "true");
   return useQuery({
     queryKey: [...PURCHASE_ORDERS_KEY, query],
     queryFn: async () =>
