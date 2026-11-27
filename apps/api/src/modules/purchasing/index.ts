@@ -86,5 +86,3 @@ export function createPurchasingModule({
     },
   };
 }
-
-export type PurchasingModule = ReturnType<typeof createPurchasingModule>;

@@ -19,7 +19,7 @@ export function useCustomers(query: ListCustomersQuery, enabled = true) {
   });
 }
 
-export function createCustomer(request: CreateCustomerRequest) {
+function createCustomer(request: CreateCustomerRequest) {
   return apiRequest("/customers", Customer, { method: "POST", body: request });
 }
 

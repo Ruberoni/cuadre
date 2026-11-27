@@ -35,7 +35,7 @@ import {
   type StoredPurchaseOrder,
 } from "./purchase-order.ts";
 
-export type DraftGoodsReceiptLineInput = {
+type DraftGoodsReceiptLineInput = {
   readonly purchaseOrderLineId: string;
   readonly quantity: string;
   readonly unitCost: { readonly minorUnits: number; readonly currency: Currency };
@@ -49,7 +49,7 @@ export type DraftGoodsReceiptInput = {
   readonly lines: readonly DraftGoodsReceiptLineInput[];
 };
 
-export type ValidatedGoodsReceiptLine = {
+type ValidatedGoodsReceiptLine = {
   readonly position: number;
   readonly purchaseOrderLineId: string;
   readonly productId: string;

@@ -34,7 +34,7 @@ export type NewProduct = {
 
 export type Product = NewProduct & { readonly id: string };
 
-export type ProductFieldIssue = FieldIssue<ProductField, ProductIssueCode>;
+type ProductFieldIssue = FieldIssue<ProductField, ProductIssueCode>;
 export type ProductValidationFailure = ValidationFailure<ProductField, ProductIssueCode>;
 
 function parseSalePrice(price: ProductInput["salePrice"]): Result<Money, ProductIssueCode> {

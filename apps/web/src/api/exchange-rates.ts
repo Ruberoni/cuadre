@@ -27,11 +27,11 @@ export function useCurrentExchangeRate(enabled = true) {
   });
 }
 
-export function recordExchangeRate(request: RecordExchangeRateRequest) {
+function recordExchangeRate(request: RecordExchangeRateRequest) {
   return apiRequest("/exchange-rates", ExchangeRate, { method: "POST", body: request });
 }
 
-export function correctExchangeRate({ date, rate }: { date: string; rate: string }) {
+function correctExchangeRate({ date, rate }: { date: string; rate: string }) {
   return apiRequest(`/exchange-rates/${encodeURIComponent(date)}`, ExchangeRate, {
     method: "PATCH",
     body: { rate },

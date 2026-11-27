@@ -13,7 +13,7 @@ import type {
 } from "../domain/purchase-order.ts";
 import type { PurchaseOrderRepository, PurchasingLookups } from "./purchase-order-repository.ts";
 
-export type GoodsReceiptListParams = { readonly page: number; readonly pageSize: number };
+type GoodsReceiptListParams = { readonly page: number; readonly pageSize: number };
 
 export type EnrichedGoodsReceipt = {
   readonly receipt: StoredGoodsReceipt;

@@ -31,7 +31,7 @@ import {
 
 const json = <T extends z.ZodType>(schema: T) => ({ "application/json": { schema } });
 
-export const listExchangeRatesRoute = createRoute({
+const listExchangeRatesRoute = createRoute({
   method: "get",
   path: "/exchange-rates",
   middleware: [allowRoles(EXCHANGE_RATE_ROLES.read)] as const,
@@ -47,7 +47,7 @@ export const listExchangeRatesRoute = createRoute({
   },
 });
 
-export const currentExchangeRateRoute = createRoute({
+const currentExchangeRateRoute = createRoute({
   method: "get",
   path: "/exchange-rates/current",
   middleware: [allowRoles(EXCHANGE_RATE_ROLES.read)] as const,
@@ -61,7 +61,7 @@ export const currentExchangeRateRoute = createRoute({
   },
 });
 
-export const recordExchangeRateRoute = createRoute({
+const recordExchangeRateRoute = createRoute({
   method: "post",
   path: "/exchange-rates",
   middleware: [allowRoles(EXCHANGE_RATE_ROLES.write)] as const,
@@ -79,7 +79,7 @@ export const recordExchangeRateRoute = createRoute({
   },
 });
 
-export const correctExchangeRateRoute = createRoute({
+const correctExchangeRateRoute = createRoute({
   method: "patch",
   path: "/exchange-rates/{date}",
   middleware: [allowRoles(EXCHANGE_RATE_ROLES.write)] as const,

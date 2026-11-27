@@ -32,7 +32,7 @@ export function errorBody(
  * the shape rejects (wrong type, unknown enum value, a price in another currency) is `INVALID`.
  * The business rules (format, length, price > 0) are the domain's and come back as the same issues.
  */
-export const validationHook: Hook<
+const validationHook: Hook<
   unknown,
   Env,
   string,
@@ -88,7 +88,7 @@ export const forbiddenResponse = {
 /** Every `OpenAPIHono` needs the hook itself: sub-apps do not inherit it. */
 export const openApiOptions = { defaultHook: validationHook };
 
-export function handleError(error: Error, c: Context): Response {
+function handleError(error: Error, c: Context): Response {
   // Malformed JSON bodies surface as a 400 HTTPException from the validator.
   if (error instanceof HTTPException && error.status === 400) {
     return c.json(errorBody("VALIDATION_ERROR"), 400);
@@ -97,7 +97,7 @@ export function handleError(error: Error, c: Context): Response {
   return c.json(errorBody("INTERNAL_ERROR"), 500);
 }
 
-export function handleNotFound(c: Context): Response {
+function handleNotFound(c: Context): Response {
   return c.json(errorBody("NOT_FOUND"), 404);
 }
 

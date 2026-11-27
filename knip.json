@@ -1,0 +1,15 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignore": [
+    ".agents/**",
+    ".claude/**",
+    "**/test/boundaries-fixtures/**",
+    "**/strictness.check.ts"
+  ],
+  "workspaces": {
+    "apps/web": {
+      "entry": ["src/components/ui/**/*.tsx"],
+      "ignoreDependencies": ["@tanstack/router-cli"]
+    }
+  }
+}

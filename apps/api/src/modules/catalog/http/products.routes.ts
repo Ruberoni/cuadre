@@ -22,7 +22,7 @@ import { CREATE_PRODUCT_ERROR_STATUS } from "./error-status.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ "application/json": { schema } });
 
-export const createProductRoute = createRoute({
+const createProductRoute = createRoute({
   method: "post",
   path: "/products",
   middleware: [allowRoles(PRODUCT_ROLES.write)] as const,
@@ -36,7 +36,7 @@ export const createProductRoute = createRoute({
   },
 });
 
-export const listProductsRoute = createRoute({
+const listProductsRoute = createRoute({
   method: "get",
   path: "/products",
   middleware: [allowRoles(PRODUCT_ROLES.read)] as const,

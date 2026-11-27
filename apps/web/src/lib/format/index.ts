@@ -1,4 +1,4 @@
-export { type Currency, MAX_MINOR_UNITS } from "@cuadre/shared-kernel";
+export { MAX_MINOR_UNITS } from "@cuadre/shared-kernel";
 export { addDays, formatDate, parseDate, todayCaracas } from "./date.ts";
 export {
   currencySymbol,

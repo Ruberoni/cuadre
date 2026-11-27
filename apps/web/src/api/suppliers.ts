@@ -19,7 +19,7 @@ export function useSuppliers(query: ListSuppliersQuery, enabled = true) {
   });
 }
 
-export function createSupplier(request: CreateSupplierRequest) {
+function createSupplier(request: CreateSupplierRequest) {
   return apiRequest("/suppliers", Supplier, { method: "POST", body: request });
 }
 

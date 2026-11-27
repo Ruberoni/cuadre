@@ -10,7 +10,7 @@ import {
   type ValidatedDraftPurchaseOrder,
 } from "../domain/purchase-order.ts";
 
-export type PurchaseOrderListParams = {
+type PurchaseOrderListParams = {
   readonly page: number;
   readonly pageSize: number;
   /** Only issued orders with no goods receipt yet (the ones that can still be received). */

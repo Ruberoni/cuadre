@@ -17,7 +17,7 @@ import { toPartnerDto } from "./partner-dto.ts";
 
 const json = <T extends z.ZodType>(schema: T) => ({ "application/json": { schema } });
 
-export const createSupplierRoute = createRoute({
+const createSupplierRoute = createRoute({
   method: "post",
   path: "/suppliers",
   middleware: [allowRoles(SUPPLIER_ROLES.write)] as const,
@@ -39,7 +39,7 @@ export const createSupplierRoute = createRoute({
   },
 });
 
-export const listSuppliersRoute = createRoute({
+const listSuppliersRoute = createRoute({
   method: "get",
   path: "/suppliers",
   middleware: [allowRoles(SUPPLIER_ROLES.read)] as const,

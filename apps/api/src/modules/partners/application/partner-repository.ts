@@ -10,12 +10,12 @@ export type PartnerListParams = {
   readonly pageSize: number;
 };
 
-export type PartnerListPage = {
+type PartnerListPage = {
   readonly items: readonly Partner[];
   readonly total: number;
 };
 
-export type SavePartnerResult =
+type SavePartnerResult =
   | { ok: true; value: Partner; promoted: boolean }
   | { ok: false; error: "RIF_ALREADY_EXISTS" }
   | { ok: false; error: "PARTNER_ALREADY_EXISTS"; partnerName: string };

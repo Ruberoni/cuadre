@@ -17,7 +17,7 @@ env:
 
 jobs:
   static:
-    name: static (typecheck, lint, boundaries)
+    name: static (typecheck, lint, boundaries, knip)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -34,6 +34,8 @@ jobs:
         run: pnpm exec biome ci .
       - name: Module boundaries
         run: pnpm lint:boundaries
+      - name: Dead code (Knip)
+        run: pnpm lint:knip
       - name: Route tree is up to date
         run: |
           pnpm --filter @cuadre/web exec tsr generate

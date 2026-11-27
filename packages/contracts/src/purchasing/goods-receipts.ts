@@ -84,12 +84,12 @@ export type GoodsReceiptLine = z.infer<typeof GoodsReceiptLine>;
 export const GoodsReceiptTotals = DocumentTotals;
 export type GoodsReceiptTotals = DocumentTotals;
 
-export const GoodsReceiptPurchaseOrderRef = z.object({
+const GoodsReceiptPurchaseOrderRef = z.object({
   id: z.uuid(),
   documentDate: z.string(),
 });
 
-export const GoodsReceiptSupplier = z.object({
+const GoodsReceiptSupplier = z.object({
   id: z.uuid(),
   rif: z.string(),
   name: z.string(),

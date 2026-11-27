@@ -43,7 +43,7 @@ export type PurchaseOrderSupplierRef = {
   readonly name: string;
 };
 
-export type DraftPurchaseOrderLineInput = {
+type DraftPurchaseOrderLineInput = {
   readonly productId: string;
   readonly quantity: string;
   readonly unitCost: { readonly minorUnits: number; readonly currency: Currency };
@@ -56,7 +56,7 @@ export type DraftPurchaseOrderInput = {
   readonly lines: readonly DraftPurchaseOrderLineInput[];
 };
 
-export type ValidatedPurchaseOrderLine = {
+type ValidatedPurchaseOrderLine = {
   readonly position: number;
   readonly productId: string;
   readonly quantity: Quantity;

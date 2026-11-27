@@ -2,7 +2,7 @@ import type { CalendarDate, Rate, Result } from "@cuadre/shared-kernel";
 import type { DbExecutor, DbTransaction } from "../../../db/client.ts";
 import type { ExchangeRateRecord } from "../domain/exchange-rate.ts";
 
-export type ExchangeRateListResult = {
+type ExchangeRateListResult = {
   items: ExchangeRateRecord[];
   total: number;
 };
