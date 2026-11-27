@@ -91,6 +91,8 @@ export function useIssueGoodsReceipt(id: string) {
         queryClient.setQueryData([...GOODS_RECEIPTS_KEY, "detail", id], result.value);
         void queryClient.invalidateQueries({ queryKey: GOODS_RECEIPTS_KEY });
         void queryClient.invalidateQueries({ queryKey: PURCHASE_ORDERS_KEY });
+        void queryClient.invalidateQueries({ queryKey: ["products"] });
+        void queryClient.invalidateQueries({ queryKey: ["kardex"] });
       }
     },
   });

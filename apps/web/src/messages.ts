@@ -12,6 +12,7 @@ import type {
   ProductIssueCode,
   PurchaseOrderIssueCode,
   Role,
+  StockMovementReferenceType,
   TaxRate,
   UnitOfMeasure,
 } from "@cuadre/contracts";
@@ -134,6 +135,7 @@ export const productsMessages = {
     unitOfMeasure: "Unidad de medida",
     taxRate: "IVA",
     salePrice: "Precio de venta",
+    onHand: "Existencia",
   },
   pager: (from: number, to: number, total: number) => `${from}–${to} de ${total} productos`,
   previousPage: "Página anterior",
@@ -174,6 +176,7 @@ export const shellMessages = {
   navGroups: {
     general: "General",
     purchasing: "Compras",
+    inventory: "Inventario",
     sales: "Ventas",
   },
   products: "Productos",
@@ -181,6 +184,7 @@ export const shellMessages = {
   suppliers: "Proveedores",
   purchaseOrders: "Órdenes de compra",
   goodsReceipts: "Recepciones de mercancía",
+  kardex: "Kardex",
   customers: "Clientes",
   headerRatePrefix: (date: string) => `Tasa BCV ${date}`,
   noRateBadge: "Sin tasa BCV",
@@ -747,4 +751,55 @@ export const goodsReceiptsMessages = {
     issueFailed:
       "No se pudo emitir la recepción de mercancía. Revisar la conexión e intentar de nuevo.",
   },
+} as const;
+
+export const kardexMessages = {
+  pageTitle: "Kardex",
+  productLabel: "Producto",
+  productPlaceholder: "Seleccionar producto…",
+  productSearchPlaceholder: "Buscar por código o nombre…",
+  productNoResults: "Sin productos que coincidan.",
+  productLoading: "Cargando productos…",
+  viewKardexLabel: (sku: string) => `Ver kardex de ${sku}`,
+  summary: {
+    onHand: "Existencia",
+    averageCost: "Costo promedio",
+    unitOfMeasure: "Unidad de medida",
+    noAverageCost: "—",
+  },
+  tableCaption: (productName: string) => `Kardex de ${productName}, ordenado cronológicamente`,
+  columns: {
+    documentDate: "Fecha",
+    document: "Documento",
+    inbound: "Entrada",
+    outbound: "Salida",
+    unitCost: "Costo unitario",
+    averageCostAfter: "Costo promedio",
+    onHandAfter: "Existencia",
+  },
+  emptyCell: "—",
+  referenceDocument: (type: StockMovementReferenceType, referenceNumber: string | null) => {
+    switch (type) {
+      case "GOODS_RECEIPT":
+        return referenceNumber === null
+          ? "Recepción de mercancía"
+          : `Recepción · ${referenceNumber}`;
+    }
+  },
+  pager: (from: number, to: number, total: number) => `${from}–${to} de ${total} movimientos`,
+  previousPage: "Página anterior",
+  nextPage: "Página siguiente",
+  emptySelection: {
+    title: "Selecciona un producto para ver su kardex.",
+    description:
+      "Consulta las entradas, salidas, costo promedio y existencia en orden cronológico.",
+  },
+  emptyMovements: {
+    title: "Sin movimientos para este producto",
+    description: "Los movimientos aparecerán al emitir recepciones de mercancía o facturas.",
+  },
+  loadError: "No se pudo cargar el kardex. Revisar la conexión e intentar de nuevo.",
+  notFound: "No se encontró el producto seleccionado.",
+  forbidden: "Solo un administrador, compras o almacén puede ver el kardex.",
+  retry: "Reintentar",
 } as const;

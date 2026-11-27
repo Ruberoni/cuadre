@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppClientesIndexRouteImport } from './routes/_app/clientes/index'
+import { Route as AppKardexIndexRouteImport } from './routes/_app/kardex/index'
 import { Route as AppOrdenesDeCompraIndexRouteImport } from './routes/_app/ordenes-de-compra/index'
 import { Route as AppOrdenesDeCompraIdRouteImport } from './routes/_app/ordenes-de-compra/$id'
 import { Route as AppOrdenesDeCompraNuevaRouteImport } from './routes/_app/ordenes-de-compra/nueva'
@@ -41,6 +42,11 @@ const LoginRoute = LoginRouteImport.update({
 const AppClientesIndexRoute = AppClientesIndexRouteImport.update({
   id: '/clientes/',
   path: '/clientes/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppKardexIndexRoute = AppKardexIndexRouteImport.update({
+  id: '/kardex/',
+  path: '/kardex/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppOrdenesDeCompraIndexRoute = AppOrdenesDeCompraIndexRouteImport.update({
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/recepciones-de-mercancia/$id': typeof AppRecepcionesDeMercanciaIdRoute
   '/recepciones-de-mercancia/nueva': typeof AppRecepcionesDeMercanciaNuevaRoute
   '/clientes/': typeof AppClientesIndexRoute
+  '/kardex/': typeof AppKardexIndexRoute
   '/ordenes-de-compra/': typeof AppOrdenesDeCompraIndexRoute
   '/productos/': typeof AppProductosIndexRoute
   '/proveedores/': typeof AppProveedoresIndexRoute
@@ -121,6 +128,7 @@ export interface FileRoutesByTo {
   '/recepciones-de-mercancia/$id': typeof AppRecepcionesDeMercanciaIdRoute
   '/recepciones-de-mercancia/nueva': typeof AppRecepcionesDeMercanciaNuevaRoute
   '/clientes': typeof AppClientesIndexRoute
+  '/kardex': typeof AppKardexIndexRoute
   '/ordenes-de-compra': typeof AppOrdenesDeCompraIndexRoute
   '/productos': typeof AppProductosIndexRoute
   '/proveedores': typeof AppProveedoresIndexRoute
@@ -138,6 +146,7 @@ export interface FileRoutesById {
   '/_app/recepciones-de-mercancia/$id': typeof AppRecepcionesDeMercanciaIdRoute
   '/_app/recepciones-de-mercancia/nueva': typeof AppRecepcionesDeMercanciaNuevaRoute
   '/_app/clientes/': typeof AppClientesIndexRoute
+  '/_app/kardex/': typeof AppKardexIndexRoute
   '/_app/ordenes-de-compra/': typeof AppOrdenesDeCompraIndexRoute
   '/_app/productos/': typeof AppProductosIndexRoute
   '/_app/proveedores/': typeof AppProveedoresIndexRoute
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/recepciones-de-mercancia/$id'
     | '/recepciones-de-mercancia/nueva'
     | '/clientes/'
+    | '/kardex/'
     | '/ordenes-de-compra/'
     | '/productos/'
     | '/proveedores/'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/recepciones-de-mercancia/$id'
     | '/recepciones-de-mercancia/nueva'
     | '/clientes'
+    | '/kardex'
     | '/ordenes-de-compra'
     | '/productos'
     | '/proveedores'
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
     | '/_app/recepciones-de-mercancia/$id'
     | '/_app/recepciones-de-mercancia/nueva'
     | '/_app/clientes/'
+    | '/_app/kardex/'
     | '/_app/ordenes-de-compra/'
     | '/_app/productos/'
     | '/_app/proveedores/'
@@ -227,6 +239,13 @@ declare module '@tanstack/react-router' {
       path: '/clientes'
       fullPath: '/clientes/'
       preLoaderRoute: typeof AppClientesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/kardex/': {
+      id: '/_app/kardex/'
+      path: '/kardex'
+      fullPath: '/kardex/'
+      preLoaderRoute: typeof AppKardexIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/ordenes-de-compra/': {
@@ -309,6 +328,7 @@ interface AppRouteChildren {
   AppRecepcionesDeMercanciaIdRoute: typeof AppRecepcionesDeMercanciaIdRoute
   AppRecepcionesDeMercanciaNuevaRoute: typeof AppRecepcionesDeMercanciaNuevaRoute
   AppClientesIndexRoute: typeof AppClientesIndexRoute
+  AppKardexIndexRoute: typeof AppKardexIndexRoute
   AppOrdenesDeCompraIndexRoute: typeof AppOrdenesDeCompraIndexRoute
   AppProductosIndexRoute: typeof AppProductosIndexRoute
   AppProveedoresIndexRoute: typeof AppProveedoresIndexRoute
@@ -323,6 +343,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppRecepcionesDeMercanciaIdRoute: AppRecepcionesDeMercanciaIdRoute,
   AppRecepcionesDeMercanciaNuevaRoute: AppRecepcionesDeMercanciaNuevaRoute,
   AppClientesIndexRoute: AppClientesIndexRoute,
+  AppKardexIndexRoute: AppKardexIndexRoute,
   AppOrdenesDeCompraIndexRoute: AppOrdenesDeCompraIndexRoute,
   AppProductosIndexRoute: AppProductosIndexRoute,
   AppProveedoresIndexRoute: AppProveedoresIndexRoute,
