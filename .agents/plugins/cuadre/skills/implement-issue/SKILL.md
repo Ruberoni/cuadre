@@ -33,7 +33,7 @@ Apply this workflow to the target GitHub issue number `<n>` provided by the main
 2. Draft the implementation plan.
 3. **Review it:** invoke the `plan-reviewer` subagent via `invoke_subagent` with the issue number and your draft plan. Take what is right, reject what is not, and keep a note of both.
 4. Ask the maintainer every open question at once with `ask_question` (a second round only if an answer opens something new). An ambiguous fiscal rule is asked, never guessed; record the answer in the PR.
-5. Present the final plan as an artifact using `write_file` with `ArtifactMetadata: { UserFacing: true, RequestFeedback: true }` containing:
+5. Present the final plan: if Plan Mode is active (where `write_file` is read-only/blocked), present the full plan directly in chat and wait for explicit maintainer approval before calling `exit_plan_mode`; otherwise write it as an artifact using `write_file` with `ArtifactMetadata: { UserFacing: true, RequestFeedback: true }`. Include:
    1. Steps, each as `step → verify: <command or test>`.
    2. Table: acceptance criterion → the test that covers it.
    3. `REVIEW.md` items the diff will trigger.
