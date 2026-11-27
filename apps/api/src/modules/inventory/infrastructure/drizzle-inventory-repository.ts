@@ -1,8 +1,8 @@
-import { money } from "@cuadre/shared-kernel";
+import { money, parseQuantity } from "@cuadre/shared-kernel";
 import { asc, eq, inArray } from "drizzle-orm";
-import type { Db, DbTransaction } from "../../../db/client.ts";
+import type { Db, DbExecutor } from "../../../db/client.ts";
 import type { InventoryRepository } from "../application/inventory-repository.ts";
-import { type StockBalance, zeroStockBalance } from "../domain/stock.ts";
+import { type LedgerMovementInput, type StockBalance, zeroStockBalance } from "../domain/stock.ts";
 import { stockBalancesTable, stockMovementsTable } from "./inventory.table.ts";
 
 /** Postgres `numeric(15, 3)` text (`"12.345"`) ↔ thousandths. */
@@ -69,13 +69,51 @@ export function createDrizzleInventoryRepository(db: Db): InventoryRepository {
       );
     },
 
-    async findBalance(productId, executor: DbTransaction | undefined) {
+    async findBalance(productId, executor: DbExecutor | undefined) {
       const [row] = await (executor ?? db)
         .select()
         .from(stockBalancesTable)
         .where(eq(stockBalancesTable.productId, productId))
         .limit(1);
       return row === undefined ? zeroStockBalance(productId) : toBalance(row);
+    },
+
+    async findBalancesByProductIds(productIds, executor: DbExecutor | undefined) {
+      const uniqueIds = [...new Set(productIds)];
+      if (uniqueIds.length === 0) return new Map();
+      const rows = await (executor ?? db)
+        .select()
+        .from(stockBalancesTable)
+        .where(inArray(stockBalancesTable.productId, uniqueIds));
+      return new Map(rows.map((row) => [row.productId, toBalance(row)]));
+    },
+
+    async listMovementsByProduct(productId) {
+      const rows = await db
+        .select()
+        .from(stockMovementsTable)
+        .where(eq(stockMovementsTable.productId, productId))
+        .orderBy(
+          asc(stockMovementsTable.documentDate),
+          asc(stockMovementsTable.createdAt),
+          asc(stockMovementsTable.id),
+        );
+      return rows.map((row): LedgerMovementInput => {
+        const quantity = parseQuantity(row.quantity, { allowDecimals: true });
+        const totalCostUsd = money(row.totalCostUsdMinor, "USD");
+        if (!quantity.ok || !totalCostUsd.ok) {
+          throw new Error(`Stock movement ${row.id} in the database breaks domain rules`);
+        }
+        return {
+          id: row.id,
+          documentDate: row.documentDate,
+          direction: row.direction,
+          quantity: quantity.value,
+          totalCostUsd: totalCostUsd.value,
+          referenceType: row.referenceType,
+          referenceId: row.referenceId,
+        };
+      });
     },
   };
 }

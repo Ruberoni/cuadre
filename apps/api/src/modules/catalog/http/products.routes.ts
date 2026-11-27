@@ -49,7 +49,7 @@ export const listProductsRoute = createRoute({
   },
 });
 
-function toDto(product: Product): ProductDto {
+function toDto(product: Product, onHand = "0"): ProductDto {
   return {
     id: product.id,
     sku: product.sku,
@@ -57,15 +57,19 @@ function toDto(product: Product): ProductDto {
     unitOfMeasure: product.unitOfMeasure,
     salePrice: { minorUnits: product.salePrice.minorUnits, currency: "USD" },
     taxRate: product.taxRate,
+    onHand,
   };
 }
 
-export function createProductRoutes(products: ProductRepository) {
+export function createProductRoutes(
+  products: ProductRepository,
+  getOnHandByProductIds?: (productIds: readonly string[]) => Promise<ReadonlyMap<string, string>>,
+) {
   const routes = new OpenAPIHono(openApiOptions);
 
   routes.openapi(createProductRoute, async (c) => {
     const result = await createProductUseCase(products, c.req.valid("json"));
-    if (result.ok) return c.json(toDto(result.value), 201);
+    if (result.ok) return c.json(toDto(result.value, "0"), 201);
 
     const status = CREATE_PRODUCT_ERROR_STATUS[result.error];
     if (result.error === "VALIDATION_ERROR") {
@@ -76,7 +80,14 @@ export function createProductRoutes(products: ProductRepository) {
 
   routes.openapi(listProductsRoute, async (c) => {
     const page = await listProductsUseCase(products, c.req.valid("query"));
-    return c.json({ ...page, items: page.items.map(toDto) }, 200);
+    const onHandById =
+      page.items.length > 0 && getOnHandByProductIds !== undefined
+        ? await getOnHandByProductIds(page.items.map((item) => item.id))
+        : new Map<string, string>();
+    return c.json(
+      { ...page, items: page.items.map((item) => toDto(item, onHandById.get(item.id) ?? "0")) },
+      200,
+    );
   });
 
   return routes;

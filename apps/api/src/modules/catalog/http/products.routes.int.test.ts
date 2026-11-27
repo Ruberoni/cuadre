@@ -1,9 +1,11 @@
+import { money, parseQuantity, parseRate } from "@cuadre/shared-kernel";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { resetDatabase } from "../../../../test/reset-database.ts";
 import { expectAllowedRoles, type Sessions, signInAll } from "../../../../test/roles.ts";
 import { createTestApp, signIn } from "../../../../test/sign-in.ts";
 import { testDatabaseUrl } from "../../../../test/test-database.ts";
 import { createDb } from "../../../db/client.ts";
+import { createInventoryModule } from "../../inventory/index.ts";
 
 const { db, close } = createDb(testDatabaseUrl());
 const testApp = createTestApp(db);
@@ -50,6 +52,7 @@ describe("POST /api/products", () => {
       unitOfMeasure: "BULK",
       salePrice: { minorUnits: 145, currency: "USD" },
       taxRate: "EXEMPT",
+      onHand: "0",
     });
   });
 
@@ -231,6 +234,46 @@ describe("roles (PLAN → Roles: admin writes, every role reads)", () => {
 
     expect(res.status).toBe(200);
     expect(skusOf((await res.json()) as Page)).toEqual(["HAR-PAN-1K"]);
+  });
+
+  it("includes canonical onHand for every role including sales (150.5 kg)", async () => {
+    const created = (await (
+      await post({
+        sku: "POL-FRE-KG",
+        name: "Pollo fresco entero",
+        unitOfMeasure: "KILOGRAM",
+        salePrice: { minorUnits: 410, currency: "USD" },
+        taxRate: "EXEMPT",
+      })
+    ).json()) as { id: string };
+
+    const inventory = createInventoryModule({ db });
+    const qty = parseQuantity("150.5", { allowDecimals: true });
+    const cost = money(300, "USD");
+    const rate = parseRate("36.5");
+    if (!qty.ok || !cost.ok || !rate.ok) throw new Error("bad fixture");
+    await db.transaction((tx) =>
+      inventory.recordInboundMovements(
+        [
+          {
+            productId: created.id,
+            quantity: qty.value,
+            unitCost: cost.value,
+            frozenRate: rate.value,
+            referenceType: "GOODS_RECEIPT",
+            referenceId: "33333333-3333-4333-8333-333333333333",
+            documentDate: "2026-11-24",
+          },
+        ],
+        tx,
+      ),
+    );
+
+    session = sessions.sales;
+    const res = await get("/api/products");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { items: { sku: string; onHand: string }[] };
+    expect(body.items).toEqual([expect.objectContaining({ sku: "POL-FRE-KG", onHand: "150.5" })]);
   });
 });
 

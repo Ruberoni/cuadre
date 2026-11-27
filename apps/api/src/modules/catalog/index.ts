@@ -5,11 +5,21 @@ import { createProductRoutes } from "./http/products.routes.ts";
 import { createDrizzleProductRepository } from "./infrastructure/drizzle-product-repository.ts";
 import { seedProducts } from "./infrastructure/seed-products.ts";
 
-export function createCatalogModule({ db }: { db: Db }) {
+export type CatalogStockLookup = (
+  productIds: readonly string[],
+) => Promise<ReadonlyMap<string, string>>;
+
+export function createCatalogModule({
+  db,
+  getOnHandByProductIds,
+}: {
+  db: Db;
+  getOnHandByProductIds?: CatalogStockLookup;
+}) {
   const products = createDrizzleProductRepository(db);
   return {
     /** Mounted by the app under `/api`. */
-    routes: createProductRoutes(products),
+    routes: createProductRoutes(products, getOnHandByProductIds),
     /** Loads the fictitious demo products; safe to run again. */
     seed: () => seedProducts(products),
     /** Batch read-only product lookup by ids for other modules (ADR-001, ADR-008). */

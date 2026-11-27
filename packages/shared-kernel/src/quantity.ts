@@ -57,11 +57,16 @@ export function parseQuantity(
   return ok({ scaled } as Quantity);
 }
 
-/** Canonical dot-decimal string without trailing fractional zeros: `100000n` → `"100"`, `12345n` → `"12.345"`. */
-export function quantityToString(quantity: Quantity): string {
-  const whole = quantity.scaled / QUANTITY_SCALE;
-  const frac = quantity.scaled % QUANTITY_SCALE;
+/** Canonical dot-decimal string without trailing fractional zeros: `0n` → `"0"`, `100000n` → `"100"`, `150500n` → `"150.5"`. */
+export function scaledQuantityToString(scaled: bigint): string {
+  const whole = scaled / QUANTITY_SCALE;
+  const frac = scaled % QUANTITY_SCALE;
   if (frac === 0n) return whole.toString();
   const fracText = frac.toString().padStart(QUANTITY_DECIMALS, "0").replace(/0+$/, "");
   return `${whole.toString()}.${fracText}`;
+}
+
+/** Canonical dot-decimal string without trailing fractional zeros: `100000n` → `"100"`, `12345n` → `"12.345"`. */
+export function quantityToString(quantity: Quantity): string {
+  return scaledQuantityToString(quantity.scaled);
 }

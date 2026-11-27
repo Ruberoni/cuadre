@@ -61,6 +61,7 @@ export type GoodsReceiptRepository = {
   markIssued(id: string, frozenRate: Rate, tx: DbTransaction): Promise<StoredGoodsReceipt>;
   findById(id: string): Promise<StoredGoodsReceipt | null>;
   findByPurchaseOrderId(purchaseOrderId: string): Promise<StoredGoodsReceipt | null>;
+  findInvoiceNumbersByIds(ids: readonly string[]): Promise<Map<string, string>>;
   list(params: GoodsReceiptListParams): Promise<{ items: StoredGoodsReceipt[]; total: number }>;
 };
 

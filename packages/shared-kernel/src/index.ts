@@ -37,6 +37,7 @@ export {
   type Quantity,
   type QuantityError,
   quantityToString,
+  scaledQuantityToString,
 } from "./quantity.ts";
 export { parseRate, type Rate, rateToString } from "./rate.ts";
 export { err, ok, type Result } from "./result.ts";
