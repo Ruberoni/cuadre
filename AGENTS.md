@@ -48,7 +48,7 @@ pnpm test:unit
 pnpm test:integration
 pnpm test:e2e            # Playwright acceptance tests (starts api + web on the cuadre_e2e database; needs Postgres) + Button browser test (PLAYWRIGHT_CHANNEL=msedge uses an installed browser)
 pnpm typecheck
-pnpm lint                # Biome + dependency-cruiser (pnpm lint:boundaries)
+pnpm lint                # Biome + dependency-cruiser (pnpm lint:boundaries) + Knip (pnpm lint:knip)
 pnpm verify              # Postgres -> fresh cuadre_e2e -> migrate -> seed -> boot api + web -> smoke E2E (ADR-014); one run at a time per machine
 ```
 

@@ -31,7 +31,7 @@ export type ExchangeRateRecord = {
   readonly frozen: boolean;
 };
 
-export type ExchangeRateFieldIssue = FieldIssue<ExchangeRateField, ExchangeRateIssueCode>;
+type ExchangeRateFieldIssue = FieldIssue<ExchangeRateField, ExchangeRateIssueCode>;
 export type ExchangeRateValidationFailure = ValidationFailure<
   ExchangeRateField,
   ExchangeRateIssueCode

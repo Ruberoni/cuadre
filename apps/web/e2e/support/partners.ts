@@ -14,7 +14,7 @@ export type NewPartnerFixture = {
  * Creates a supplier or customer through the API, the way the acceptance examples say "Given X
  * exists". Signs the request context in as the seeded admin first (the API needs a session).
  */
-export async function givenPartner(
+async function givenPartner(
   request: APIRequestContext,
   resource: "/suppliers" | "/customers",
   partner: NewPartnerFixture,

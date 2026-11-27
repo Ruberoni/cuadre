@@ -27,7 +27,7 @@ export function useProducts(query: ListProductsQuery, enabled = true) {
   });
 }
 
-export function createProduct(request: CreateProductRequest) {
+function createProduct(request: CreateProductRequest) {
   return apiRequest("/products", Product, { method: "POST", body: request });
 }
 

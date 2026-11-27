@@ -13,7 +13,7 @@ import { parsePartnerAddress, parsePartnerEmail, parsePartnerPhone } from "./par
 import { type PartnerName, parsePartnerName } from "./partner-name.ts";
 
 /** What a caller sends to create a partner: untrusted text, checked by `createSupplier` / `createCustomer`. */
-export type PartnerInput = {
+type PartnerInput = {
   readonly rif: string;
   readonly name: string;
   readonly phone?: string | null | undefined;
@@ -37,11 +37,9 @@ export type NewPartner = {
 
 export type Partner = NewPartner & { readonly id: string };
 
-export type PartnerFieldIssue = FieldIssue<PartnerField, PartnerIssueCode>;
-export type PartnerValidationFailure = ValidationFailure<PartnerField, PartnerIssueCode>;
-export type SupplierFieldIssue = PartnerFieldIssue;
+type PartnerFieldIssue = FieldIssue<PartnerField, PartnerIssueCode>;
+type PartnerValidationFailure = ValidationFailure<PartnerField, PartnerIssueCode>;
 export type SupplierValidationFailure = PartnerValidationFailure;
-export type CustomerFieldIssue = PartnerFieldIssue;
 export type CustomerValidationFailure = PartnerValidationFailure;
 
 /** Enforces every partner rule and reports all invalid fields at once. */

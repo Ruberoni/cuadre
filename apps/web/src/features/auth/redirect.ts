@@ -1,6 +1,6 @@
 /** Where a signed-in user lands when there is nowhere (safe) to return to. */
 export const HOME_PATH = "/productos";
-export const LOGIN_PATH = "/login";
+const LOGIN_PATH = "/login";
 
 /**
  * The `redirect` search param of Login, made safe: only a path on this same origin (never another
