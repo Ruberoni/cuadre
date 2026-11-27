@@ -1,6 +1,7 @@
+import type { UnitOfMeasure } from "@cuadre/contracts";
 import type { Money, Quantity, Rate, Result } from "@cuadre/shared-kernel";
-import type { DbTransaction } from "../../../db/client.ts";
-import type { StockBalance } from "../domain/stock.ts";
+import type { DbExecutor, DbTransaction } from "../../../db/client.ts";
+import type { LedgerMovementInput, StockBalance } from "../domain/stock.ts";
 
 /** One inbound line, as the owner of the source document (e.g. a goods receipt) describes it. */
 export type InboundMovementInput = {
@@ -32,6 +33,21 @@ export type StockMovementRow = {
   readonly documentDate: string;
 };
 
+export type KardexProductRef = {
+  readonly id: string;
+  readonly sku: string;
+  readonly name: string;
+  readonly unitOfMeasure: UnitOfMeasure;
+};
+
+/** Read-only cross-module lookups needed by the kardex use case (injected by app wiring, ADR-001). */
+export type KardexLookups = {
+  findProductById(productId: string): Promise<KardexProductRef | null>;
+  findGoodsReceiptInvoiceNumbersByIds?(
+    ids: readonly string[],
+  ): Promise<ReadonlyMap<string, string>>;
+};
+
 export type InventoryRepository = {
   /** Makes sure each product has a balance row, then locks them (`FOR UPDATE`), sorted by product id. */
   lockBalances(
@@ -40,5 +56,11 @@ export type InventoryRepository = {
   ): Promise<Map<string, StockBalance>>;
   saveBalance(balance: StockBalance, tx: DbTransaction): Promise<void>;
   insertMovements(rows: readonly StockMovementRow[], tx: DbTransaction): Promise<void>;
-  findBalance(productId: string, executor: DbTransaction | undefined): Promise<StockBalance>;
+  findBalance(productId: string, executor: DbExecutor | undefined): Promise<StockBalance>;
+  findBalancesByProductIds(
+    productIds: readonly string[],
+    executor?: DbExecutor,
+  ): Promise<Map<string, StockBalance>>;
+  /** Chronological movements for one product (`documentDate ASC, createdAt ASC, id ASC`). */
+  listMovementsByProduct(productId: string): Promise<LedgerMovementInput[]>;
 };

@@ -29,8 +29,11 @@ export function createApp({ db, auth, today }: { db: Db; auth: Auth; today?: () 
   // endpoint must declare its roles with `allowRoles`: one that does not answers 403 to everyone.
   app.use("/api/*", requireSession(auth), requireRoleDeclaration());
 
-  const catalog = createCatalogModule({ db });
   const inventory = createInventoryModule({ db });
+  const catalog = createCatalogModule({
+    db,
+    getOnHandByProductIds: (ids) => inventory.getOnHandByProductIds(ids),
+  });
   const partners = createPartnersModule({ db });
   const exchangeRates = createExchangeRatesModule({
     db,
@@ -44,9 +47,15 @@ export function createApp({ db, auth, today }: { db: Db; auth: Auth; today?: () 
     inventory,
     ...(today === undefined ? {} : { today }),
   });
+  const inventoryRoutes = inventory.createRoutes({
+    findProductById: async (id) => (await catalog.findProductsByIds([id])).get(id) ?? null,
+    findGoodsReceiptInvoiceNumbersByIds: (ids) =>
+      purchasing.findGoodsReceiptInvoiceNumbersByIds(ids),
+  });
 
   app.route("/api", catalog.routes);
   app.route("/api", exchangeRates.routes);
+  app.route("/api", inventoryRoutes);
   app.route("/api", partners.routes);
   app.route("/api", purchasing.routes);
 

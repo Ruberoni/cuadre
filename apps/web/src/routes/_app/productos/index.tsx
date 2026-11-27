@@ -1,4 +1,5 @@
 import {
+  KARDEX_ROLES,
   PRODUCT_ROLES,
   PRODUCTS_PAGE_SIZE,
   type Product,
@@ -6,7 +7,7 @@ import {
 } from "@cuadre/contracts";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { SearchIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useProducts } from "@/api/products";
 import { usePageTitle, useSignedInUser } from "@/components/app-layout";
 import { type Column, DataTable, Pager, type SortOrder } from "@/components/data-table";
@@ -14,8 +15,13 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { productsSearchSchema } from "@/features/products/search";
-import { formatMoney } from "@/lib/format";
-import { productsMessages, taxRateColumnLabels, unitOfMeasureLabels } from "@/messages";
+import { formatMoney, formatQuantity } from "@/lib/format";
+import {
+  kardexMessages,
+  productsMessages,
+  taxRateColumnLabels,
+  unitOfMeasureLabels,
+} from "@/messages";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -24,48 +30,71 @@ export const Route = createFileRoute("/_app/productos/")({
   component: ProductsList,
 });
 
-const columns: readonly Column<Product, ProductSortField>[] = [
-  {
-    id: "sku",
-    header: productsMessages.columns.sku,
-    sortKey: "sku",
-    // Plain text until "Editar producto" exists (#36).
-    cell: (product) => <span className="font-medium tabular-nums">{product.sku}</span>,
-  },
-  {
-    id: "name",
-    header: productsMessages.columns.name,
-    sortKey: "name",
-    cell: (product) => (
-      <span className="block max-w-96 truncate" title={product.name}>
-        {product.name}
-      </span>
-    ),
-  },
-  {
-    id: "unitOfMeasure",
-    header: productsMessages.columns.unitOfMeasure,
-    cell: (product) => unitOfMeasureLabels[product.unitOfMeasure],
-  },
-  {
-    id: "taxRate",
-    header: productsMessages.columns.taxRate,
-    align: "right",
-    cell: (product) => taxRateColumnLabels[product.taxRate],
-  },
-  {
-    id: "salePrice",
-    header: productsMessages.columns.salePrice,
-    align: "right",
-    sortKey: "salePrice",
-    cell: (product) => formatMoney(product.salePrice.minorUnits, product.salePrice.currency),
-  },
-];
+function buildColumns(canViewKardex: boolean): readonly Column<Product, ProductSortField>[] {
+  return [
+    {
+      id: "sku",
+      header: productsMessages.columns.sku,
+      sortKey: "sku",
+      // Plain text until "Editar producto" exists (#36).
+      cell: (product) => <span className="font-medium tabular-nums">{product.sku}</span>,
+    },
+    {
+      id: "name",
+      header: productsMessages.columns.name,
+      sortKey: "name",
+      cell: (product) => (
+        <span className="block max-w-96 truncate" title={product.name}>
+          {product.name}
+        </span>
+      ),
+    },
+    {
+      id: "unitOfMeasure",
+      header: productsMessages.columns.unitOfMeasure,
+      cell: (product) => unitOfMeasureLabels[product.unitOfMeasure],
+    },
+    {
+      id: "taxRate",
+      header: productsMessages.columns.taxRate,
+      align: "right",
+      cell: (product) => taxRateColumnLabels[product.taxRate],
+    },
+    {
+      id: "salePrice",
+      header: productsMessages.columns.salePrice,
+      align: "right",
+      sortKey: "salePrice",
+      cell: (product) => formatMoney(product.salePrice.minorUnits, product.salePrice.currency),
+    },
+    {
+      id: "onHand",
+      header: productsMessages.columns.onHand,
+      align: "right",
+      cell: (product) =>
+        canViewKardex ? (
+          <Link
+            to="/kardex"
+            search={{ producto: product.id, page: 1 }}
+            aria-label={`${kardexMessages.viewKardexLabel(product.sku)}: ${formatQuantity(product.onHand)}`}
+            className="inline-flex min-h-(--target-min) min-w-(--target-min) items-center justify-end font-medium text-primary tabular-nums underline-offset-4 hover:underline"
+          >
+            {formatQuantity(product.onHand)}
+          </Link>
+        ) : (
+          <span className="tabular-nums">{formatQuantity(product.onHand)}</span>
+        ),
+    },
+  ];
+}
 
 function ProductsList() {
   usePageTitle(productsMessages.pageTitle);
+  const role = useSignedInUser().role;
   // Read-only roles see no way to create products (the API refuses them anyway).
-  const canCreate = PRODUCT_ROLES.write.includes(useSignedInUser().role);
+  const canCreate = PRODUCT_ROLES.write.includes(role);
+  const canViewKardex = KARDEX_ROLES.read.includes(role);
+  const columns = useMemo(() => buildColumns(canViewKardex), [canViewKardex]);
   const { q, sort, order, page } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const products = useProducts({ q, sort, order, page });

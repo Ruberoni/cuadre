@@ -41,6 +41,19 @@ export {
   ListExchangeRatesResponse,
   RecordExchangeRateRequest,
 } from "./exchange-rates/exchange-rates.ts";
+export {
+  GetKardexQuery,
+  KARDEX_PAGE_SIZE,
+  KARDEX_ROLES,
+  KardexEntry,
+  KardexProduct,
+  KardexProductParam,
+  KardexResponse,
+  STOCK_MOVEMENT_DIRECTIONS,
+  STOCK_MOVEMENT_REFERENCE_TYPES,
+  type StockMovementDirection,
+  type StockMovementReferenceType,
+} from "./inventory/kardex.ts";
 export { CurrencySchema, MoneyDto } from "./money.ts";
 export {
   CreateCustomerRequest,

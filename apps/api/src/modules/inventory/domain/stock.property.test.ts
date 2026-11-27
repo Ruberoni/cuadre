@@ -11,8 +11,10 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
   applyInboundMovement,
+  buildStockLedger,
   computeInboundCostUsd,
   deriveAverageCostUsd,
+  deriveRoundedAverageCostUsd,
   type StockBalance,
   zeroStockBalance,
 } from "./stock.ts";
@@ -95,6 +97,39 @@ describe("stock invariants (ADR-007)", () => {
         const first = computeInboundCostUsd(quantity, ves.value, frozen);
         const again = computeInboundCostUsd(quantity, ves.value, frozen);
         expect(again).toEqual(first);
+      }),
+    );
+  });
+
+  it("replaying inbound movements in buildStockLedger matches applyInboundMovement and is monotonic in on-hand", () => {
+    fc.assert(
+      fc.property(movementsArb, (movements) => {
+        const ledger = buildStockLedger(
+          PRODUCT,
+          movements.map((m, index) => ({
+            id: `m-${index}`,
+            documentDate: "2026-11-20",
+            direction: "INBOUND" as const,
+            quantity: m.quantity,
+            totalCostUsd: usd(m.cost),
+            referenceType: "GOODS_RECEIPT",
+            referenceId: PRODUCT,
+          })),
+        );
+        expect(ledger.ok).toBe(true);
+        if (!ledger.ok) return;
+
+        let expected = zeroStockBalance(PRODUCT);
+        let prevOnHand = 0n;
+        for (const [index, m] of movements.entries()) {
+          expected = apply(expected, m.quantity, m.cost);
+          const entry = ledger.value.entries[index];
+          expect(entry?.onHandAfterScaled).toBe(expected.onHandScaled);
+          expect(entry?.onHandAfterScaled).toBeGreaterThan(prevOnHand);
+          expect(entry?.averageCostAfterUsd).toEqual(deriveRoundedAverageCostUsd(expected));
+          prevOnHand = expected.onHandScaled;
+        }
+        expect(ledger.value.finalBalance).toEqual(expected);
       }),
     );
   });

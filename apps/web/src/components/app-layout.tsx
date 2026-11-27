@@ -2,6 +2,7 @@ import {
   CUSTOMER_ROLES,
   EXCHANGE_RATE_ROLES,
   GOODS_RECEIPT_ROLES,
+  KARDEX_ROLES,
   PRODUCT_ROLES,
   PURCHASE_ORDER_ROLES,
   type Role,
@@ -26,6 +27,7 @@ import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { defaultExchangeRatesSearch } from "@/features/exchange-rates/search";
+import { defaultKardexSearch } from "@/features/kardex/search";
 import { defaultPartnersSearch } from "@/features/partners/search";
 import { defaultProductsSearch } from "@/features/products/search";
 import { defaultGoodsReceiptsSearch } from "@/features/purchasing/goods-receipts-search";
@@ -81,6 +83,7 @@ type NavRoute =
   | "/proveedores"
   | "/ordenes-de-compra"
   | "/recepciones-de-mercancia"
+  | "/kardex"
   | "/clientes";
 
 // Grouped sidebar items for screens that exist, each with the roles that see it (PLAN → Roles).
@@ -111,6 +114,11 @@ const NAV_GROUPS: readonly NavGroup<NavRoute>[] = [
     ],
   },
   {
+    id: "inventory",
+    label: shellMessages.navGroups.inventory,
+    items: [{ to: "/kardex", label: shellMessages.kardex, roles: KARDEX_ROLES.read }],
+  },
+  {
     id: "sales",
     label: shellMessages.navGroups.sales,
     items: [{ to: "/clientes", label: shellMessages.customers, roles: CUSTOMER_ROLES.read }],
@@ -130,6 +138,8 @@ function defaultSearchFor(to: NavRoute) {
       return defaultPurchaseOrdersSearch;
     case "/recepciones-de-mercancia":
       return defaultGoodsReceiptsSearch;
+    case "/kardex":
+      return defaultKardexSearch;
   }
 }
 

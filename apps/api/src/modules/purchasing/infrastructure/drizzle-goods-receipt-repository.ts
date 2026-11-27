@@ -8,7 +8,7 @@ import {
   type Rate,
   rateToString,
 } from "@cuadre/shared-kernel";
-import { and, asc, count, desc, eq } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
 import type { Db, DbTransaction } from "../../../db/client.ts";
 import { postgresError, UNIQUE_VIOLATION } from "../../../db/postgres-error.ts";
 import type { GoodsReceiptRepository } from "../application/goods-receipt-repository.ts";
@@ -209,6 +209,19 @@ export function createDrizzleGoodsReceiptRepository(db: Db): GoodsReceiptReposit
         .limit(1);
       if (header === undefined) return null;
       return toStoredReceipt(header, await linesOf(db, header.id));
+    },
+
+    async findInvoiceNumbersByIds(ids) {
+      const uniqueIds = [...new Set(ids)];
+      if (uniqueIds.length === 0) return new Map();
+      const rows = await db
+        .select({
+          id: goodsReceiptsTable.id,
+          supplierInvoiceNumber: goodsReceiptsTable.supplierInvoiceNumber,
+        })
+        .from(goodsReceiptsTable)
+        .where(inArray(goodsReceiptsTable.id, uniqueIds));
+      return new Map(rows.map((row) => [row.id, row.supplierInvoiceNumber]));
     },
 
     async list(params) {

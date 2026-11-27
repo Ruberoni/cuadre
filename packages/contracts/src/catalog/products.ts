@@ -68,6 +68,8 @@ export const Product = z.object({
   unitOfMeasure: z.enum(UNITS_OF_MEASURE),
   salePrice: UsdPrice,
   taxRate: z.enum(TAX_RATES),
+  /** Current on-hand quantity as canonical dot-decimal string (`"0"`, `"50"`, `"150.5"`). */
+  onHand: z.string(),
 });
 export type Product = z.infer<typeof Product>;
 

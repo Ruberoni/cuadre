@@ -64,6 +64,9 @@ export function createPurchasingModule({
   return {
     /** Mounted by the app under `/api`. */
     routes,
+    /** Read-only batch lookup of goods-receipt supplier invoice numbers for other modules (ADR-001). */
+    findGoodsReceiptInvoiceNumbersByIds: (ids: readonly string[]) =>
+      goodsReceiptRepository.findInvoiceNumbersByIds(ids),
     /**
      * Loads the fictitious demo purchase orders (2 drafts + 2 issued, one of them received through
      * an issued goods receipt); safe to run again.

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { parseQuantity, QUANTITY_SCALE, quantityToString } from "./quantity.ts";
+import {
+  parseQuantity,
+  QUANTITY_SCALE,
+  quantityToString,
+  scaledQuantityToString,
+} from "./quantity.ts";
 
 describe("parseQuantity", () => {
   it("accepts whole numbers for whole-number units", () => {
@@ -59,5 +64,15 @@ describe("parseQuantity", () => {
       ok: false,
       error: "OUT_OF_RANGE",
     });
+  });
+});
+
+describe("scaledQuantityToString", () => {
+  it("formats zero, whole numbers and fractional thousandths without trailing zeros", () => {
+    expect(scaledQuantityToString(0n)).toBe("0");
+    expect(scaledQuantityToString(10_000n)).toBe("10");
+    expect(scaledQuantityToString(150_500n)).toBe("150.5");
+    expect(scaledQuantityToString(12_345n)).toBe("12.345");
+    expect(scaledQuantityToString(5n)).toBe("0.005");
   });
 });

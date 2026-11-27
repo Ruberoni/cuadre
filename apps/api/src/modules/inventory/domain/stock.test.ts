@@ -9,7 +9,9 @@ import {
 import { describe, expect, it } from "vitest";
 import {
   applyInboundMovement,
+  buildStockLedger,
   computeInboundCostUsd,
+  computeUnitCostUsd,
   deriveAverageCostUsd,
   deriveRoundedAverageCostUsd,
   type StockBalance,
@@ -118,5 +120,138 @@ describe("computeInboundCostUsd (ADR-007: excludes IVA, converts VES at the rece
       ok: true,
       value: cash(274),
     });
+  });
+});
+
+describe("computeUnitCostUsd", () => {
+  it("divides total USD cost by quantity, rounding half away from zero", () => {
+    expect(computeUnitCostUsd(cash(5000), qty("10"))).toEqual({ ok: true, value: cash(500) });
+    // $10,00 / 3 = $3,3333… → $3,33; $10,00 / 6 = $1,6666… → $1,67
+    expect(computeUnitCostUsd(cash(1000), qty("3"))).toEqual({ ok: true, value: cash(333) });
+    expect(computeUnitCostUsd(cash(1000), qty("6"))).toEqual({ ok: true, value: cash(167) });
+    // Fractional quantity: $301,00 / 150,5 kg = $2,00/kg
+    expect(computeUnitCostUsd(cash(30100), qty("150.5"))).toEqual({ ok: true, value: cash(200) });
+  });
+
+  it("rejects non-USD or negative costs", () => {
+    expect(computeUnitCostUsd(cash(100, "VES"), qty("1"))).toEqual({
+      ok: false,
+      error: "INVALID_COST",
+    });
+    expect(computeUnitCostUsd(cash(-1), qty("1"))).toEqual({
+      ok: false,
+      error: "INVALID_COST",
+    });
+  });
+});
+
+describe("buildStockLedger (ADR-007)", () => {
+  const RECEIPT_1 = "33333333-3333-4333-8333-333333333331";
+  const RECEIPT_2 = "33333333-3333-4333-8333-333333333332";
+
+  it("10 units at $5,00 then 10 at $7,00 shows on-hand 10 → 20 and average $5,00 → $6,00", () => {
+    const result = buildStockLedger(PRODUCT, [
+      {
+        id: "m1",
+        documentDate: "2026-11-20",
+        direction: "INBOUND",
+        quantity: qty("10"),
+        totalCostUsd: cash(5000),
+        referenceType: "GOODS_RECEIPT",
+        referenceId: RECEIPT_1,
+      },
+      {
+        id: "m2",
+        documentDate: "2026-11-21",
+        direction: "INBOUND",
+        quantity: qty("10"),
+        totalCostUsd: cash(7000),
+        referenceType: "GOODS_RECEIPT",
+        referenceId: RECEIPT_2,
+      },
+    ]);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.entries).toEqual([
+      {
+        id: "m1",
+        documentDate: "2026-11-20",
+        direction: "INBOUND",
+        quantity: qty("10"),
+        unitCostUsd: cash(500),
+        averageCostAfterUsd: cash(500),
+        onHandAfterScaled: 10_000n,
+        referenceType: "GOODS_RECEIPT",
+        referenceId: RECEIPT_1,
+      },
+      {
+        id: "m2",
+        documentDate: "2026-11-21",
+        direction: "INBOUND",
+        quantity: qty("10"),
+        unitCostUsd: cash(700),
+        averageCostAfterUsd: cash(600),
+        onHandAfterScaled: 20_000n,
+        referenceType: "GOODS_RECEIPT",
+        referenceId: RECEIPT_2,
+      },
+    ]);
+    expect(result.value.finalBalance.onHandScaled).toBe(20_000n);
+    expect(result.value.finalBalance.totalValueUsd).toEqual(cash(12000));
+  });
+
+  it("returns empty entries and zero balance when there are no movements", () => {
+    const result = buildStockLedger(PRODUCT, []);
+
+    expect(result).toEqual({
+      ok: true,
+      value: { entries: [], finalBalance: zeroStockBalance(PRODUCT) },
+    });
+  });
+
+  it("empties value and clears averageCostAfter when an outbound movement brings on-hand to zero", () => {
+    const result = buildStockLedger(PRODUCT, [
+      {
+        id: "m1",
+        documentDate: "2026-11-20",
+        direction: "INBOUND",
+        quantity: qty("3"),
+        totalCostUsd: cash(1000),
+        referenceType: "GOODS_RECEIPT",
+        referenceId: RECEIPT_1,
+      },
+      {
+        id: "m2",
+        documentDate: "2026-11-21",
+        direction: "OUTBOUND",
+        quantity: qty("3"),
+        totalCostUsd: cash(1000),
+        referenceType: "GOODS_RECEIPT",
+        referenceId: RECEIPT_2,
+      },
+    ]);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.entries[1]?.onHandAfterScaled).toBe(0n);
+    expect(result.value.entries[1]?.averageCostAfterUsd).toBeNull();
+    expect(result.value.finalBalance.totalValueUsd).toEqual(cash(0));
+  });
+
+  it("fails with INSUFFICIENT_STOCK if an outbound movement exceeds on-hand", () => {
+    const result = buildStockLedger(PRODUCT, [
+      {
+        id: "m1",
+        documentDate: "2026-11-20",
+        direction: "OUTBOUND",
+        quantity: qty("1"),
+        totalCostUsd: cash(100),
+        referenceType: "GOODS_RECEIPT",
+        referenceId: RECEIPT_1,
+      },
+    ]);
+
+    expect(result).toEqual({ ok: false, error: "INSUFFICIENT_STOCK" });
   });
 });
